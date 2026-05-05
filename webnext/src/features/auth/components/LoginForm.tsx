@@ -19,12 +19,12 @@ export default function LoginForm() {
       },
       {
         onSuccess: (res: any) => {
-          console.log("🔥 LOGIN RESPONSE:", res);
+          console.log(" LOGIN RESPONSE:", res);
 
           const user = res.data?.data?.user || res.data?.user;
 
           if (!user) {
-            console.error("❌ USER NOT FOUND", res);
+            console.error("USER NOT FOUND", res);
             return;
           }
 
@@ -36,8 +36,8 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-red-500 to-orange-400 px-4">
-      
+    // <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-red-500 to-orange-400 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFFFFF] via-[#EAF6FF] to-[#BFE4FF] px-4">
       {/* Glass Card */}
       <form
         onSubmit={handleSubmit}
@@ -45,7 +45,7 @@ export default function LoginForm() {
       >
         {/* Title */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Welcome Back ❤️</h1>
+          <h1 className="text-3xl font-bold Beau Rivage">MatchMaker</h1>
           <p className="text-white/70 text-sm mt-1">
             Login to continue your journey
           </p>

@@ -1,17 +1,28 @@
-FROM node:20.10-alpine
+# ---- Build Stage ----
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-ENV NODE_ENV=development
-
-# Install dependencies first (cached)
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
-# Copy rest of the code
 COPY . .
+
+RUN npm run build
+
+
+# ---- Production Stage ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --production
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.* ./
 
 EXPOSE 3000
 
-RUN npm run build
 CMD ["npm", "start"]

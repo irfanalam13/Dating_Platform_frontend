@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useUpdateProfile } from "@/features/profile/hooks/useProfile";
+import { useRouter } from 'next/navigation';
 
 export default function EditProfile() {
   const mutation = useUpdateProfile();
 
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
-
+  const router = useRouter();
 const handleSubmit = () => {
 const formData = new FormData();
 formData.append("bio", bio);
@@ -20,7 +21,7 @@ mutation.mutate(formData, {
     console.log("❌ DATA:", err.response?.data);
     },
 });
-};
+}; 
 
   return (
     <div>

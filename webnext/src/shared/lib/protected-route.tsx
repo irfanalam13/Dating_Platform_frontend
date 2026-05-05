@@ -1,24 +1,36 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/features/auth/store/auth.store";
+import { AuthContext } from "@/shared/context/auth-context";
 
 type Props = {
   children: ReactNode;
 };
 
 export default function ProtectedRoute({ children }: Props) {
-  const user = useAuthStore((s) => s.user);
+  const auth = useContext(AuthContext);
   const router = useRouter();
 
+  if (!auth) return null;
+
+  const { user, loading } = auth;
+
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       router.push("/login");
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
-  if (!user) return null;
+  // ⏳ While checking auth
+  if (loading) {
+    return <p>Checking authentication...</p>;
+  }
+
+  // 🚫 Not logged in
+  if (!user) {
+    return null;
+  }
 
   return <>{children}</>;
 }
