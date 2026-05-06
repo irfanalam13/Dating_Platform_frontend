@@ -1,4 +1,4 @@
-import api from "@/shared/lib/api";
+import api from "./client";
 import { LoginPayload, RegisterPayload, AuthResponse } from "../types/auth.types";
 
 // 🟢 REGISTER

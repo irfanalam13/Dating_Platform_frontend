@@ -1,71 +1,74 @@
-// "use client";
+// src/features/auth/hooks/useCurrentUser.ts
+"use client";
 
-// import { useEffect, useState } from "react";
-// import api from "@/shared/lib/api";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "@/shared/api/auth.api";
+import { useAuthStore } from "../store/auth.store";
 
-// export const useCurrentUser = () => {
-//   const [loading, setLoading] = useState(true);
-//   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-//   useEffect(() => {
-//     const hasToken = document.cookie.includes("access");
-
-//     if (!hasToken) {
-//       setLoading(false);
-//       setIsAuthenticated(false);
-//       return;
-//     }
-
-//     api.get("/auth/me/")
-//       .then(() => {
-//         setIsAuthenticated(true);
-//       })
-//       .catch(() => {
-//         setIsAuthenticated(false);
-//       })
-//       .finally(() => {
-//         setLoading(false);
-//       });
-
-//   }, []);
-
-//   return { loading, isAuthenticated };
-// };
-
-
-
-
-
-
-import { useEffect, useState } from "react";
-import api from "@/shared/lib/api";
+export interface User {
+  id: string | number;
+  email: string;
+  name?: string;
+  full_name?: string;
+  image?: string;
+  profile_image?: string;
+  location?: string;
+  age?: number;
+  bio?: string;
+  about?: string;
+  interests?: string[];
+  matches?: number;
+  likes_received?: number;
+  photos_count?: number;
+  photos?: string[];
+  settings?: any;
+}
 
 export function useCurrentUser() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: storeUser, setAuth } = useAuthStore();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["authUser"],
+    queryFn: async () => {
+      try {
+        const res = await getMe();
+        return res;
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          return null; // Graceful 401 handling
+        }
+        throw err;
+      }
+    },
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // 🔒 Stops the query from refetching on remount
+    refetchOnReconnect: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    retry: false, // Prevents endless API retries
+  });
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        // 🔐 1. Initialize CSRF FIRST
-        await api.get("/auth/csrf/");
+    const currentUser = data?.user || data;
 
-        // 👤 2. Fetch user
-        const res = await api.get("/auth/profile/me/");
-        setUser(res.data.data);
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
+    if (currentUser) {
+      // 🔒 Only update Zustand store if the user object has changed
+      if (JSON.stringify(storeUser) !== JSON.stringify(currentUser)) {
+        setAuth(currentUser);
       }
-    };
-
-    init();
-  }, []);
+    } else if (!isLoading) {
+      // 🔒 Only update Zustand to null if it's not already null
+      if (storeUser !== null) {
+        setAuth(null);
+      }
+    }
+  }, [data, isLoading, storeUser, setAuth]);
 
   return {
-    user,
-    loading,
-    isAuthenticated: !!user, // ✅ ADD THIS
+    user: (data?.user || data) as User | null,
+    loading: isLoading,
+    isAuthenticated: !!(data?.user || data),
+    error,
+    refetch,
   };
 }

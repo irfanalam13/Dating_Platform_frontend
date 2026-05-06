@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useState } from "react";
-import api from "@/shared/lib/api";
+import api from "@/shared/api/client";
 
 type User = {
   id: number;

@@ -1,4 +1,4 @@
-import api from "@/shared/lib/api";
+import api from "./client";
 
 // ✅ Get my profile
 export const getMyProfile = async () => {
@@ -8,7 +8,8 @@ export const getMyProfile = async () => {
 
 // ✅ Get other user profile
 export const getUserProfile = async (userId: number) => {
-  const res = await api.get(`/profiles/${userId}/`);
+  // const res = await api.get(`/profiles/${userId}/`);
+  const res = await api.get("/auth/me/");
   return res.data;
 };
 

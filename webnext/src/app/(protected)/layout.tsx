@@ -9,6 +9,16 @@
 // }) {
 //   return <ProtectedRoute>{children}</ProtectedRoute>;
 // }
-export default function ProtectedLayout({ children }) {
+// export default function ProtectedLayout({ children }) {
+//   return <>{children}</>;
+// }
+
+import React from "react";
+
+export default function ProtectedLayout({ 
+  children 
+}: { 
+  children: React.ReactNode 
+}) {
   return <>{children}</>;
 }

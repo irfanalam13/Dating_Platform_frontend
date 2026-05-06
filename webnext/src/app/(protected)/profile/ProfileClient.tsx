@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // ✅ 1. Import useRouter
 import ProfileCard from "@/features/profile/components/ProfileCard";
 import {
   useMyProfile,
@@ -10,6 +11,7 @@ import {
 export default function ProfileClient({ user }: any) {
   const { data, isLoading } = useMyProfile();
   const mutation = useUpdateProfile();
+  const router = useRouter(); // ✅ 2. Initialize router
 
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
@@ -42,7 +44,11 @@ export default function ProfileClient({ user }: any) {
       {/* Profile View */}
       {!isEditing && (
         <>
-          <ProfileCard data={data} />
+          {/* ✅ 3. Add the required onSettingsClick prop */}
+          <ProfileCard 
+            data={data} 
+            onSettingsClick={() => router.push('/settings')}
+          />
           <button
             onClick={() => setIsEditing(true)}
             className="px-4 py-2 bg-blue-500 text-white rounded"

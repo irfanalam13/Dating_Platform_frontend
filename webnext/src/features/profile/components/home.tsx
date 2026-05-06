@@ -60,10 +60,10 @@
 'use client';
 
 import Image from "next/image";
-import { Heart, X, Star, Settings } from "lucide-react";
+import { Heart, X, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function DatingProfileCard({ data }: any) {
+export default function HomePage({ data }: any) {
   const router = useRouter();
 
   return (
@@ -88,12 +88,7 @@ export default function DatingProfileCard({ data }: any) {
 
           {/* Top overlay buttons */}
           <div className="absolute top-4 left-4 right-4 flex justify-between">
-            <button
-              onClick={() => router.push("/settings")}
-              className="p-2 bg-white/80 backdrop-blur rounded-full shadow"
-            >
-              <Settings className="w-5 h-5 text-gray-700" />
-            </button>
+
 
             <div className="flex gap-2">
               <span className="px-3 py-1 text-xs bg-black/50 text-white rounded-full">

@@ -29,7 +29,9 @@ export default function LoginForm() {
           }
 
           // window.location.href = `/${user.username}`;
-          router.push(`/${user.username}`);
+          // router.push("/profile/");
+          router.push("/home");
+          
         },
       }
     );
@@ -55,7 +57,7 @@ export default function LoginForm() {
         <input
           name="email"
           placeholder="Email"
-          className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+          className="w-full px-4 py-3 rounded-xl bg-black/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />
 
         {/* Password */}
@@ -63,7 +65,7 @@ export default function LoginForm() {
           name="password"
           type="password"
           placeholder="Password"
-          className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+          className="w-full px-4 py-3 rounded-xl bg-black/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />
 
         {/* Login Button */}
