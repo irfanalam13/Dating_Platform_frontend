@@ -1,28 +1,40 @@
-// 🔹 Profile Core
 export interface Profile {
   id: number;
+  full_name: string;
   bio: string;
-  location: string;
+  city: string;
+  age: number;
+  gender: string;
+  date_of_birth: string | null;
+  relationship_intent: string;
+  education: string;
+  career: string;
+  values: string;
+  hobbies: string;
+  preferences: string;
+  religion?: number | null;
+  religion_name?: string;
+  caste?: number | null;
+  caste_name?: string;
+  gotra?: number | null;
+  gotra_name?: string;
+  ethnicity: string;
+  gan: string;
+  horoscope: string;
   profile_image: string | null;
+  profile_image_url: string | null;
+  is_complete: boolean;
+  is_profile_public: boolean;
+  verified: boolean;
+  compatibility_tags?: string[];
 }
 
-// 🔹 Stats
-export interface ProfileStats {
-  followers: number;
-  following: number;
-  posts: number;
+export interface DiscoverResponse {
+  results: Profile[];
 }
 
-// 🔹 Settings
-export interface ProfileSettings {
-  is_private: boolean;
-  blur: boolean;
-}
-
-// 🔹 Full API Response
-export interface ProfileResponse {
-  profile: Profile;
-  stats: ProfileStats;
-  settings: ProfileSettings;
-  is_private: boolean;
+export interface MatchResponse {
+  message: string;
+  matched: boolean;
+  match_id?: number;
 }

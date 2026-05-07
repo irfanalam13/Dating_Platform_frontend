@@ -1,78 +1,32 @@
-// chat/api.ts
-
-import axios from "axios";
 import type {
   Conversation,
   Message,
-  StartConversationResponse,
   SendMessageRequest,
   SendMessageResponse,
+  StartConversationResponse,
 } from "../types/chat.types";
+import api from "./client";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
-// 🔐 Token helper
-const getAuthHeader = () => {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("access")
-      : null;
-
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-    },
-  };
-};
-
-// =====================================================
-// 💬 START CONVERSATION
-// =====================================================
 export const startConversation = async (
   profileId: number
 ): Promise<StartConversationResponse> => {
-  const res = await axios.post(
-    `${API}/chat/start/${profileId}/`,
-    {},
-    getAuthHeader()
-  );
-
+  const res = await api.post(`/chat/start/${profileId}/`, {});
   return res.data;
 };
 
-// =====================================================
-// 📋 GET CONVERSATIONS
-// =====================================================
 export const getConversations = async (): Promise<Conversation[]> => {
-  const res = await axios.get(`${API}/chat/`, getAuthHeader());
+  const res = await api.get("/chat/");
   return res.data;
 };
 
-// =====================================================
-// 📨 GET MESSAGES
-// =====================================================
-export const getMessages = async (
-  conversationId: number
-): Promise<Message[]> => {
-  const res = await axios.get(
-    `${API}/chat/${conversationId}/messages/`,
-    getAuthHeader()
-  );
-
+export const getMessages = async (conversationId: number): Promise<Message[]> => {
+  const res = await api.get(`/chat/${conversationId}/messages/`);
   return res.data;
 };
 
-// =====================================================
-// ✉️ SEND MESSAGE
-// =====================================================
 export const sendMessage = async (
   data: SendMessageRequest
 ): Promise<SendMessageResponse> => {
-  const res = await axios.post(
-    `${API}/chat/send/`,
-    data,
-    getAuthHeader()
-  );
-
+  const res = await api.post("/chat/send/", data);
   return res.data;
 };

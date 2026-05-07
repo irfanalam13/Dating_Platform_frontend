@@ -1,13 +1,35 @@
-// src/features/auth/hooks/useAuth.ts
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-
 import { registerUser, loginUser } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { showSuccess, showError } from "@/shared/utils/toast";
-import api from "@/shared/api/client"; // Needed for the logout call
+import api from "@/shared/api/client";
+/**
+ * Robust helper to extract error messages from Django/Axios responses.
+ * Handles nested field errors, detail strings, and generic messages.
+ */
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  const responseData = (err as any)?.response?.data;
+
+  if (responseData && typeof responseData === "object") {
+    // 1. Check for nested field errors (e.g., data.email: ["..."])
+    // Your backend sends errors inside the 'data' or 'errors' key
+    const fieldErrors = responseData.data || responseData.errors;
+
+    if (fieldErrors && typeof fieldErrors === "object") {
+      const firstError = Object.values(fieldErrors).flat().find((msg) => typeof msg === "string");
+      if (firstError) return firstError as string;
+    }
+
+    // 2. Check for common Django keys
+    if (typeof responseData.detail === "string") return responseData.detail;
+    if (typeof responseData.message === "string") return responseData.message;
+  }
+
+  return fallback;
+}
 
 // ================= REGISTER =================
 export const useRegister = () => {
@@ -18,26 +40,17 @@ export const useRegister = () => {
     mutationFn: registerUser,
 
     onSuccess: async (res: any) => {
-      console.log("✅ REGISTER SUCCESS", res);
-      
-      const user = res?.data?.data?.user || res?.data?.user || res?.user || res;
-
-      if (user) {
-        setAuth(user);
-        showSuccess("Account created successfully! Redirecting...");
-
-        setTimeout(() => {
-          router.push("/profile");
-        }, 1000);
-      } else {
-        showSuccess("Account created! Please log in.");
-        router.push("/login");
+      const user = res?.data?.data?.user || res?.data?.user || res?.data;
+      if (user && typeof user === "object") {
+        setAuth(user); // ✅ save user so onboarding knows who they are
       }
+      showSuccess("Account created! Let's set up your profile.");
+      router.push("/onboarding"); // ✅ Register → Onboarding
     },
 
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error("❌ REGISTER ERROR", err);
-      showError(err?.response?.data?.message || "Registration failed. Please try again.");
+      showError(getApiErrorMessage(err, "Registration failed. Please try again."));
     },
   });
 };
@@ -53,23 +66,22 @@ export const useLogin = () => {
     onSuccess: (res: any) => {
       console.log("🔥 LOGIN RESPONSE:", res);
 
-      // Adjusted to match your Django api_response utility structure
-      const user = res?.data?.data?.user || res?.data?.user;
+      const user = res?.data?.data?.user || res?.data?.user || res?.data;
 
-      if (!user) {
-        console.error("❌ USER NOT FOUND IN RESPONSE", res);
-        showError("Invalid login response");
+      if (!user || typeof user !== "object") {
+        console.error("❌ USER DATA MISSING IN RESPONSE", res);
+        showError("Invalid login response from server");
         return;
       }
 
       setAuth(user);
-      showSuccess("Login successful");
-      router.push("/profile");
+      showSuccess("Welcome back!");
+      router.push("/dashboard"); // ✅ Login → Dashboard (skip onboarding)
     },
 
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       console.error("❌ LOGIN ERROR", err);
-      showError(err?.response?.data?.message || "Login failed");
+      showError(getApiErrorMessage(err, "Login failed"));
     },
   });
 };
@@ -77,26 +89,31 @@ export const useLogin = () => {
 // ================= LOGOUT =================
 export const useLogout = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation({
-    // We call the backend so Django can delete the HttpOnly cookies
     mutationFn: async () => {
-      const res = await api.post("/auth/logout/");
-      return res.data;
+      // ✅ Raw fetch — completely bypasses axios interceptor
+      // This prevents the refresh → logout → refresh loop
+      await fetch("http://localhost:8000/api/v1/auth/logout/", {
+        method: "POST",
+        credentials: "include", // sends cookies so Django can blacklist + clear them
+      });
     },
-    
+
     onSuccess: () => {
-      setAuth(null); // Clear the frontend state
+      setAuth(null);
+      queryClient.clear(); // ✅ wipe ALL cached queries so nothing re-fetches
       showSuccess("Logged out successfully");
       router.push("/login");
     },
 
-    onError: (err: any) => {
-      console.error("❌ LOGOUT ERROR", err);
-      // Even if the backend fails, we should force clear the frontend state
+    onError: () => {
+      // Even if logout fails, clear everything locally
       setAuth(null);
+      queryClient.clear(); // ✅ wipe cache here too
       router.push("/login");
-    }
+    },
   });
 };

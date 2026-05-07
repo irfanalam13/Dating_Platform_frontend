@@ -1,208 +1,197 @@
-// "use client";
-
-// import { useState } from "react";
-// import { useUpdateProfile } from "@/features/profile/hooks/useProfile";
-// import { useRouter } from 'next/navigation';
-
-// export default function EditProfile() {
-//   const mutation = useUpdateProfile();
-
-//   const [bio, setBio] = useState("");
-//   const [location, setLocation] = useState("");
-//   const router = useRouter();
-// const handleSubmit = () => {
-// const formData = new FormData();
-// formData.append("bio", bio);
-// formData.append("location", location);
-
-// mutation.mutate(formData, {
-//     onError: (err: any) => {
-//     console.log("❌ STATUS:", err.response?.status);
-//     console.log("❌ DATA:", err.response?.data);
-//     },
-// });
-// }; 
-
-//   return (
-//     <div>
-//       <input
-//         placeholder="Bio"
-//         onChange={(e) => setBio(e.target.value)}
-//       />
-//       <input
-//         placeholder="Location"
-//         onChange={(e) => setLocation(e.target.value)}
-//       />
-
-//       <button onClick={handleSubmit}>
-//         Update
-//       </button>
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
-
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUpdateProfile } from "@/features/profile/hooks/useProfile";
-import { showSuccess, showError } from "@/shared/utils/toast";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ArrowRight, Lock, Upload } from "lucide-react";
+import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
 
-// 1. Define schema using Zod
-const profileSchema = z.object({
-  bio: z
-    .string()
-    .min(10, { message: "Bio must be at least 10 characters long" })
-    .max(160, { message: "Bio cannot exceed 160 characters" }),
-  location: z
-    .string()
-    .min(2, { message: "Location must be at least 2 characters" })
-    .max(50, { message: "Location cannot exceed 50 characters" }),
-});
-
-// Infer types from the schema
-type ProfileFormData = z.infer<typeof profileSchema>;
+const steps = ["Intent", "Identity", "Lifestyle", "Culture", "Privacy"];
 
 export default function EditProfile() {
   const router = useRouter();
+  const { data } = useMyProfile();
   const mutation = useUpdateProfile();
-
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors, isSubmitting, isDirty, isValid },
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    mode: "onTouched",
-    defaultValues: {
-      bio: "",
-      location: "",
-    },
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
+    relationship_intent: "Serious Relationship",
+    full_name: "",
+    date_of_birth: "",
+    gender: "",
+    city: "",
+    education: "",
+    career: "",
+    values: "",
+    hobbies: "",
+    bio: "",
+    ethnicity: "",
+    gan: "",
+    horoscope: "",
+    is_profile_public: "true",
   });
+  const [photo, setPhoto] = useState<File | null>(null);
 
-  // 2. Submit handler
-  const onSubmit = async (data: ProfileFormData) => {
+  useEffect(() => {
+    if (!data) return;
+    setForm((current) => ({
+      ...current,
+      relationship_intent: data.relationship_intent || current.relationship_intent,
+      full_name: data.full_name || "",
+      date_of_birth: data.date_of_birth || "",
+      gender: data.gender || "",
+      city: data.city || "",
+      education: data.education || "",
+      career: data.career || "",
+      values: data.values || "",
+      hobbies: data.hobbies || "",
+      bio: data.bio || "",
+      ethnicity: data.ethnicity || "",
+      gan: data.gan || "",
+      horoscope: data.horoscope || "",
+      is_profile_public: String(data.is_profile_public ?? true),
+    }));
+  }, [data]);
+
+  const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+
+  const submit = () => {
     const formData = new FormData();
-    formData.append("bio", data.bio);
-    formData.append("location", data.location);
-
-    mutation.mutate(formData, {
-      onSuccess: (res: any) => {
-        showSuccess(res?.message || "Profile updated successfully");
-        router.push("/profile"); // Redirect after success
-      },
-      onError: (err: any) => {
-        console.error("❌ UPDATE PROFILE ERROR:", err);
-        showError(err?.response?.data?.message || "Failed to update profile");
-
-        // Map backend-specific error fields to the form
-        const apiErrors = err?.response?.data?.errors;
-        if (apiErrors) {
-          Object.keys(apiErrors).forEach((field) => {
-            setError(field as keyof ProfileFormData, {
-              type: "manual",
-              message: apiErrors[field],
-            });
-          });
-        }
-      },
-    });
+    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+    if (photo) formData.append("profile_image", photo);
+    mutation.mutate(formData, { onSuccess: () => router.push("/home") });
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-6">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100 space-y-6"
-      >
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Edit Profile</h1>
-          <p className="text-sm text-gray-500 mt-1">Update your profile information below.</p>
-        </div>
+    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
+      <div className="mx-auto max-w-md">
+        <header className="mb-5">
+          <button onClick={() => router.back()} className="mb-4 grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
+          <h1 className="text-2xl font-semibold">Build a trustworthy profile</h1>
+          <div className="mt-4 grid grid-cols-5 gap-2">
+            {steps.map((item, index) => (
+              <div key={item} className={`h-1.5 rounded-full ${index <= step ? "bg-[#7A2432]" : "bg-[#EADDD2]"}`} />
+            ))}
+          </div>
+        </header>
 
-        {/* Bio Field */}
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="bio" className="text-sm font-medium text-gray-700">
-            Bio
-          </label>
-          <textarea
-            id="bio"
-            {...register("bio")}
-            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            placeholder="Tell us a little bit about yourself"
-            rows={4}
-          />
-          {errors.bio && (
-            <p className="text-sm font-medium text-red-600 animate-fadeIn">
-              {errors.bio.message}
-            </p>
-          )}
-        </div>
+        <section className="rounded-lg border border-[#EADDD2] bg-white p-5 shadow-sm">
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-4">
+              {step === 0 && (
+                <>
+                  <h2 className="text-lg font-semibold">What are you looking for?</h2>
+                  {["Serious Relationship", "Marriage"].map((intent) => (
+                    <button
+                      key={intent}
+                      onClick={() => update("relationship_intent", intent)}
+                      className={`h-14 w-full rounded-md border text-left px-4 font-medium ${
+                        form.relationship_intent === intent ? "border-[#7A2432] bg-[#F8EFE6] text-[#7A2432]" : "border-[#EADDD2]"
+                      }`}
+                    >
+                      {intent}
+                    </button>
+                  ))}
+                </>
+              )}
 
-        {/* Location Field */}
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="location" className="text-sm font-medium text-gray-700">
-            Location
-          </label>
-          <input
-            id="location"
-            type="text"
-            {...register("location")}
-            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            placeholder="e.g., San Francisco, CA"
-          />
-          {errors.location && (
-            <p className="text-sm font-medium text-red-600 animate-fadeIn">
-              {errors.location.message}
-            </p>
-          )}
-        </div>
+              {step === 1 && (
+                <>
+                  <Field label="Full name" value={form.full_name} onChange={(v) => update("full_name", v)} />
+                  <Field label="Date of birth" type="date" value={form.date_of_birth} onChange={(v) => update("date_of_birth", v)} />
+                  <Select label="Gender" value={form.gender} onChange={(v) => update("gender", v)} options={["male", "female", "other"]} />
+                  <Field label="City" value={form.city} onChange={(v) => update("city", v)} placeholder="Kathmandu, Pokhara..." />
+                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-[#EADDD2] p-4 text-sm text-[#746767]">
+                    <Upload className="h-5 w-5 text-[#7A2432]" />
+                    <span>{photo ? photo.name : "Upload profile photo"}</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
+                  </label>
+                </>
+              )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={!isDirty || !isValid || isSubmitting || mutation.isPending}
-          className="w-full py-3 px-4 text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-md font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          {isSubmitting || mutation.isPending ? (
-            <>
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <span>Saving...</span>
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </button>
-      </form>
-    </div>
+              {step === 2 && (
+                <>
+                  <Field label="Education" value={form.education} onChange={(v) => update("education", v)} />
+                  <Field label="Career" value={form.career} onChange={(v) => update("career", v)} />
+                  <Field label="Values and mindset" value={form.values} onChange={(v) => update("values", v)} placeholder="Family, honesty, growth" />
+                  <TextArea label="Short bio" value={form.bio} onChange={(v) => update("bio", v)} />
+                </>
+              )}
+
+              {step === 3 && (
+                <>
+                  <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
+                  <Field label="Gotra / Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
+                  <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
+                  <Field label="Interests" value={form.hobbies} onChange={(v) => update("hobbies", v)} placeholder="Music, hiking, reading" />
+                </>
+              )}
+
+              {step === 4 && (
+                <>
+                  <div className="rounded-md bg-[#F8EFE6] p-4">
+                    <Lock className="mb-3 h-5 w-5 text-[#7A2432]" />
+                    <h2 className="font-semibold">Choose profile visibility</h2>
+                    <p className="mt-1 text-sm leading-6 text-[#746767]">Messages are limited to mutual matches. You can browse with more comfort and adjust privacy anytime.</p>
+                  </div>
+                  <Select label="Profile mode" value={form.is_profile_public} onChange={(v) => update("is_profile_public", v)} options={["true", "false"]} labels={{ true: "Public", false: "Private" }} />
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] font-semibold disabled:opacity-40">
+              Back
+            </button>
+            {step < steps.length - 1 ? (
+              <button onClick={() => setStep((value) => value + 1)} className="flex h-12 items-center justify-center gap-2 rounded-md bg-[#7A2432] font-semibold text-white">
+                Next <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button onClick={submit} disabled={mutation.isPending} className="h-12 rounded-md bg-[#7A2432] font-semibold text-white disabled:opacity-60">
+                {mutation.isPending ? "Saving..." : "Save profile"}
+              </button>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function Field({ label, value, onChange, type = "text", placeholder, optional }: { label: string; value: string; onChange: (value: string) => void; type?: string; placeholder?: string; optional?: boolean }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-medium">{label} {optional && <span className="text-[#746767]">(optional)</span>}</span>
+      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] bg-white px-3 text-sm outline-none focus:border-[#7A2432]" />
+    </label>
+  );
+}
+
+function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-medium">{label}</span>
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-md border border-[#EADDD2] bg-white p-3 text-sm outline-none focus:border-[#7A2432]" />
+    </label>
+  );
+}
+
+function Select({ label, value, onChange, options, labels }: { label: string; value: string; onChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-medium">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] bg-white px-3 text-sm outline-none focus:border-[#7A2432]">
+        <option value="">Select</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{labels?.[option] ?? option}</option>
+        ))}
+      </select>
+    </label>
   );
 }

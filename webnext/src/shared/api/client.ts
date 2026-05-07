@@ -152,9 +152,21 @@
 
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
-const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true, // 👈 This tells the browser to send the HttpOnly cookies
+// const api = axios.create({
+//   baseURL: process.env.NEXT_PUBLIC_API_URL || "https://dating-platform-backend.onrender.com/api/v1",
+//   withCredentials: true, // This ensures EVERY request sends cookies
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+const api = axios.create({
+  // Force it to local Django. Use localhost, NEVER 127.0.0.1
+  baseURL: "http://localhost:8000/api/v1", 
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // ================= TYPES & STATE =================
@@ -186,48 +198,67 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+
+
 // ================= RESPONSE INTERCEPTOR =================
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig;
-    if (!error.response || !originalRequest) return Promise.reject(error);
+
+    if (!error.response || !originalRequest) {
+      return Promise.reject(error);
+    }
 
     const status = error.response.status;
     const url = originalRequest.url || "";
-    const isAuthRoute = url.includes("/auth/login") || url.includes("/auth/register") || url.includes("/auth/refresh");
 
-    // ================= HANDLE 401 (TOKEN EXPIRED) =================
+    const isAuthRoute =
+      url.includes("/auth/login/") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/refresh/") ||  // ✅ || here
+      url.includes("/auth/logout/") ||
+      url.includes("/auth/me/") ;    // ✅ and no trailing slash needed
+
     if (status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(() => api(originalRequest)).catch((err) => Promise.reject(err));
+        })
+          .then(() => api(originalRequest))
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        // Axios will automatically send the HttpOnly "refresh" cookie here!
-        await api.post("/auth/refresh/"); 
-        
-        // Django sets the NEW HttpOnly "access" cookie in the response.
+        await api.post("/auth/refresh/");
         processQueue(null);
-        
-        // Retry the original request (browser will attach the new cookie)
+        isRefreshing = false; // ✅ reset before retry
         return api(originalRequest);
-      } catch (err) {
-        processQueue(err);
-        
-        // If refresh fails, they are truly logged out.
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-        return Promise.reject(err);
-      } finally {
+
+      } catch (refreshError) {
+        processQueue(refreshError);
         isRefreshing = false;
+
+        if (typeof window !== "undefined") {
+          console.error("REFRESH FAILED - FORCING LOGOUT", refreshError); // ✅ log actual error
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // ✅ Let server clear HttpOnly cookies
+          await fetch("http://localhost:8000/api/v1/auth/logout/", {
+            method: "POST",
+            credentials: "include",  // sends the cookies so Django can blacklist + clear them
+          }).catch(() => {});
+          window.location.replace("/login");
+          return new Promise(() => {});
+        }
+
+        return Promise.reject(refreshError);
       }
+      // ✅ no finally block needed
     }
 
     return Promise.reject(error);

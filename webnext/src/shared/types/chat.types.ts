@@ -1,7 +1,16 @@
+export interface ConversationParticipant {
+  id: number;
+  email: string;
+  name: string;
+  profile_id: number | null;
+  profile_image: string | null;
+}
 
 export interface Conversation {
   id: number;
-  participants: string[]; // emails of other users
+  participants: ConversationParticipant[];
+  last_message: string;
+  updated_at: string;
   created_at?: string;
 }
 
