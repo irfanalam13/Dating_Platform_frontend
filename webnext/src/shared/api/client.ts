@@ -160,14 +160,25 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestCo
 //   },
 // });
 
+// const api = axios.create({
+//   // Force it to local Django. Use localhost, NEVER 127.0.0.1
+//   baseURL: "http://localhost:8000/api/v1", 
+//   withCredentials: true,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+
 const api = axios.create({
-  // Force it to local Django. Use localhost, NEVER 127.0.0.1
-  baseURL: "http://localhost:8000/api/v1", 
+  // Use the env variable, fallback to localhost if it's missing
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1", 
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
 
 // ================= TYPES & STATE =================
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
