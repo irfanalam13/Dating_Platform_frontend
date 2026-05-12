@@ -45,6 +45,7 @@ export const useRegister = () => {
         setAuth(user); // ✅ save user so onboarding knows who they are
       }
       showSuccess("Account created! Let's set up your profile.");
+      console.log("Routing to onboarding, ", user)
       router.push("/onboarding"); // ✅ Register → Onboarding
     },
 

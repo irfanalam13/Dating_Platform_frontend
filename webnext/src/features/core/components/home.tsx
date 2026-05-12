@@ -516,10 +516,10 @@ export default function HomePage() {
     enabled: !!user,
     retry: false,
   });
-  // console.log("🔍 user:", user);
-  // console.log("🔍 data:", data);
-  // console.log("🔍 queue:", queue);
-  // console.log("🔍 queueReady:", queueReady);
+  console.log("🔍 user:", user);
+  console.log("🔍 data:", data);
+  console.log("🔍 queue:", queue);
+  console.log("🔍 queueReady:", queueReady);
 
   // ─── Derived — must come BEFORE useEffects that use them ──────────────────────
   const current = queue[0];
