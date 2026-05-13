@@ -44,7 +44,7 @@ export default function RegisterForm() {
     }
 
     if (!isLengthValid) {
-      return showError("Password must be at least 6 characters");
+      return showError("Password must be at least 8 characters");
     }
 
     if (!passwordsMatch) {
@@ -61,30 +61,35 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-500 via-red-500 to-orange-400 px-4">
+    <div className=" flex items-center justify-center px-4 mt-0">
       
       <motion.form
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         onSubmit={handleSubmit}
-        className="w-full max-w-md p-8 rounded-3xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl space-y-5 text-white"
+        className="w-full max-w-md p-8 rounded-3xl space-y-5 text-black"
       >
         {/* Title */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold">Create Account 🚀</h2>
-          <p className="text-white/70 text-sm">
-            Start your journey today
+          <img src="/logo.png" alt=""
+          width={200}
+          height={200}
+          className="mx-auto"
+          />
+          <p className="log-font text-black/70 text-4xl">
+            MatchMakers
           </p>
         </div>
+        <br />
 
         {/* Inputs */}
         <input
           name="full_name"
-          placeholder="Full Name"
+          placeholder="Type in your full name"
           value={form.full_name}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+          className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />
 
         <input
@@ -92,16 +97,16 @@ export default function RegisterForm() {
           placeholder="Username"
           value={form.username}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+          className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />
 
         <input
           name="email"
           type="email"
-          placeholder="Email"
+          placeholder="Type in your email"
           value={form.email}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+          className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />
 
         {/* Password */}
@@ -109,15 +114,15 @@ export default function RegisterForm() {
           <input
             name="password"
             type={showPass ? "text" : "password"}
-            placeholder="Password"
+            placeholder="Set a password"
             value={form.password}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+            className="w-full px-4 py-3 rounded-xl bg-white/20 text-xs placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
           />
           <button
             type="button"
             onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-3 text-white/60"
+            className="absolute right-3 top-3 text-black/60"
           >
             {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -125,14 +130,14 @@ export default function RegisterForm() {
 
         {/* Password Strength */}
         {password && (
-          <div className="text-sm space-y-1 text-white/80">
+          <div className="text-sm space-y-1 text-black/80">
             <div className="flex items-center gap-2">
               {isLengthValid ? (
                 <CheckCircle className="text-green-400" size={16} />
               ) : (
                 <XCircle className="text-red-400" size={16} />
               )}
-              <span>At least 6 characters</span>
+              <span>At least 8 characters</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -163,12 +168,12 @@ export default function RegisterForm() {
             placeholder="Confirm Password"
             value={form.confirm_password}
             onChange={handleChange}
-            className="w-full px-4 py-3 rounded-xl bg-white/20 text-white placeholder-white/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
+            className="w-full px-4 py-3 rounded-xl bg-white/20 text-xs placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
           />
           <button
             type="button"
             onClick={() => setShowConfirm(!showConfirm)}
-            className="absolute right-3 top-3 text-white/60"
+            className="absolute right-3 top-3 text-black/60"
           >
             {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -191,25 +196,25 @@ export default function RegisterForm() {
           </div>
         )}
 
-        {/* Button */}
-        <button
-          disabled={isPending}
-          className="w-full py-3 rounded-xl bg-white text-black font-semibold hover:bg-gray-200 transition"
-        >
-          {isPending ? "Creating..." : "Sign Up"}
-        </button>
-
         {/* Footer */}
-        <p className="text-center text-sm text-white/70">
+        <p className="text-right text-sm text-black/70">
           Already have an account?{" "}
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-white font-semibold underline"
+            className="text-[#005DFF] font-bold underline"
           >
-            Login
+            Log on
           </button>
         </p>
+<br />
+        {/* Button */}
+        <button
+          disabled={isPending}
+          className="w-48 py-3 mx-auto block rounded-full bg-[#0088FF] text-white font-light hover:bg-[#006DCD] transition"
+        >
+          {isPending ? "Creating..." : "Register"}
+        </button>
       </motion.form>
     </div>
   );
