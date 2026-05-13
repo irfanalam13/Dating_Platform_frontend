@@ -1,11 +1,11 @@
 "use client";
 
-// import { useState } from "react";
-// import { useRegister } from "../hooks/useAuth";
-// import { showError } from "@/shared/utils/toast";
-// import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
-// import { motion } from "framer-motion";
-// import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRegister } from "../hooks/useAuth";
+import { showError } from "@/shared/utils/toast";
+import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
   const { mutate, isPending } = useRegister();
