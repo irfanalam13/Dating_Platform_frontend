@@ -1,15 +1,8 @@
+// @/shared/api/notification.api.ts
 import api from "./client";
+import type { AppNotification } from "@/shared/types/notification.types";
 
-export interface AppNotification {
-  id: number;
-  notification_type: "match" | "message" | "system";
-  title: string;
-  body: string;
-  conversation_id: number | null;
-  profile_id: number | null;
-  is_read: boolean;
-  created_at: string;
-}
+export type { AppNotification }; // re-export so existing imports don't break
 
 export const getNotifications = async (): Promise<AppNotification[]> => {
   const res = await api.get("/notification/");

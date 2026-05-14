@@ -188,8 +188,7 @@ export default function ProfileClient() {
   const hobbies = data.hobbies
     ? data.hobbies.split(",").map((h) => h.trim()).filter(Boolean)
     : [];
-  const compatibilityTags = data.compatibility_tags ?? [];
-
+  const compatibilityTags = (data as any).compatibility_tags ?? [];
   return (
     <main className="min-h-[100dvh] bg-[#FFF8F1] pb-10 text-[#2D2424]">
       <div className="mx-auto max-w-md space-y-4 px-4 py-5">
@@ -350,7 +349,7 @@ export default function ProfileClient() {
           <Section title="Compatibility">
             <div className="rounded-xl border border-[#EADDD2] bg-white p-4">
               <div className="flex flex-wrap gap-2">
-                {compatibilityTags.map((tag) => (
+                {compatibilityTags.map((tag: string) => (
                   <span
                     key={tag}
                     className="flex items-center gap-1 rounded-full bg-[#FFF0F2] px-3 py-1 text-xs font-medium text-[#7A2432]"

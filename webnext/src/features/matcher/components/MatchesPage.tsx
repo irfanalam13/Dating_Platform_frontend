@@ -1,57 +1,25 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { HeartHandshake, MessageCircle, UserCheck, X } from "lucide-react";
 import {
-  acceptMatch,
-  getAcceptedMatches,
-  getReceivedMatches,
-  rejectMatch,
-} from "@/shared/api/matcher.api";
-import { startConversation } from "@/shared/api/chat.api";
-// import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { useAuth } from "@/app/providers";
+  useAcceptedMatches,
+  useReceivedMatches,
+  useAcceptMatch,
+  useRejectMatch,
+  useStartConversation,
+} from "@/features/matcher/hooks/useMatches";
 
 export default function MatchesPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
 
-  const { data: matches = [], isLoading: matchesLoading } = useQuery({
-    queryKey: ["acceptedMatches"],
-    queryFn: getAcceptedMatches,
-    enabled: !!user, // ✅ wait for auth
-    retry: false,
-  });
-
-  const { data: received = [], isLoading: receivedLoading } = useQuery({
-    queryKey: ["receivedMatches"],
-    queryFn: getReceivedMatches,
-    enabled: !!user, // ✅ wait for auth
-    retry: false,
-  });
+  const { data: matches = [], isLoading: matchesLoading } = useAcceptedMatches();
+  const { data: received = [], isLoading: receivedLoading } = useReceivedMatches();
+  const acceptMutation = useAcceptMatch();
+  const rejectMutation = useRejectMatch();
+  const conversationMutation = useStartConversation();
 
   const isLoading = matchesLoading || receivedLoading;
-
-  const acceptMutation = useMutation({
-    mutationFn: acceptMatch,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["acceptedMatches"] });
-      queryClient.invalidateQueries({ queryKey: ["receivedMatches"] });
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: rejectMatch,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["receivedMatches"] }),
-  });
-
-  const conversationMutation = useMutation({
-    mutationFn: startConversation,
-    onSuccess: (res) => router.push(`/chat/${res.conversation_id}`),
-  });
 
   return (
     <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 pb-24 pt-5 text-[#2D2424]">
@@ -80,7 +48,6 @@ export default function MatchesPage() {
                   className="flex items-center justify-between rounded-md bg-[#F8EFE6] p-3"
                 >
                   <div>
-                    {/* ⚠️ sender may be email/id — update after seeing console.log */}
                     <p className="text-sm font-semibold">
                       {item.sender || "Someone"}
                     </p>
@@ -135,8 +102,7 @@ export default function MatchesPage() {
               <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No mutual matches yet</h2>
               <p className="mt-2 text-sm leading-6 text-[#746767]">
-                Show interest from Discover. When both people agree, they appear
-                here.
+                Show interest from Discover. When both people agree, they appear here.
               </p>
               <button
                 onClick={() => router.push("/home")}
@@ -167,9 +133,7 @@ export default function MatchesPage() {
               </div>
               {match.profile_id && (
                 <button
-                  onClick={() =>
-                    conversationMutation.mutate(match.profile_id!)
-                  }
+                  onClick={() => conversationMutation.mutate(match.profile_id!)}
                   disabled={conversationMutation.isPending}
                   className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
                 >

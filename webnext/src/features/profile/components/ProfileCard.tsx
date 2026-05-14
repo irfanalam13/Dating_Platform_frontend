@@ -204,7 +204,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Heart, MessageCircle, MapPin, Settings, Edit3, Eye, BadgeCheck } from "lucide-react";
-import { Profile, ProfileStats, ProfileSettings, ProfileImage } from "@/types/profile.types";
+import { Profile, ProfileStats, ProfileSettings, ProfileImage } from "@/shared/types/profile.types";
 
 /* ================= TYPES ================= */
 
@@ -307,7 +307,7 @@ export default function ProfileCard({
           <div className="flex items-center justify-center gap-1">
             <h2 className="text-xl font-bold">{profile.full_name}</h2>
             {profile.verified && (
-              <BadgeCheck className="w-5 h-5 text-rose-500" title="Verified" />
+              <BadgeCheck className="w-5 h-5 text-rose-500" aria-label="Verified" />
             )}
           </div>
 
