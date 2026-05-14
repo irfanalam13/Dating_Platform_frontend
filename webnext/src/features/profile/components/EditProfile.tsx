@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Lock, Upload } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
-
+import api from "@/shared/api/client";
 const steps = ["Intent", "Identity", "Lifestyle", "Culture", "Privacy"];
 
 export default function EditProfile() {
@@ -56,13 +56,27 @@ export default function EditProfile() {
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
-  const submit = () => {
+  const submit = async () => {
+    // Step 1 — Upload image first if selected
+    if (photo) {
+      const imageData = new FormData();
+      imageData.append("image", photo);          // ← "image" not "profile_image"
+      imageData.append("image_type", "profile");
+      imageData.append("is_primary", "true");
+
+      await api.post("/profile/images/", imageData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    }
+
+    // Step 2 — Update profile data (no image)
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
-    if (photo) formData.append("profile_image", photo);
-    mutation.mutate(formData, { onSuccess: () => router.push("/home") });
+    
+    mutation.mutate(formData, { 
+      onSuccess: () => router.push("/home") 
+    });
   };
-
   return (
     <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
