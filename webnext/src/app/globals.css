@@ -1,4 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Beau+Rivage&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+body {
+  @apply min-h-screen text-gray-900;
+
+  background: linear-gradient(
+    to bottom,
+    #FFFFFF 0%,
+    #EEF7FF 31%,
+    #ACD8FF 100%
+  );
+}
+
+.log-font {
+  font-family: "Beau Rivage", cursive;
+}

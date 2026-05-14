@@ -2,13 +2,6 @@
 
 import { QueryClient } from "@tanstack/react-query";
 
-/**
- * Global default config for all queries
- * This prevents:
- * - infinite refetch loops
- * - unnecessary network calls
- * - unstable UI behavior
- */
 export const queryConfig = {
   staleTime: 1000 * 60 * 5, // 5 minutes (better for apps like chat/dating)
   gcTime: 1000 * 60 * 30, // 30 minutes cache retention

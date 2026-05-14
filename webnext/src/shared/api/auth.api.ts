@@ -29,15 +29,6 @@ export const logoutUser = async (refresh: string) => {
   return res.data;
 };
 
-// 🔐 GET CURRENT USER
-// export const getMe = async () => {
-//   const res = await api.get("/auth/me/", {
-//     withCredentials: true, // 🔥 REQUIRED
-//   });
-//   return res.data;
-// };
-
-
 
 // 🔐 GET CURRENT USER — bypasses interceptor to avoid refresh loop
 export const getMe = async () => {
