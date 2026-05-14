@@ -60,23 +60,24 @@ export default function EditProfile() {
     // Step 1 — Upload image first if selected
     if (photo) {
       const imageData = new FormData();
-      imageData.append("image", photo);          // ← "image" not "profile_image"
+      imageData.append("image", photo);
       imageData.append("image_type", "profile");
       imageData.append("is_primary", "true");
 
-      await api.post("/profile/images/", imageData, {
+      await api.post("/profile/images/upload/", imageData, {  // ✅ correct URL
         headers: { "Content-Type": "multipart/form-data" },
       });
     }
 
-    // Step 2 — Update profile data (no image)
+    // Step 2 — Update profile data
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
-    
-    mutation.mutate(formData, { 
-      onSuccess: () => router.push("/home") 
+
+    mutation.mutate(formData, {
+      onSuccess: () => router.push("/home"),
     });
   };
+
   return (
     <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
