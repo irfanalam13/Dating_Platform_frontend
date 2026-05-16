@@ -1,4 +1,4 @@
-import NotificationItem from "@/features/notification/components/notificationhome";
+import NotificationItem from "@/features/notification/components/NotificationHome";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 

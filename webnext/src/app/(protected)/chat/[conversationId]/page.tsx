@@ -10,46 +10,74 @@ import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
 export default function ConversationPage() {
   const router = useRouter();
   const params = useParams<{ conversationId: string }>();
-  const conversationId = Number(params.conversationId);
+  
+  // Keep the ID as a string to perfectly match your API signatures
+  const conversationIdStr = String(params.conversationId);
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [showReport, setShowReport] = useState(false);
 
-  const { data = [], isLoading } = useQuery({
-    queryKey: ["messages", conversationId],
-    queryFn: () => getMessages(conversationId),
-    enabled: Number.isFinite(conversationId),
+  // 1. MESSAGES QUERY
+  const { data: messagesData, isLoading } = useQuery({
+    queryKey: ["messages", conversationIdStr],
+    queryFn: () => getMessages(conversationIdStr),
+    enabled: !!params.conversationId,
     retry: false,
   });
-  const { data: conversations = [] } = useQuery({
+
+  // Safely extract messages whether it returns an Array or a PaginatedResponse
+  const messagesList = Array.isArray(messagesData)
+    ? messagesData
+    : messagesData?.results || [];
+
+  // 2. CONVERSATIONS QUERY
+  const { data: conversationsData } = useQuery({
     queryKey: ["conversations"],
     queryFn: getConversations,
     retry: false,
   });
-  const conversation = conversations.find((item) => item.id === conversationId);
-  const participant = conversation?.participants[0];
 
+  // Safely extract conversations whether it returns an Array or a PaginatedResponse
+  const conversationList = Array.isArray(conversationsData)
+    ? conversationsData
+    : conversationsData?.results || [];
+
+  // Safely find the conversation
+  const conversation = conversationList.find(
+    (item: any) => String(item?.id) === conversationIdStr
+  );
+  // Add an extra ? before [0] to prevent runtime crashes if conversation is undefined
+  const participant = conversation?.participants?.[0];
+
+  // 3. MUTATIONS
   const mutation = useMutation({
-    mutationFn: sendMessage,
+    mutationFn: (variables: { content: string }) => 
+      sendMessage(conversationIdStr, variables.content),
     onSuccess: () => {
       setContent("");
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationIdStr] });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
+
   const blockMutation = useMutation({
     mutationFn: blockProfile,
     onSuccess: () => router.push("/chat"),
   });
+
   const reportMutation = useMutation({
-    mutationFn: (profileId: number) => reportProfile(profileId, { reason: "other", description: "Reported from chat safety controls." }),
+    mutationFn: (profileId: number) => 
+      reportProfile(profileId, { reason: "other", description: "Reported from chat safety controls." }),
     onSuccess: () => setShowReport(false),
   });
 
+  // 4. FORM HANDLER
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!content.trim()) return;
-    mutation.mutate({ conversation_id: conversationId, content: content.trim() });
+    
+    // Fix: Only pass 'content' since that's all the mutationFn expects
+    mutation.mutate({ content: content.trim() });
   };
 
   return (
@@ -80,14 +108,16 @@ export default function ConversationPage() {
 
       <section className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 overflow-y-auto px-4 py-5">
         {isLoading && <p className="text-sm text-[#746767]">Loading messages...</p>}
-        {!isLoading && data.length === 0 && (
+        
+        {!isLoading && messagesList.length === 0 && (
           <div className="mt-20 rounded-lg border border-[#EADDD2] bg-white p-5 text-center text-sm leading-6 text-[#746767]">
             Start with respect and curiosity. Share only what you are comfortable sharing.
           </div>
         )}
-        {data.map((message) => (
-          <div key={message.id} className="max-w-[82%] rounded-lg border border-[#EADDD2] bg-white p-3 text-sm leading-6 shadow-sm">
-            {message.content}
+        
+        {messagesList.map((message: any) => (
+          <div key={message?.id} className="max-w-[82%] rounded-lg border border-[#EADDD2] bg-white p-3 text-sm leading-6 shadow-sm">
+            {message?.content}
           </div>
         ))}
       </section>

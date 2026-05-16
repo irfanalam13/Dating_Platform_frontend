@@ -1,38 +1,32 @@
-
-
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import type { User } from "@/shared/types/auth.types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useAuth } from "@/features/auth";
+import { NotificationProvider } from "@/features/notification/context/NotificationContext";
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
+// ─────────────────────────────────────────────────────────
+// Public routes — no auth check, no loading spinner
+// ─────────────────────────────────────────────────────────
+
+const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"];
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-});
+// ─────────────────────────────────────────────────────────
+// Inner — separated so it can call useAuth inside
+// QueryClientProvider (hooks need the client above them)
+// ─────────────────────────────────────────────────────────
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+function InnerProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const auth = useCurrentUser();
+  const { loading } = useAuth(); // ← "loading" not "isLoading" — matches useCurrentUser
 
-  const publicRoutes = ["/login", "/register"];
-  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
-
-  const authValue = useMemo(
-    () => ({
-      user: auth?.user ?? null,
-      loading: auth?.loading ?? false,
-    }),
-    [auth?.user, auth?.loading]
-  );
-
-  if (!isPublic && authValue.loading) {
+  if (!isPublicRoute(pathname) && loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FFF8F1]">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-[#7A2432]" />
@@ -42,11 +36,41 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={authValue}>
+    <NotificationProvider>
       {children}
-    </AuthContext.Provider>
+    </NotificationProvider>
   );
 }
 
-// ✅ Use this instead of useCurrentUser in any component that just needs user/loading
-export const useAuth = () => useContext(AuthContext);
+// ─────────────────────────────────────────────────────────
+// Root providers
+// ─────────────────────────────────────────────────────────
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {/*
+        No AuthProvider here — auth state lives in Zustand (useAuthStore).
+        useCurrentUser syncs React Query → Zustand on mount.
+        No wrapper needed.
+      */}
+      <InnerProviders>
+        {children}
+      </InnerProviders>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}

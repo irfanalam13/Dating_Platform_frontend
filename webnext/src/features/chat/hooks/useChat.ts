@@ -1,124 +1,502 @@
+// "use client";
+
+// import {
+//   useEffect,
+//   useCallback,
+//   useRef,
+//   useState,
+//   useMemo,
+// } from "react";
+// import { useQuery, useQueryClient } from "@tanstack/react-query";
+// import { getMessages } from "@/shared/api/chat.api";
+// import { ChatWebSocket } from "@/shared/lib/websocket";
+// import { getAccessToken } from "@/shared/api/client";
+// import { useAuthStore } from "@/features/auth/store/auth.store";
+// import { useNotificationContext } from "@/features/notification/context/NotificationContext";
+// import type {
+//   Message,
+//   WSChatEvent,
+//   WSChatMessage,
+//   WSTypingEvent,
+//   WSReadEvent,
+//   ChatUser,
+// } from "@/shared/types/chat.types";
+
+// // ─────────────────────────────────────────────────────────
+// // Query key factory
+// // ─────────────────────────────────────────────────────────
+
+// export const chatKeys = {
+//   messages: (conversationId: string) =>
+//     ["messages", conversationId] as const,
+// };
+
+// // ─────────────────────────────────────────────────────────
+// // Return shape
+// // ─────────────────────────────────────────────────────────
+
+// interface UseChatReturn {
+//   messages: Message[];
+//   isLoading: boolean;
+//   typingUsers: Set<string>;
+//   wsStatus: "connecting" | "connected" | "disconnected" | "error";
+//   send: (text: string) => void;
+//   sendTyping: (isTyping: boolean) => void;
+//   sendRead: () => void;
+// }
+
+// // ─────────────────────────────────────────────────────────
+// // Hook — accepts plain string, reads currentUser internally
+// // ─────────────────────────────────────────────────────────
+
+// export function useChat(conversationId: string | null): UseChatReturn {
+//   // ✅ Read from Zustand — no need to pass as prop
+//   const currentUser = useAuthStore((s) => s.user) as ChatUser | null;
+
+//   const queryClient                 = useQueryClient();
+//   const { markConversationRead }    = useNotificationContext();
+//   const wsRef                       = useRef<ChatWebSocket | null>(null);
+//   const [wsStatus, setWsStatus]     = useState<UseChatReturn["wsStatus"]>("disconnected");
+//   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+//   const typingTimers                = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+//   // ── Message history ────────────────────────────────────
+
+//   const { data, isLoading } = useQuery({
+//     queryKey: chatKeys.messages(conversationId ?? ""),
+//     queryFn: () => getMessages(conversationId!),
+//     enabled: !!conversationId,
+//     staleTime: Infinity,
+//   });
+
+//   const messages = useMemo(() => data?.results ?? [], [data]);
+
+//   // ── WS lifecycle ───────────────────────────────────────
+
+//   useEffect(() => {
+//     if (!conversationId) return;
+
+//     const token = getAccessToken();
+//     console.log("useChat WS init:", { conversationId, token: !!token })  // ← ADD
+
+//     if (!token) return;
+
+//     const ws = new ChatWebSocket(conversationId, {
+//       onOpen:  () => setWsStatus("connected"),
+//       onClose: () => setWsStatus("disconnected"),
+//       onError: () => setWsStatus("error"),
+//     });
+
+//     wsRef.current = ws;
+//     const unsub = ws.subscribe((event: WSChatEvent) => handleWSEvent(event));
+//     ws.connect(token);
+
+//     // Mark read when entering the conversation
+//     ws.sendRead();
+//     markConversationRead(conversationId);
+
+//     return () => {
+//       unsub();
+//       ws.disconnect();
+//       wsRef.current  = null;
+//       setWsStatus("disconnected");
+//       setTypingUsers(new Set());
+//     };
+//   // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [conversationId]);
+
+//   // ── WS event handler ──────────────────────────────────
+
+//   const handleWSEvent = useCallback(
+//     (event: WSChatEvent) => {
+//       switch (event.type) {
+
+//         case "message": {
+//           const e = event as WSChatMessage;
+//           const newMsg: Message = {
+//             id:           e.message_id,
+//             conversation: conversationId!,
+//             sender: {
+//               id:        parseInt(e.sender_id, 10),
+//               username:  e.sender_name,
+//               email:     "",
+//               is_online: true,
+//               last_seen: null,
+//             },
+//             content:    e.message,
+//             is_read:    false,
+//             read_at:    null,
+//             created_at: e.timestamp,
+//           };
+
+//           queryClient.setQueryData<{ results: Message[] }>(
+//             chatKeys.messages(conversationId!),
+//             (old) => ({
+//               ...old,
+//               results: [...(old?.results ?? []), newMsg],
+//             })
+//           );
+
+//           // Auto mark read — user is looking at this conversation
+//           wsRef.current?.sendRead();
+//           markConversationRead(conversationId!);
+//           break;
+//         }
+
+//         case "typing": {
+//           const e = event as WSTypingEvent;
+//           const uid = e.user_id;
+
+//           // Don't show typing indicator for current user
+//           if (currentUser && uid === String(currentUser.id)) break;
+
+//           if (e.is_typing) {
+//             setTypingUsers((prev) => new Set([...prev, uid]));
+
+//             // Auto-clear after 3s if backend drops is_typing: false
+//             if (typingTimers.current.has(uid)) {
+//               clearTimeout(typingTimers.current.get(uid)!);
+//             }
+//             typingTimers.current.set(
+//               uid,
+//               setTimeout(() => {
+//                 setTypingUsers((prev) => {
+//                   const next = new Set(prev);
+//                   next.delete(uid);
+//                   return next;
+//                 });
+//                 typingTimers.current.delete(uid);
+//               }, 3000)
+//             );
+//           } else {
+//             clearTimeout(typingTimers.current.get(uid));
+//             typingTimers.current.delete(uid);
+//             setTypingUsers((prev) => {
+//               const next = new Set(prev);
+//               next.delete(uid);
+//               return next;
+//             });
+//           }
+//           break;
+//         }
+
+//         case "read": {
+//           const e = event as WSReadEvent;
+//           // Mark all our sent messages as read in the cache
+//           if (!currentUser) break;
+//           queryClient.setQueryData<{ results: Message[] }>(
+//             chatKeys.messages(e.conversation_id),
+//             (old) => ({
+//               ...old,
+//               results: (old?.results ?? []).map((m) =>
+//                 m.sender.id === currentUser.id
+//                   ? { ...m, is_read: true, read_at: e.read_at }
+//                   : m
+//               ),
+//             })
+//           );
+//           break;
+//         }
+
+//         case "error": {
+//           console.error("ChatWS error:", event.message);
+//           break;
+//         }
+
+//         default:
+//           break;
+//       }
+//     },
+//     [conversationId, currentUser, queryClient, markConversationRead]
+//   );
+
+//   // ── Public actions ─────────────────────────────────────
+
+//   const send = useCallback(
+//     (text: string) => {
+//       const trimmed = text.trim();
+//       if (!trimmed || !conversationId) return;
+//       wsRef.current?.sendMessage(trimmed);
+//     },
+//     [conversationId]
+//   );
+
+//   const sendTyping = useCallback((isTyping: boolean) => {
+//     wsRef.current?.sendTyping(isTyping);
+//   }, []);
+
+//   const sendRead = useCallback(() => {
+//     wsRef.current?.sendRead();
+//   }, []);
+
+//   return { messages, isLoading, typingUsers, wsStatus, send, sendTyping, sendRead };
+// }
+
+
+
+
+
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-// Adjust this import path to wherever your types.ts file actually lives
-import type { Message, SendMessageRequest, SendMessageResponse } from "@/shared/types/chat.types";
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMessages } from "@/shared/api/chat.api";
+import { ChatWebSocket } from "@/shared/lib/websocket";
+import { getAccessToken } from "@/shared/api/client";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useNotificationContext } from "@/features/notification/context/NotificationContext";
+import type {
+  Message,
+  WSChatEvent,
+  WSChatMessage,
+  WSTypingEvent,
+  WSReadEvent,
+  ChatUser,
+} from "@/shared/types/chat.types";
 
-interface UseChatProps {
-  conversationId: number | null; 
-  currentUserId: number; // Matches the 'sender' type in your Message interface
-  currentUserEmail?: string; 
+export const chatKeys = {
+  messages: (conversationId: string) =>
+    ["messages", conversationId] as const,
+};
+
+interface UseChatReturn {
+  messages: Message[];
+  isLoading: boolean;
+  typingUsers: Set<string>;
+  wsStatus: "connecting" | "connected" | "disconnected" | "error";
+  send: (text: string) => void;
+  sendTyping: (isTyping: boolean) => void;
+  sendRead: () => void;
 }
 
-export const useChat = ({ conversationId, currentUserId, currentUserEmail }: UseChatProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState<boolean>(false);
+export function useChat(conversationId: string | null): UseChatReturn {
+  const currentUser                   = useAuthStore((s) => s.user) as ChatUser | null;
+  const queryClient                   = useQueryClient();
+  const { markConversationRead }      = useNotificationContext();
 
-  // 1. Fetch initial message history
+  // ✅ wsRef holds the WS instance
+  const wsRef                         = useRef<ChatWebSocket | null>(null);
+
+  // ✅ wsStatusRef mirrors wsStatus so send() always reads current value
+  // without needing wsStatus in its dependency array (which causes stale closure)
+  const wsStatusRef                   = useRef<UseChatReturn["wsStatus"]>("disconnected");
+
+  const [wsStatus, setWsStatus]       = useState<UseChatReturn["wsStatus"]>("disconnected");
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const typingTimers                  = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Keep wsStatusRef in sync with wsStatus state
+  const updateStatus = useCallback((status: UseChatReturn["wsStatus"]) => {
+    wsStatusRef.current = status;
+    setWsStatus(status);
+  }, []);
+
+  // ── Message history ──────────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: chatKeys.messages(conversationId ?? ""),
+    queryFn:  () => getMessages(conversationId!),
+    enabled:  !!conversationId,
+    staleTime: Infinity,
+  });
+
+  const messages = useMemo(() => data?.results ?? [], [data]);
+
+  // ── WS event handler ─────────────────────────────────
+  const handleWSEvent = useCallback(
+    (event: WSChatEvent) => {
+      switch (event.type) {
+
+        case "message": {
+          const e = event as WSChatMessage;
+          const newMsg: Message = {
+            id:           e.message_id,
+            conversation: conversationId!,
+            sender: {
+              id:        parseInt(e.sender_id, 10),
+              username:  e.sender_name,
+              email:     "",
+              is_online: true,
+              last_seen: null,
+            },
+            content:    e.message,
+            is_read:    false,
+            read_at:    null,
+            created_at: e.timestamp,
+          };
+
+          queryClient.setQueryData<{ results: Message[] }>(
+            chatKeys.messages(conversationId!),
+            (old) => ({
+              ...old,
+              results: [...(old?.results ?? []), newMsg],
+            })
+          );
+
+          wsRef.current?.sendRead();
+          markConversationRead(conversationId!);
+          break;
+        }
+
+        case "typing": {
+          const e = event as WSTypingEvent;
+          const uid = e.user_id;
+
+          if (currentUser && uid === String(currentUser.id)) break;
+
+          if (e.is_typing) {
+            setTypingUsers((prev) => new Set([...prev, uid]));
+            if (typingTimers.current.has(uid)) {
+              clearTimeout(typingTimers.current.get(uid)!);
+            }
+            typingTimers.current.set(
+              uid,
+              setTimeout(() => {
+                setTypingUsers((prev) => {
+                  const next = new Set(prev);
+                  next.delete(uid);
+                  return next;
+                });
+                typingTimers.current.delete(uid);
+              }, 3000)
+            );
+          } else {
+            clearTimeout(typingTimers.current.get(uid));
+            typingTimers.current.delete(uid);
+            setTypingUsers((prev) => {
+              const next = new Set(prev);
+              next.delete(uid);
+              return next;
+            });
+          }
+          break;
+        }
+
+        case "read": {
+          const e = event as WSReadEvent;
+          if (!currentUser) break;
+          queryClient.setQueryData<{ results: Message[] }>(
+            chatKeys.messages(e.conversation_id),
+            (old) => ({
+              ...old,
+              results: (old?.results ?? []).map((m) =>
+                m.sender.id === currentUser.id
+                  ? { ...m, is_read: true, read_at: e.read_at }
+                  : m
+              ),
+            })
+          );
+          break;
+        }
+        case "ping":
+          break
+        case "error": {
+          console.error("ChatWS error:", event.message);
+          break;
+        }
+
+        default:
+          break;
+      }
+    },
+    [conversationId, currentUser, queryClient, markConversationRead]
+  );
+
+  // ── WS lifecycle ─────────────────────────────────────
   useEffect(() => {
-    // Don't fetch if there's no active conversation
-    if (!conversationId) {
-      setLoading(false);
+    if (!conversationId) return;
+    if (!currentUser)    return;   // wait for auth
+
+    const token = getAccessToken();
+    if (!token) {
+      console.warn("useChat: no token — WS not started");
       return;
     }
 
-    const fetchMessages = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // 🚧 ADJUST API PATH: Change this to match your actual backend URL
-        const response = await fetch(`/api/messages?conversation_id=${conversationId}`);
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch messages");
-        }
+    // Tear down any existing connection first
+    if (wsRef.current) {
+      wsRef.current.disconnect();
+      wsRef.current = null;
+    }
 
-        const data: Message[] = await response.json();
-        setMessages(data);
-      } catch (err: any) {
-        setError(err.message || "Failed to load messages");
-      } finally {
-        setLoading(false);
-      }
+    console.log("useChat: connecting WS", { conversationId, userId: currentUser.id });
+    updateStatus("connecting");
+
+    const ws = new ChatWebSocket(conversationId, {
+      onOpen:  () => {
+        console.log("useChat: WS connected ✅");
+        updateStatus("connected");
+      },
+      onClose: () => {
+        console.log("useChat: WS closed");
+        updateStatus("disconnected");
+      },
+      onError: () => {
+        console.log("useChat: WS error");
+        updateStatus("error");
+      },
+    });
+
+    // ✅ Store in ref BEFORE calling connect
+    wsRef.current = ws;
+
+    const unsub = ws.subscribe(handleWSEvent);
+    ws.connect(token);
+
+    ws.sendRead();
+    markConversationRead(conversationId);
+
+    return () => {
+      console.log("useChat: cleanup WS");
+      unsub();
+      ws.disconnect();
+      wsRef.current = null;
+      updateStatus("disconnected");
+      setTypingUsers(new Set());
     };
+  }, [conversationId, currentUser, handleWSEvent, markConversationRead, updateStatus]);
 
-    fetchMessages();
+  // ── Public actions ───────────────────────────────────
 
-    // 💡 If you add WebSockets later (e.g., Pusher/Socket.io), 
-    // subscribe to new incoming messages right here.
+  // ✅ Uses wsRef directly — no stale closure on wsStatus
+  const send = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || !conversationId) return;
 
-  }, [conversationId]);
+      console.log("send() called:", {
+        wsRef: !!wsRef.current,
+        wsStatusRef: wsStatusRef.current,
+        wsReadyState: (wsRef.current as any)?.ws?.readyState,
+      });
 
-  // 2. Send a new message
-  const sendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim() || !conversationId) return;
-
-      setIsSending(true);
-      setError(null);
-
-      // Create a temporary "Optimistic" message so the UI feels instant
-      const tempId = Date.now(); // Temporary fake ID
-      const optimisticMessage: Message = {
-        id: tempId,
-        conversation: conversationId,
-        sender: currentUserId,
-        sender_email: currentUserEmail,
-        content: content.trim(),
-        is_read: false,
-        created_at: new Date().toISOString(),
-      };
-
-      // Immediately show the message in the chat
-      setMessages((prev) => [...prev, optimisticMessage]);
-
-      try {
-        const payload: SendMessageRequest = {
-          conversation_id: conversationId,
-          content: optimisticMessage.content,
-        };
-
-        // 🚧 ADJUST API PATH: Change this to match your actual backend URL
-        const response = await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to send message");
-        }
-
-        const data: SendMessageResponse = await response.json();
-
-        // Swap out the temporary fake ID for the real ID returned from the database
-        setMessages((prev) => 
-          prev.map((msg) => 
-            msg.id === tempId ? { ...msg, id: data.id } : msg
-          )
-        );
-
-      } catch (err: any) {
-        // If the request fails, remove the optimistic message from the screen
-        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
-        setError("Failed to send message. Please try again.");
-      } finally {
-        setIsSending(false);
+      if (!wsRef.current) {
+        console.warn("❌ wsRef.current is null — WS not initialized");
+        return;
       }
+
+      if (wsStatusRef.current !== "connected") {
+        console.warn("❌ WS not connected —", wsStatusRef.current);
+        return;
+      }
+
+      wsRef.current.sendMessage(trimmed);
     },
-    [conversationId, currentUserId, currentUserEmail]
+    [conversationId]   // ✅ no wsStatus dep — reads from ref instead
   );
 
-  return {
-    messages,
-    loading,
-    error,
-    isSending,
-    sendMessage,
-  };
-};
+  const sendTyping = useCallback((isTyping: boolean) => {
+    wsRef.current?.sendTyping(isTyping);
+  }, []);
+
+  const sendRead = useCallback(() => {
+    wsRef.current?.sendRead();
+  }, []);
+
+  return { messages, isLoading, typingUsers, wsStatus, send, sendTyping, sendRead };
+}

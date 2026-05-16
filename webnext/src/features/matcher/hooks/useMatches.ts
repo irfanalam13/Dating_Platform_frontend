@@ -6,8 +6,11 @@ import {
   getReceivedMatches,
   rejectMatch,
 } from "@/shared/api/matcher.api";
-import { startConversation } from "@/shared/api/chat.api";
-import { useAuth } from "@/app/providers";
+import { getConversation } from "@/shared/api/chat.api";
+import { useAuth } from "@/features/auth";
+import { showError } from "@/shared/utils/toast"
+import { createOrGetConversation } from "@/shared/api/chat.api"
+
 
 export function useAcceptedMatches() {
   const { user } = useAuth();
@@ -49,10 +52,13 @@ export function useRejectMatch() {
   });
 }
 
+// ✅ Correct — number matches AcceptedMatch.profile_id
 export function useStartConversation() {
   const router = useRouter();
+
   return useMutation({
-    mutationFn: startConversation,
-    onSuccess: (res) => router.push(`/chat/${res.conversation_id}`),
+    mutationFn: (participantId: number) => createOrGetConversation(participantId),
+    onSuccess: (res) => router.push(`/chat/${res.id}`),
+    onError: () => showError("Could not open conversation. Please try again."),
   });
 }

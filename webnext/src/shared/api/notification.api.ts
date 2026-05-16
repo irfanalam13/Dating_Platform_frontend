@@ -1,15 +1,57 @@
-// @/shared/api/notification.api.ts
-import api from "./client";
-import type { AppNotification } from "@/shared/types/notification.types";
+import api from "@/shared/api/client";
+import type { Notification } from "@/shared/types/notification.types";
+import type { PaginatedResponse } from "@/shared/types/chat.types"
+// ─────────────────────────────────────────────────────────
+// Helper
+// ─────────────────────────────────────────────────────────
 
-export type { AppNotification }; // re-export so existing imports don't break
+function data<T>(config: Parameters<typeof api.request>[0]): Promise<T> {
+  return api.request<T>(config).then((res) => res.data);
+}
 
-export const getNotifications = async (): Promise<AppNotification[]> => {
-  const res = await api.get("/notification/");
-  return res.data;
-};
+// ─────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────
 
-export const markNotificationRead = async (id: number): Promise<{ message: string }> => {
-  const res = await api.post(`/notification/${id}/read/`);
-  return res.data;
-};
+/**
+ * GET /notifications/
+ * Paginated list, newest first.
+ * Matches NotificationListView on the backend.
+ */
+export function getNotifications(): Promise<PaginatedResponse<Notification>> {
+  return data({ method: "GET", url: "/notifications/" });
+}
+
+/**
+ * POST /notifications/read/
+ * body: { notification_ids: string[] }
+ * Marks specific notifications as read.
+ * Max 100 IDs per request (backend enforced).
+ */
+export function markNotificationsRead(ids: string[]): Promise<{ marked_read: number }> {
+  return data({
+    method: "POST",
+    url: "/notifications/read/",
+    data: { notification_ids: ids },
+  });
+}
+
+/**
+ * POST /notifications/read-all/
+ * Marks every unread notification for the current user as read.
+ */
+export function markAllNotificationsRead(): Promise<{ marked_read: number }> {
+  return data({
+    method: "POST",
+    url: "/notifications/read-all/",
+  });
+}
+
+/**
+ * GET /notifications/unread-count/
+ * Lightweight endpoint for initial page load badge count.
+ * After login, the WS unread_count event takes over.
+ */
+export function getUnreadCount(): Promise<{ unread_count: number }> {
+  return data({ method: "GET", url: "/notifications/unread-count/" });
+}

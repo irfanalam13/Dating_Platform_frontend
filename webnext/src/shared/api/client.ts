@@ -1,67 +1,452 @@
 
 
 
+// "use client";
+
+// import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+// import Cookies from "js-cookie";
+
+// const api = axios.create({
+//   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
+//   withCredentials: true,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+// // ================= TYPES & STATE =================
+// interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+//   _retry?: boolean;
+// }
+
+// let isRefreshing = false;
+// let failedQueue: { resolve: (val: any) => void; reject: (err: any) => void }[] = [];
+
+// const processQueue = (error: any, token: string | null = null) => {
+//   failedQueue.forEach((prom) => {
+//     if (error) prom.reject(error);
+//     else prom.resolve(token);
+//   });
+//   failedQueue = [];
+// };
+
+// // ================= REQUEST INTERCEPTOR =================
+// api.interceptors.request.use((config) => {
+//   if (typeof document !== "undefined") {
+//     const match = document.cookie.match(/csrftoken=([^;]+)/);
+//     if (match) {
+//       config.headers["X-CSRFToken"] = match[1];
+//     }
+//   }
+//   return config;
+// });
+
+// // ================= RESPONSE INTERCEPTOR =================
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error: AxiosError) => {
+//     const originalRequest = error.config as CustomAxiosRequestConfig;
+
+//     if (!error.response || !originalRequest) {
+//       return Promise.reject(error);
+//     }
+
+//     const status = error.response.status;
+//     const url = originalRequest.url || "";
+
+//     const isAuthRoute =
+//       url.includes("/auth/login/") ||
+//       url.includes("/auth/register") ||
+//       url.includes("/auth/refresh/") ||
+//       url.includes("/auth/logout/") ||
+//       url.includes("/auth/me/");
+
+//     if (status === 401 && !originalRequest._retry && !isAuthRoute) {
+//       if (isRefreshing) {
+//         return new Promise((resolve, reject) => {
+//           failedQueue.push({ resolve, reject });
+//         })
+//           .then(() => api(originalRequest))
+//           .catch((err) => Promise.reject(err));
+//       }
+
+//       originalRequest._retry = true;
+//       isRefreshing = true;
+
+//       try {
+//         await api.post("/auth/refresh/");
+//         processQueue(null);
+//         isRefreshing = false;
+//         return api(originalRequest);
+
+//       } catch (refreshError) {
+//         processQueue(refreshError);
+//         isRefreshing = false;
+
+//         if (typeof window !== "undefined") {
+//           console.error("REFRESH FAILED - FORCING LOGOUT", refreshError);
+//           localStorage.clear();
+//           sessionStorage.clear();
+
+//           // ✅ Clear logged_in cookie from frontend domain
+//           Cookies.remove("logged_in");
+
+//           // ✅ Let server clear HttpOnly cookies
+//           await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout/`, {
+//             method: "POST",
+//             credentials: "include",
+//           }).catch(() => {});
+
+//           window.location.replace("/login");
+//           return new Promise(() => {});
+//         }
+
+//         return Promise.reject(refreshError);
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
+
+// export default api;
+
+
+
+// "use client";
+
+// import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+// import Cookies from "js-cookie";
+
+// const api = axios.create({
+//   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
+//   withCredentials: true,
+//   timeout: 15_000,                          // ← ADD: prevents hanging requests
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+// // ================= TYPES & STATE =================
+// interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+//   _retry?: boolean;
+// }
+
+// let isRefreshing = false;
+// let failedQueue: { resolve: (val: any) => void; reject: (err: any) => void }[] = [];
+
+// const processQueue = (error: any, token: string | null = null) => {
+//   failedQueue.forEach((prom) => {
+//     if (error) prom.reject(error);
+//     else prom.resolve(token);
+//   });
+//   failedQueue = [];
+// };
+
+// // ================= TOKEN STORAGE =================
+// let _accessToken: string | null = null;
+
+// export function setAccessToken(token: string | null): void {
+//   _accessToken = token;
+//   if (typeof window !== "undefined") {
+//     if (token) localStorage.setItem("access_token", token);
+//     else localStorage.removeItem("access_token");
+//   }
+// }
+
+// export function getAccessToken(): string | null {
+//   if (_accessToken) return _accessToken;
+//   if (typeof window !== "undefined") {
+//     const stored = localStorage.getItem("access_token");
+//     if (stored) {
+//       _accessToken = stored;
+//       return stored;
+//     }
+//   }
+//   return null;
+// }
+
+// // ================= REQUEST INTERCEPTOR =================
+// api.interceptors.request.use((config) => {
+//   if (typeof document !== "undefined") {
+//     const match = document.cookie.match(/csrftoken=([^;]+)/);
+//     if (match) {
+//       config.headers["X-CSRFToken"] = match[1];
+//     }
+//   }
+//   return config;
+// });
+
+// // ================= RESPONSE INTERCEPTOR =================
+// api.interceptors.response.use(
+//   (response) => response,
+//   async (error: AxiosError) => {
+//     const originalRequest = error.config as CustomAxiosRequestConfig;
+
+//     if (!error.response || !originalRequest) {
+//       return Promise.reject(error);
+//     }
+
+//     const status = error.response.status;
+//     const url = originalRequest.url || "";
+
+//     const isAuthRoute =
+//       url.includes("/auth/login/") ||
+//       url.includes("/auth/register") ||
+//       url.includes("/auth/refresh/") ||
+//       url.includes("/auth/logout/") ||
+//       url.includes("/auth/me/");
+
+//     if (status === 401 && !originalRequest._retry && !isAuthRoute) {
+//       if (isRefreshing) {
+//         return new Promise((resolve, reject) => {
+//           failedQueue.push({ resolve, reject });
+//         })
+//           .then(() => api(originalRequest))
+//           .catch((err) => Promise.reject(err));
+//       }
+
+//       originalRequest._retry = true;
+//       isRefreshing = true;
+
+//       try {
+//         await api.post("/auth/refresh/");
+//         processQueue(null);
+//         isRefreshing = false;
+//         return api(originalRequest);
+
+//       } catch (refreshError) {
+//         processQueue(refreshError);
+//         isRefreshing = false;
+
+//         if (typeof window !== "undefined") {
+//           console.error("REFRESH FAILED - FORCING LOGOUT", refreshError);
+//           localStorage.clear();
+//           sessionStorage.clear();
+
+//           Cookies.remove("logged_in");
+
+//           await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout/`, {
+//             method: "POST",
+//             credentials: "include",
+//           }).catch(() => {});
+
+//           window.location.replace("/login");
+//           return new Promise(() => {});
+//         }
+
+//         return Promise.reject(refreshError);
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
+
+// export default api;
+
+
+
+
 "use client";
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 
+// ─────────────────────────────────────────────────────────
+// Axios instance
+// ─────────────────────────────────────────────────────────
+
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
   withCredentials: true,
+  timeout: 15_000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// ================= TYPES & STATE =================
+// ─────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────
+
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
-let isRefreshing = false;
-let failedQueue: { resolve: (val: any) => void; reject: (err: any) => void }[] = [];
+interface QueueEntry {
+  resolve: (value: unknown) => void;
+  reject:  (reason: unknown) => void;
+}
 
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
+// ─────────────────────────────────────────────────────────
+// Refresh queue
+// ─────────────────────────────────────────────────────────
+
+let isRefreshing = false;
+let failedQueue: QueueEntry[] = [];
+
+function processQueue(error: unknown, token: string | null = null): void {
+  failedQueue.forEach((entry) => {
+    if (error) entry.reject(error);
+    else       entry.resolve(token);
   });
   failedQueue = [];
-};
+}
 
-// ================= REQUEST INTERCEPTOR =================
-api.interceptors.request.use((config) => {
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/csrftoken=([^;]+)/);
-    if (match) {
-      config.headers["X-CSRFToken"] = match[1];
-    }
+// ─────────────────────────────────────────────────────────
+// Token storage
+// Three layers: memory → sessionStorage → cookie
+// Memory:          fastest, lost on refresh
+// sessionStorage:  survives refresh, cleared on tab close
+// Cookie:          tertiary backup, readable by JS
+//
+// ⚠️  NOT localStorage — tokens should not persist
+//     across browser sessions for security
+// ─────────────────────────────────────────────────────────
+
+const TOKEN_KEY = "chat_access_token";
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void {
+  if (typeof window === "undefined") return;  // SSR guard
+
+  if (token) {
+    // 1. Memory
+    _accessToken = token;
+
+    // 2. sessionStorage
+    try {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    } catch {}
+
+    // 3. Cookie (1 day — short lived)
+    Cookies.set("access_token", token, {
+      expires: 1,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    console.log("✅ Token stored — layers: memory + sessionStorage + cookie");
+  } else {
+    // Clear all three layers
+    _accessToken = null;
+
+    try {
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch {}
+
+    Cookies.remove("access_token");
   }
-  return config;
-});
+}
 
-// ================= RESPONSE INTERCEPTOR =================
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;  // SSR guard
+
+  // 1. Memory — fastest path
+  if (_accessToken) return _accessToken;
+
+  // 2. sessionStorage — survives page refresh
+  try {
+    const fromSession = sessionStorage.getItem(TOKEN_KEY);
+    if (fromSession) {
+      _accessToken = fromSession;   // restore to memory
+      return fromSession;
+    }
+  } catch {}
+
+  // 3. Cookie — last resort
+  const fromCookie = Cookies.get("access_token");
+  if (fromCookie) {
+    _accessToken = fromCookie;      // restore to memory
+    return fromCookie;
+  }
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────
+// Force logout — clears everything and redirects
+// ─────────────────────────────────────────────────────────
+
+async function forceLogout(): Promise<never> {
+  // Clear token from all layers
+  setAccessToken(null);
+
+  // Clear all app state
+  try {
+    sessionStorage.clear();
+    // ⚠️ Do NOT localStorage.clear() — other app data may live there
+  } catch {}
+
+  Cookies.remove("logged_in");
+
+  // Tell server to clear httpOnly refresh cookie
+  try {
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/auth/logout/`,
+      { method: "POST", credentials: "include" }
+    );
+  } catch {}
+
+  window.location.replace("/login");
+  return new Promise(() => {});   // never resolves — redirect takes over
+}
+
+// ─────────────────────────────────────────────────────────
+// Auth routes — never trigger refresh loop
+// ─────────────────────────────────────────────────────────
+
+const AUTH_ROUTES = [
+  "/auth/login/",
+  "/auth/register",
+  "/auth/refresh/",
+  "/auth/logout/",
+  "/auth/me/",
+];
+
+function isAuthRoute(url: string): boolean {
+  return AUTH_ROUTES.some((route) => url.includes(route));
+}
+
+// ─────────────────────────────────────────────────────────
+// Request interceptor — attach CSRF token
+// ─────────────────────────────────────────────────────────
+
+api.interceptors.request.use(
+  (config) => {
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      if (match) {
+        config.headers["X-CSRFToken"] = match[1];
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ─────────────────────────────────────────────────────────
+// Response interceptor — handle 401 with token refresh
+// ─────────────────────────────────────────────────────────
+
 api.interceptors.response.use(
   (response) => response,
+
   async (error: AxiosError) => {
-    const originalRequest = error.config as CustomAxiosRequestConfig;
+    const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
 
     if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
 
-    const status = error.response.status;
-    const url = originalRequest.url || "";
+    const { status } = error.response;
+    const url = originalRequest.url ?? "";
 
-    const isAuthRoute =
-      url.includes("/auth/login/") ||
-      url.includes("/auth/register") ||
-      url.includes("/auth/refresh/") ||
-      url.includes("/auth/logout/") ||
-      url.includes("/auth/me/");
+    // ── 401 — try refresh ───────────────────────────────
+    if (status === 401 && !originalRequest._retry && !isAuthRoute(url)) {
 
-    if (status === 401 && !originalRequest._retry && !isAuthRoute) {
+      // Another refresh already in flight — queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -74,7 +459,29 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post("/auth/refresh/");
+        // Django uses httpOnly refresh cookie — no body needed
+        const refreshRes = await api.post("/auth/refresh/");
+
+        // ✅ If backend returns new access token, store it
+        // const newToken =
+        //   refreshRes?.data?.data?.tokens?.access ||
+        //   refreshRes?.data?.tokens?.access       ||
+        //   refreshRes?.data?.access               ||
+        //   refreshRes?.data?.access_token         ||
+        //   null;
+        // interceptor in client.ts — fix this
+        const newToken =
+          refreshRes?.data?.data?.access ||  // 👈 add this as first check
+          refreshRes?.data?.data?.tokens?.access ||
+          refreshRes?.data?.tokens?.access ||
+          refreshRes?.data?.access ||
+          null;
+
+        if (newToken) {
+          setAccessToken(newToken);
+          console.log("✅ Token refreshed via interceptor");
+        }
+
         processQueue(null);
         isRefreshing = false;
         return api(originalRequest);
@@ -83,25 +490,8 @@ api.interceptors.response.use(
         processQueue(refreshError);
         isRefreshing = false;
 
-        if (typeof window !== "undefined") {
-          console.error("REFRESH FAILED - FORCING LOGOUT", refreshError);
-          localStorage.clear();
-          sessionStorage.clear();
-
-          // ✅ Clear logged_in cookie from frontend domain
-          Cookies.remove("logged_in");
-
-          // ✅ Let server clear HttpOnly cookies
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout/`, {
-            method: "POST",
-            credentials: "include",
-          }).catch(() => {});
-
-          window.location.replace("/login");
-          return new Promise(() => {});
-        }
-
-        return Promise.reject(refreshError);
+        console.error("REFRESH FAILED — forcing logout", refreshError);
+        return forceLogout();
       }
     }
 

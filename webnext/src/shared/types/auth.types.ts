@@ -1,8 +1,8 @@
 export interface User {
   id: number;
-  full_name: string;
   email: string;
   username: string; // ✅ add this
+  full_name?: string;
 }
 
 export interface Tokens {

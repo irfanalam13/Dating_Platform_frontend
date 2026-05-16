@@ -131,9 +131,22 @@ export default function MatchesPage() {
                 <p className="font-semibold">{match.name || match.email}</p>
                 <p className="text-sm text-[#746767]">Mutual match</p>
               </div>
-              {match.profile_id && (
+              {/* {match.profile_id && (
                 <button
                   onClick={() => conversationMutation.mutate(match.profile_id!)}
+                  disabled={conversationMutation.isPending}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
+                >
+                  {conversationMutation.isPending ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <MessageCircle className="h-5 w-5" />
+                  )}
+                </button>
+              )} */}
+              {typeof match.profile_id === "number" && (
+                <button
+                  onClick={() => conversationMutation.mutate(match.profile_id as number)}
                   disabled={conversationMutation.isPending}
                   className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
                 >
