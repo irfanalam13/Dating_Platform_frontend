@@ -120,19 +120,19 @@ export function getAccessToken(): string | null {
 let refreshPromise: Promise<string | null> | null = null
 
 export const refreshOnce = async (): Promise<string | null> => {
-  // ✅ If already refreshing, wait for same promise
   if (refreshPromise) return refreshPromise
 
   refreshPromise = api.post('/auth/refresh/')
     .then(res => {
-      const token = res?.data?.data?.access || null
+      const token = res?.data?.data?.access ?? null
       if (token) setAccessToken(token)
       return token
     })
-    .catch(() => null)
+    .catch(() => {
+      return null
+    })
     .finally(() => {
-      // ✅ Reset after done so next refresh can happen
-      setTimeout(() => { refreshPromise = null }, 5000)
+      refreshPromise = null    // ✅ reset immediately, not after 5s
     })
 
   return refreshPromise

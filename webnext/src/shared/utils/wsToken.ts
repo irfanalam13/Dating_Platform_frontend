@@ -31,6 +31,10 @@
 import { getAccessToken, refreshOnce } from '@/shared/api/client'
 
 export const getFreshToken = async (): Promise<string | null> => {
-  const token = await refreshOnce()        // ✅ single shared refresh
-  return token ?? getAccessToken()         // ✅ fallback to existing token
+  const token = await refreshOnce()
+  if (!token) {
+    console.warn('getFreshToken: refresh failed — no token available')
+    return null              // ✅ return null, not the expired token
+  }
+  return token
 }
