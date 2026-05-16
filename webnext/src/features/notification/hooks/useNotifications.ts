@@ -382,3 +382,35 @@ export function useMarkAllNotificationsRead() {
     },
   });
 }
+
+// ─────────────────────────────────────────────────────────
+// useNotificationList — REST fetch for the full page list
+// Different from useNotifications (which is the WS hook)
+// Used by NotificationHome.tsx
+// ─────────────────────────────────────────────────────────
+
+interface UseNotificationListReturn {
+  data: Notification[];
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+}
+
+export function useNotificationList(): UseNotificationListReturn {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: notificationKeys.all,
+    queryFn: async () => {
+      const res = await getNotifications();
+      return res.results;
+    },
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  return {
+    data: data ?? [],
+    isLoading,
+    error: error as Error | null,
+    refetch,
+  };
+}
