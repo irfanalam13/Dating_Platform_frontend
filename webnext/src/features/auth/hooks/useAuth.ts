@@ -295,7 +295,7 @@ export const useRegister = () => {
       }
 
       if (user) {
-        setAuth(user as Parameters<typeof setAuth>[0]);
+        setAuth(user as unknown as Parameters<typeof setAuth>[0]);
         queryClient.setQueryData(["authUser"], user);
       }
 
@@ -341,8 +341,8 @@ export const useLogin = () => {
         showError("Invalid login response from server");
         return;
       }
+      setAuth(user as unknown as Parameters<typeof setAuth>[0]);
 
-      setAuth(user as Parameters<typeof setAuth>[0]);
       queryClient.setQueryData(["authUser"], user);
       setLoggedInCookie();
       showSuccess("Welcome back!");

@@ -218,6 +218,8 @@ class WebSocketManager {
   protected shouldReconnect = true
   protected reconnectDelay = 2000
   protected maxReconnectDelay = 30_000
+  protected _token: string | null = null  // 👈 add this
+
   status: WSStatus = 'disconnected'
 
   constructor(url: string, options: WSOptions = {}) {
@@ -262,14 +264,14 @@ class WebSocketManager {
       this.options.onError?.(e);
     };
 
-    this.ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data) as WSChatEvent;
-        this.handlers.forEach((h) => h(data));
-      } catch {
-        console.error("WS bad JSON:", e.data);
-      }
-    };
+    // this.ws.onmessage = (e) => {
+    //   try {
+    //     const data = JSON.parse(e.data) as WSChatEvent;
+    //     this.handlers.forEach((h) => h(data));
+    //   } catch {
+    //     console.error("WS bad JSON:", e.data);
+    //   }
+    // };
   }
 
   protected _onMessage(_e: MessageEvent) {}
