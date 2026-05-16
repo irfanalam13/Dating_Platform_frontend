@@ -35,7 +35,8 @@ import {
   isUnreadCountEvent,
   isMessageReadEvent,
 } from "@/shared/types/notification.types";
-import api, { getAccessToken, setAccessToken } from '@/shared/api/client';
+import api, {  setAccessToken } from '@/shared/api/client';
+import { getFreshToken } from "@/shared/utils/wsToken";
 
 // ─────────────────────────────────────────────────────────
 // Context
@@ -201,49 +202,43 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // ── WS lifecycle ──────────────────────────────────────
 
+  // ── WebSocket lifecycle ────────────────────────────────
+
   useEffect(() => {
     if (!user) return;
 
-    let cancelled = false;
+    let cancelled = false                  // ✅ prevent race condition
 
     const connectWS = async () => {
-      // ✅ Refresh token first
-      let token = getAccessToken();
-
-      try {
-        const { default: api, setAccessToken } = await import('@/shared/api/client');
-        const refreshRes = await api.post('/auth/refresh/');
-        const newToken = refreshRes?.data?.data?.access || null;
-        if (newToken) {
-          setAccessToken(newToken);
-          token = newToken;
-        }
-      } catch (e) {
-        console.warn('Could not refresh token before notification WS connect');
-      }
-
-      if (!token || cancelled) return;
+      const token = await getFreshToken()  // ✅ always fresh token
+      if (!token) return;
+      if (cancelled) return;              // ✅ unmounted before token arrived
 
       const ws = new NotificationWebSocket({
-        onOpen:  () => setWsStatus('connected'),
-        onClose: () => setWsStatus('disconnected'),
-        onError: () => setWsStatus('error'),
+        onOpen:  () => setWsStatus("connected"),
+        onClose: () => setWsStatus("disconnected"),
+        onError: () => setWsStatus("error"),
       });
 
       wsRef.current = ws;
       const unsub = ws.subscribe(handleEvent);
-      ws.connect(token);
+      ws.connect(token);                  // ✅ fresh token
 
-      return unsub;
-    };
+      return unsub
+    }
 
-    connectWS();
+    let unsubFn: (() => void) | undefined
+
+    connectWS().then(unsub => {
+      unsubFn = unsub
+    })
 
     return () => {
-      cancelled = true;
+      cancelled = true                    // ✅ cancel if unmounted
+      unsubFn?.()
       wsRef.current?.disconnect();
       wsRef.current = null;
-      setWsStatus('disconnected');
+      setWsStatus("disconnected");
     };
   }, [user, handleEvent]);
 

@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NotificationWebSocket } from "@/shared/lib/websocket";
-import { getAccessToken } from "@/shared/api/client";
+import { getFreshToken } from "@/shared/utils/wsToken";          // ✅ replaces getAccessToken
 import { notificationKeys } from "@/features/notification/hooks/useNotifications";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { Notification, NotificationType } from "@/shared/types/notification.types";
@@ -50,16 +50,15 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 // ─────────────────────────────────────────────────────────
 // Build a Notification row from a WS event
-// so it appears in the bell panel instantly
 // ─────────────────────────────────────────────────────────
 
 const EVENT_TO_TYPE: Record<string, NotificationType> = {
-  "notification.new_message":    "new_message",
-  "notification.friend_request": "friend_request",
-  "notification.friend_accepted":"friend_accepted",
-  "notification.missed_call":    "missed_call",
-  "notification.safety_alert":   "safety_alert",
-  "notification.system":         "system",
+  "notification.new_message":     "new_message",
+  "notification.friend_request":  "friend_request",
+  "notification.friend_accepted": "friend_accepted",
+  "notification.missed_call":     "missed_call",
+  "notification.safety_alert":    "safety_alert",
+  "notification.system":          "system",
 };
 
 function buildNotification(event: WSNotificationEvent): Notification | null {
@@ -125,14 +124,14 @@ function buildNotification(event: WSNotificationEvent): Notification | null {
 // ─────────────────────────────────────────────────────────
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const queryClient                         = useQueryClient();
-  const user                                = useAuthStore((s) => s.user);
-  const wsRef                               = useRef<NotificationWebSocket | null>(null);
-  const [notifications, setNotifications]   = useState<Notification[]>([]);
-  const [unreadCounts, setUnreadCounts]     = useState<UnreadCounts>({});
-  const [totalUnread, setTotalUnread]       = useState(0);
-  const [onlineUsers, setOnlineUsers]       = useState<Set<number>>(new Set());
-  const [wsStatus, setWsStatus]             = useState<NotificationContextValue["wsStatus"]>(
+  const queryClient                       = useQueryClient();
+  const user                              = useAuthStore((s) => s.user);
+  const wsRef                             = useRef<NotificationWebSocket | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCounts, setUnreadCounts]   = useState<UnreadCounts>({});
+  const [totalUnread, setTotalUnread]     = useState(0);
+  const [onlineUsers, setOnlineUsers]     = useState<Set<number>>(new Set());
+  const [wsStatus, setWsStatus]           = useState<NotificationContextValue["wsStatus"]>(
     "disconnected"
   );
 
@@ -141,7 +140,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const handleEvent = useCallback(
     (event: WSNotificationEvent) => {
 
-      // 1. Bulk unread sync — on connect + after mark_read
+      // 1. Bulk unread sync
       if (isUnreadCountEvent(event)) {
         const e = event as WSUnreadCountEvent;
         setUnreadCounts(e.unread_counts);
@@ -149,7 +148,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 2. Presence — green/grey dot on avatars
+      // 2. Presence
       if (isPresenceEvent(event)) {
         if (event.event === "notification.user_online") {
           const e = event as WSUserOnlineEvent;
@@ -165,7 +164,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 3. New message — increment conversation badge
+      // 3. New message — increment badge
       if (isNewMessageEvent(event)) {
         const e = event as WSNewMessageEvent;
         setUnreadCounts((prev) => ({
@@ -173,10 +172,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           [e.conversation_id]: (prev[e.conversation_id] ?? 0) + 1,
         }));
         setTotalUnread((t) => t + 1);
-        // Fall through — also store in notification list
       }
 
-      // 4. Message read — clear sender's badge
+      // 4. Message read — clear badge
       if (isMessageReadEvent(event)) {
         const e = event as WSMessageReadEvent;
         setUnreadCounts((prev) => {
@@ -188,7 +186,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 5. Pong — keepalive reply, ignore
+      // 5. Pong — ignore
       if (event.event === "pong") return;
 
       // 6. Error
@@ -197,8 +195,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // 7. All other events — store in bell panel list
-      //    and invalidate React Query so NotificationHome refreshes
+      // 7. All other events — store in bell panel
       const notif = buildNotification(event);
       if (notif) {
         setNotifications((prev) => [notif, ...prev].slice(0, 50));
@@ -213,22 +210,36 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!user) return;
 
-    const token = getAccessToken();
-    if (!token) return;
+    let cancelled = false                        // ✅ prevent race condition
 
-    const ws = new NotificationWebSocket({
-      onOpen:  () => setWsStatus("connected"),
-      onClose: () => setWsStatus("disconnected"),
-      onError: () => setWsStatus("error"),
-    });
+    const connectWS = async () => {
+      const token = await getFreshToken()        // ✅ always fresh token
+      if (!token) return;
+      if (cancelled) return;                     // ✅ unmounted before token arrived
 
-    wsRef.current = ws;
-    const unsub = ws.subscribe(handleEvent);
-    ws.connect(token);
+      const ws = new NotificationWebSocket({
+        onOpen:  () => setWsStatus("connected"),
+        onClose: () => setWsStatus("disconnected"),
+        onError: () => setWsStatus("error"),
+      });
+
+      wsRef.current = ws;
+      const unsub = ws.subscribe(handleEvent);
+      ws.connect(token);                         // ✅ fresh token
+
+      return unsub
+    }
+
+    let unsubFn: (() => void) | undefined
+
+    connectWS().then(unsub => {
+      unsubFn = unsub
+    })
 
     return () => {
-      unsub();
-      ws.disconnect();
+      cancelled = true                           // ✅ stop if unmounted
+      unsubFn?.()
+      wsRef.current?.disconnect();
       wsRef.current = null;
       setWsStatus("disconnected");
     };
@@ -237,8 +248,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // ── Public actions ─────────────────────────────────────
 
   const markConversationRead = useCallback((conversationId: string) => {
-    // Tells NotificationConsumer to clear the badge +
-    // triggers a fresh unread_count sync from the backend
     wsRef.current?.markRead(conversationId);
   }, []);
 

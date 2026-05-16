@@ -1,6 +1,5 @@
 import { Conversation } from '@/shared/types/chat.types'
 import { useAuth } from '@/features/auth'
-import { useNotifications } from '@/features/notification/hooks/useNotifications'
 import Avatar from '@/features/profile/components/Avatar'
 import { formatTime } from '@/shared/lib/utils'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'

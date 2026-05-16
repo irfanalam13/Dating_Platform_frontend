@@ -1,6 +1,3 @@
-// Use this only for websocket production
-
-
 "use client";
 
 import {
@@ -13,7 +10,6 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMessages } from "@/shared/api/chat.api";
 import { ChatWebSocket } from "@/shared/lib/websocket";
-import { getAccessToken } from "@/shared/api/client";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
 import type {
@@ -24,6 +20,8 @@ import type {
   WSReadEvent,
   ChatUser,
 } from "@/shared/types/chat.types";
+import { getFreshToken } from '@/shared/utils/wsToken'
+
 
 export const chatKeys = {
   messages: (conversationId: string) =>
@@ -175,57 +173,68 @@ export function useChat(conversationId: string | null): UseChatReturn {
   // ── WS lifecycle ─────────────────────────────────────
   useEffect(() => {
     if (!conversationId) return;
-    if (!currentUser)    return;   // wait for auth
+    if (!currentUser)    return;
 
-    const token = getAccessToken();
-    if (!token) {
-      console.warn("useChat: no token — WS not started");
-      return;
+    let cancelled = false                  // ✅ prevent race condition
+
+    const connectWS = async () => {
+      const token = await getFreshToken()  // ✅ always fresh token
+      if (!token) {
+        console.warn("useChat: no token — WS not started");
+        return;
+      }
+      if (cancelled) return;              // ✅ component unmounted before token arrived
+
+      // Tear down any existing connection first
+      if (wsRef.current) {
+        wsRef.current.disconnect();
+        wsRef.current = null;
+      }
+
+      console.log("useChat: connecting WS", { conversationId, userId: currentUser.id });
+      updateStatus("connecting");
+
+      const ws = new ChatWebSocket(conversationId, {
+        onOpen:  () => {
+          console.log("useChat: WS connected ✅");
+          updateStatus("connected");
+        },
+        onClose: () => {
+          console.log("useChat: WS closed");
+          updateStatus("disconnected");
+        },
+        onError: () => {
+          console.log("useChat: WS error");
+          updateStatus("error");
+        },
+      });
+
+      wsRef.current = ws;
+      const unsub = ws.subscribe(handleWSEvent);
+      ws.connect(token);                  // ✅ fresh token
+
+      ws.sendRead();
+      markConversationRead(conversationId);
+
+      return unsub                        // ✅ return unsub for cleanup
     }
 
-    // Tear down any existing connection first
-    if (wsRef.current) {
-      wsRef.current.disconnect();
-      wsRef.current = null;
-    }
+    let unsubFn: (() => void) | undefined  // ✅ store unsub
 
-    console.log("useChat: connecting WS", { conversationId, userId: currentUser.id });
-    updateStatus("connecting");
-
-    const ws = new ChatWebSocket(conversationId, {
-      onOpen:  () => {
-        console.log("useChat: WS connected ✅");
-        updateStatus("connected");
-      },
-      onClose: () => {
-        console.log("useChat: WS closed");
-        updateStatus("disconnected");
-      },
-      onError: () => {
-        console.log("useChat: WS error");
-        updateStatus("error");
-      },
-    });
-
-    // ✅ Store in ref BEFORE calling connect
-    wsRef.current = ws;
-
-    const unsub = ws.subscribe(handleWSEvent);
-    ws.connect(token);
-
-    ws.sendRead();
-    markConversationRead(conversationId);
+    connectWS().then(unsub => {
+      unsubFn = unsub
+    })
 
     return () => {
+      cancelled = true                    // ✅ cancel if unmounted
       console.log("useChat: cleanup WS");
-      unsub();
-      ws.disconnect();
+      unsubFn?.()                         // ✅ unsubscribe handlers
+      wsRef.current?.disconnect();
       wsRef.current = null;
       updateStatus("disconnected");
       setTypingUsers(new Set());
     };
   }, [conversationId, currentUser, handleWSEvent, markConversationRead, updateStatus]);
-
   // ── Public actions ───────────────────────────────────
 
   // ✅ Uses wsRef directly — no stale closure on wsStatus
