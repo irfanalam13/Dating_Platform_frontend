@@ -4,37 +4,25 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
-import { setAccessToken } from "@/shared/api/client";
-import api from "@/shared/api/client";  // ✅ missing import
+import { refreshOnce } from "@/shared/api/client";  // ✅ import refreshOnce
 
 export function useCurrentUser() {
   const { user: storeUser, setAuth } = useAuthStore();
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["authUser"],  // ✅ missing queryKey — required by React Query
+    queryKey: ["authUser"],
 
     queryFn: async () => {
       try {
-        // Step 1 — get access token from httpOnly refresh cookie
-        const refreshRes = await api.post("/auth/refresh/");
-
-        console.log("REFRESH RESPONSE:", JSON.stringify(refreshRes?.data, null, 2));
-
-        const token =
-          refreshRes?.data?.data?.tokens?.access ||
-          refreshRes?.data?.tokens?.access       ||
-          refreshRes?.data?.access               ||
-          refreshRes?.data?.access_token         ||
-          null;
+        // ✅ Single refresh — no duplicate calls
+        const token = await refreshOnce()
 
         if (token) {
-          setAccessToken(token);
-          console.log("✅ Token restored on page load:", token.slice(0, 20) + "...");
+          console.log("✅ Token restored:", token.slice(0, 20) + "...");
         } else {
-          console.warn("⚠️ Refresh returned no token:", refreshRes?.data);
+          console.warn("⚠️ Could not refresh token");
         }
 
-        // Step 2 — fetch user profile
         const res = await getMe();
         return (res as Record<string, unknown>)?.data
           ?? (res as Record<string, unknown>)?.user
@@ -42,7 +30,6 @@ export function useCurrentUser() {
           ?? null;
 
       } catch {
-        // No active session — stay logged out
         return null;
       }
     },
@@ -54,7 +41,6 @@ export function useCurrentUser() {
     staleTime: Infinity,
   });
 
-  // Sync React Query result → Zustand store
   useEffect(() => {
     if (data) {
       if (JSON.stringify(storeUser) !== JSON.stringify(data)) {
