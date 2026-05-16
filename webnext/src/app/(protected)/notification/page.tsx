@@ -1,8 +1,5 @@
-import NotificationItem from "@/features/notification/components/NotificationHome";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import  NotificationHome  from "@/features/notification/components/NotificationHome";
 
-export default async function Page() {
-
-  return <NotificationItem />;
+export default function NotificationPage() {
+  return <NotificationHome />;
 }
