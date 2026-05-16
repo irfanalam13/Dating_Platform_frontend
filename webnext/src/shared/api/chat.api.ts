@@ -72,6 +72,7 @@ export function getMessages(
  * REST fallback only — normal path is ChatConsumer WebSocket.
  * Use when WS is disconnected.
  */
+
 export function sendMessage(
   conversationId: string,
   content: string
@@ -82,6 +83,14 @@ export function sendMessage(
     data: { content },
   });
 }
+
+
+
+// export async function sendMessage(conversationId: string, content: string) {
+//   const res = await api.post(`/chat/conversations/${conversationId}/messages/`, { content });
+//   return res.data;
+// }
+
 
 /**
  * PATCH /chat/conversations/:id/messages/read/
