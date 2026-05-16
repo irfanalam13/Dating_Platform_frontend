@@ -10,28 +10,28 @@ function data<T>(config: Parameters<typeof api.request>[0]): Promise<T> {
 }
 
 // ─────────────────────────────────────────────────────────
-// Notifications
+// Notification
 // ─────────────────────────────────────────────────────────
 
 /**
- * GET /notifications/
+ * GET /notification/
  * Paginated list, newest first.
  * Matches NotificationListView on the backend.
  */
 export function getNotifications(): Promise<PaginatedResponse<Notification>> {
-  return data({ method: "GET", url: "/notifications/" });
+  return data({ method: "GET", url: "/notification/" });
 }
 
 /**
- * POST /notifications/read/
+ * POST /notification/read/
  * body: { notification_ids: string[] }
- * Marks specific notifications as read.
+ * Marks specific notification as read.
  * Max 100 IDs per request (backend enforced).
  */
 export function markNotificationsRead(ids: string[]): Promise<{ marked_read: number }> {
   return data({
     method: "POST",
-    url: "/notifications/read/",
+    url: "/notification/read/",
     data: { notification_ids: ids },
   });
 }
@@ -43,7 +43,7 @@ export function markNotificationsRead(ids: string[]): Promise<{ marked_read: num
 export function markAllNotificationsRead(): Promise<{ marked_read: number }> {
   return data({
     method: "POST",
-    url: "/notifications/read-all/",
+    url: "/notification/read-all/",
   });
 }
 
@@ -53,5 +53,5 @@ export function markAllNotificationsRead(): Promise<{ marked_read: number }> {
  * After login, the WS unread_count event takes over.
  */
 export function getUnreadCount(): Promise<{ unread_count: number }> {
-  return data({ method: "GET", url: "/notifications/unread-count/" });
+  return data({ method: "GET", url: "/notification/unread-count/" });
 }
