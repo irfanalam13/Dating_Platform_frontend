@@ -10,10 +10,11 @@ import { getConversation } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
 import { showError } from "@/shared/utils/toast"
 import { createOrGetConversation } from "@/shared/api/chat.api"
-
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 export function useAcceptedMatches() {
-  const { user } = useAuth();
+  // const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
   return useQuery({
     queryKey: ["acceptedMatches"],
     queryFn: getAcceptedMatches,

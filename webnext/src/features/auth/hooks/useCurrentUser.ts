@@ -1,26 +1,35 @@
+
 "use client";
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
-import { refreshOnce } from "@/shared/api/client";  // ✅ import refreshOnce
+import { refreshOnce } from "@/shared/api/client";
+
+// ✅ Helper to check hint cookie
+function hasRefreshTokenHint(): boolean {
+  return document.cookie.includes("rt_exists=true");
+}
 
 export function useCurrentUser() {
   const { user: storeUser, setAuth } = useAuthStore();
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetched, error, refetch } = useQuery({
     queryKey: ["authUser"],
 
     queryFn: async () => {
       try {
-        // ✅ Single refresh — no duplicate calls
-        const token = await refreshOnce()
+        // ✅ Skip refresh entirely if no hint cookie
+        if (!hasRefreshTokenHint()) {
+          return null;
+        }
 
-        if (token) {
-          console.log("✅ Token restored:", token.slice(0, 20) + "...");
-        } else {
-          console.warn("⚠️ Could not refresh token");
+        const token = await refreshOnce();
+
+        if (!token) {
+          setAuth(null);
+          return null;
         }
 
         const res = await getMe();
@@ -30,6 +39,7 @@ export function useCurrentUser() {
           ?? null;
 
       } catch {
+        setAuth(null);
         return null;
       }
     },
@@ -42,19 +52,21 @@ export function useCurrentUser() {
   });
 
   useEffect(() => {
+    if (!isFetched) return;
+
     if (data) {
       if (JSON.stringify(storeUser) !== JSON.stringify(data)) {
         setAuth(data as Parameters<typeof setAuth>[0]);
       }
-    } else if (!isLoading && storeUser !== null) {
+    } else if (storeUser !== null) {
       setAuth(null);
     }
-  }, [data, isLoading, storeUser, setAuth]);
+  }, [data, isFetched, storeUser, setAuth]);
 
   return {
     user: storeUser,
-    loading: isLoading,
-    isAuthenticated: !!storeUser,
+    loading: isLoading || !isFetched,
+    isAuthenticated: isFetched ? !!data : false,
     error,
     refetch,
   };

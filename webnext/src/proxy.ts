@@ -5,11 +5,13 @@ import type { NextRequest } from "next/server";
 // Route groups
 // ─────────────────────────────────────────────────────────
 
+
 const PUBLIC_ROUTES = [
   "/login",
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/verify-email",   // ← add this
 ];
 
 const ALWAYS_ALLOWED = [
