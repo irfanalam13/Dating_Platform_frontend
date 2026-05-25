@@ -1,6 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 import {
   Bell,
   ChevronLeft,
@@ -10,6 +13,12 @@ import {
   UserPlus,
   Phone,
   Megaphone,
+  Heart,
+  Star,
+  Users,
+  Camera,
+  Lightbulb,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { Notification, NotificationType } from "@/shared/types/notification.types";
 import {
@@ -19,25 +28,45 @@ import {
 } from "@/features/notification/hooks/useNotifications";
 import { formatTime } from "@/shared/utils/time";
 
-function NotificationIcon({ type }: { type: NotificationType }) {
+/* ─── Action icon on the right side of each notification ─── */
+function NotificationActionIcon({ type }: { type: NotificationType }) {
+  const baseClass = "h-5 w-5";
   switch (type) {
-    case "new_message":     return <MessageCircle className="h-5 w-5" />;
-    case "friend_request":  return <UserPlus className="h-5 w-5" />;
-    case "friend_accepted": return <HeartHandshake className="h-5 w-5" />;
-    case "missed_call":     return <Phone className="h-5 w-5" />;
-    case "safety_alert":    return <ShieldCheck className="h-5 w-5" />;
-    case "system":          return <Megaphone className="h-5 w-5" />;
-    default:                return <Bell className="h-5 w-5" />;
+    case "new_message":
+      return <ImageIcon className={`${baseClass} text-sky-400`} />;
+    case "friend_request":
+      return <Heart className={`${baseClass} text-rose-400`} />;
+    case "friend_accepted":
+      return <Star className={`${baseClass} text-amber-400`} fill="currentColor" />;
+    case "missed_call":
+      return <Users className={`${baseClass} text-rose-500`} />;
+    case "safety_alert":
+      return <ShieldCheck className={`${baseClass} text-red-500`} />;
+    case "system":
+      return <Lightbulb className={`${baseClass} text-amber-400`} fill="currentColor" />;
+    default:
+      return <Bell className={`${baseClass} text-sky-400`} />;
   }
 }
 
-function iconClass(type: NotificationType, isRead: boolean): string {
-  if (isRead) return "bg-[#F8EFE6] text-[#746767]";
+/* ─── Avatar placeholder colours per notification type ─── */
+function avatarGradient(type: NotificationType): string {
   switch (type) {
-    case "safety_alert": return "bg-red-600 text-white";
-    case "missed_call":  return "bg-orange-500 text-white";
-    default:             return "bg-[#7A2432] text-white";
+    case "new_message":     return "from-sky-300 to-sky-500";
+    case "friend_request":  return "from-rose-300 to-rose-500";
+    case "friend_accepted": return "from-amber-300 to-amber-500";
+    case "missed_call":     return "from-orange-300 to-orange-500";
+    case "safety_alert":    return "from-red-400 to-red-600";
+    case "system":          return "from-violet-300 to-violet-500";
+    default:                return "from-slate-300 to-slate-500";
   }
+}
+
+/* ─── Avatar initials helper ─── */
+function getInitials(title: string): string {
+  const words = title.replace(/^(New |Missed |Friend |Safety )/i, "").split(" ");
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return (words[0]?.[0] ?? "?").toUpperCase();
 }
 
 function useNotificationNavigation() {
@@ -88,53 +117,73 @@ export default function NotificationHome() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 pb-24 pt-5 text-[#2D2424]">
+    <main
+      className={`${inter.className} min-h-[100dvh] px-4 pb-24 pt-6`}
+      style={{
+        background: "linear-gradient(180deg, #ffffff 0%, #e0f0ff 60%, #c6e4fa 100%)",
+      }}
+    >
       <div className="mx-auto max-w-md">
-        <header className="mb-5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              aria-label="Go back"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-semibold">Notifications</h1>
-              <p className="text-sm text-[#746767]">Matches, messages, and safety updates.</p>
-            </div>
-          </div>
-          {unreadCount > 0 && (
+        {/* ── Header ─────────────────────────────── */}
+        <header className="mb-6 flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="grid h-9 w-9 shrink-0 place-items-center"
+          >
+            <ChevronLeft className="h-6 w-6 text-[#1a1a2e]" />
+          </button>
+          <h1 className="text-[1.65rem] font-bold tracking-tight text-[#1a1a2e]">
+            Notifications
+          </h1>
+        </header>
+
+        {/* ── Mark-all-read (small link, only when needed) ── */}
+        {unreadCount > 0 && (
+          <div className="mb-4 flex justify-end">
             <button
               onClick={() => markAllRead()}
               disabled={isMarkingAll}
-              className="shrink-0 rounded-full border border-[#EADDD2] bg-white px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
+              className="text-xs font-medium text-sky-600 hover:text-sky-700 disabled:opacity-50"
             >
-              {isMarkingAll ? "Marking..." : "Mark all read"}
+              {isMarkingAll ? "Marking…" : "Mark all as read"}
             </button>
-          )}
-        </header>
+          </div>
+        )}
 
+        {/* ── Skeleton loading ───────────────────── */}
         {isLoading && (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-lg border border-[#EADDD2] bg-white" />
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-2xl bg-white/70 p-4"
+              >
+                <div className="h-11 w-11 animate-pulse rounded-full bg-slate-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-3/4 animate-pulse rounded bg-slate-200" />
+                  <div className="h-2.5 w-1/2 animate-pulse rounded bg-slate-100" />
+                </div>
+                <div className="h-5 w-5 animate-pulse rounded-full bg-slate-200" />
+              </div>
             ))}
           </div>
         )}
 
+        {/* ── Empty state ────────────────────────── */}
         {!isLoading && data.length === 0 && (
-          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] bg-white p-8 text-center">
-            <div>
-              <Bell className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
-              <h2 className="font-semibold">No notifications yet</h2>
-              <p className="mt-2 text-sm leading-6 text-[#746767]">
-                Important match, message, and safety updates will appear here.
-              </p>
+          <div className="mt-20 flex flex-col items-center text-center">
+            <div className="mb-5 grid h-20 w-20 place-items-center rounded-full bg-white/80 shadow-sm">
+              <Bell className="h-9 w-9 text-sky-400" />
             </div>
+            <h2 className="text-lg font-semibold text-[#1a1a2e]">No notifications yet</h2>
+            <p className="mt-2 max-w-[260px] text-sm leading-relaxed text-slate-500">
+              Important match, message, and safety updates will appear here.
+            </p>
           </div>
         )}
 
+        {/* ── Notification list ──────────────────── */}
         {!isLoading && data.length > 0 && (
           <div className="space-y-3">
             {data.map((item: Notification) => (
@@ -142,28 +191,44 @@ export default function NotificationHome() {
                 key={item.id}
                 onClick={() => handleOpen(item)}
                 className={
-                  "flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors " +
-                  (item.is_read ? "border-[#EADDD2] bg-white" : "border-[#D4A89A] bg-[#FEF6F0]")
+                  "group flex w-full items-center gap-3.5 rounded-2xl border px-4 py-3.5 text-left " +
+                  "transition-all duration-200 ease-out " +
+                  "hover:scale-[1.015] hover:shadow-md " +
+                  "active:scale-[0.99] " +
+                  (item.is_read
+                    ? "border-white/60 bg-white/65 shadow-sm backdrop-blur-sm"
+                    : "border-white/80 bg-white/85 shadow-sm backdrop-blur-sm")
                 }
               >
+                {/* Avatar circle */}
                 <span
                   className={
-                    "grid h-10 w-10 shrink-0 place-items-center rounded-full " +
-                    iconClass(item.notification_type, item.is_read)
+                    "grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br text-white text-sm font-bold shadow-sm " +
+                    avatarGradient(item.notification_type)
                   }
                 >
-                  <NotificationIcon type={item.notification_type} />
+                  {getInitials(item.title)}
                 </span>
+
+                {/* Text */}
                 <span className="min-w-0 flex-1">
-                  <span className={"block text-sm " + (!item.is_read ? "font-semibold" : "font-medium")}>
-                    {item.title}
+                  <span
+                    className={
+                      "block truncate text-[0.9rem] leading-snug text-[#1a1a2e] " +
+                      (!item.is_read ? "font-semibold" : "font-medium")
+                    }
+                  >
+                    {item.body || item.title}
                   </span>
-                  <span className="mt-0.5 block text-sm leading-5 text-[#746767]">
-                    {item.body || "Tap to view details."}
+                  <span className="mt-0.5 block text-[0.7rem] text-slate-400">
+                    {formatTime(item.created_at)}
                   </span>
-                  <span className="mt-1 block text-xs text-[#A89090]">{formatTime(item.created_at)}</span>
                 </span>
-                {!item.is_read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#B78A3B]" />}
+
+                {/* Action icon */}
+                <span className="shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <NotificationActionIcon type={item.notification_type} />
+                </span>
               </button>
             ))}
           </div>
