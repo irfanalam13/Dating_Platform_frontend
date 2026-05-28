@@ -325,7 +325,8 @@ export default function RegisterForm() {
             Click the link to activate your account.
           </p>
           <button
-            onClick={() => router.push(`/verify-email?email=${encodeURIComponent(form.email)}`)}
+            // onClick={() => router.push(`/verify-email?email=${encodeURIComponent(form.email)}`)}
+            onClick={ () => router.push(`/onboarding`)}
             className="w-full py-3 rounded-full bg-[#0088FF] text-white font-medium hover:bg-[#006DCD] transition"
           >
             Go to Verify Email
