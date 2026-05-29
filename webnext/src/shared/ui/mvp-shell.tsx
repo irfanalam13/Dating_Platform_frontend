@@ -16,11 +16,11 @@ import { useNotificationContext } from "@/features/notification/context/Notifica
 // ─────────────────────────────────────────────────────────
 
 const nav = [
-  { href: "/home",         label: "Home",    icon: Home },
-  { href: "/matches",      label: "Matches", icon: HeartHandshake },
-  { href: "/chat",         label: "Chat",    icon: MessageCircle },
-  { href: "/notification", label: "Alerts",  icon: Bell },
-  { href: "/profile",      label: "Profile", icon: UserRound },
+  { href: "/home",         label: "Home",    icon: Home, color: "#000000" },
+  { href: "/matches",      label: "Matches", icon: HeartHandshake, color: "#FF0000" },
+  { href: "/chat",         label: "Chat",    icon: MessageCircle, color: "#00D400" },
+  { href: "/notification", label: "Alerts",  icon: Bell, color: "#000000" },
+  { href: "/profile",      label: "Profile", icon: UserRound, color: "#000000" },
   // { href: "/settings", label: "Settings", icon: Settings },
 
 ];
@@ -29,12 +29,12 @@ const nav = [
 // Bell with live red dot
 // ─────────────────────────────────────────────────────────
 
-function BellWithBadge() {
+function BellWithBadge({ color }: { color?: string }) {
   const { totalUnread } = useNotificationContext();
 
   return (
     <div className="relative">
-      <Bell className="h-5 w-5" />
+      <Bell className="h-5 w-5" color={color} />
       {totalUnread > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#7A2432] text-[9px] font-bold text-white">
           {totalUnread > 9 ? "9+" : totalUnread}
@@ -48,14 +48,14 @@ function BellWithBadge() {
 // Chat with live amber dot
 // ─────────────────────────────────────────────────────────
 
-function ChatWithBadge() {
+function ChatWithBadge({ color }: { color?: string }) {
   const { unreadCounts } = useNotificationContext();
 
   const total = Object.values(unreadCounts).reduce((sum, n) => sum + n, 0);
 
   return (
     <div className="relative">
-      <MessageCircle className="h-5 w-5" />
+      <MessageCircle className="h-5 w-5" color={color} />
       {total > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#B78A3B] text-[9px] font-bold text-white">
           {total > 9 ? "9+" : total}
@@ -84,29 +84,32 @@ export function MvpShell({ children }: { children: React.ReactNode }) {
       </main>
 
       {!hideNav && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#EADDD2] px-2 py-2 backdrop-blur">
-          <div className="mx-auto grid max-w-md grid-cols-5">  {/* ✅ 5 cols not 6 */}
-            {nav.map(({ href, label, icon: Icon }) => {
-              const active =
-                pathname === href || pathname.startsWith(`${href}/`);
+        <nav className="fixed inset-x-0 bottom-4 z-40 flex justify-center pointer-events-auto">
+          <div className="bottom-nav-glass mx-auto max-w-md w-full px-3">
+            <div className="flex items-center justify-between">
+              {nav.map(({ href, label, icon: Icon, color }) => {
+                const active = pathname === href || pathname.startsWith(`${href}/`);
 
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex flex-col items-center gap-1 rounded-md py-2 text-[11px] font-medium transition-colors ${active ? "text-[#7A2432]" : "text-[#746767]"}`}
-                >
-                  {href === "/notification" ? (
-                    <BellWithBadge />
-                  ) : href === "/chat" ? (
-                    <ChatWithBadge />
-                  ) : (
-                    <Icon className="h-5 w-5" />
-                  )}
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex flex-col items-center gap-1 px-2 transition-colors`}
+                    aria-label={label}
+                  >
+                    <div className={`bottom-nav-item ${active ? "activated" : ""}`}>
+                      {href === "/notification" ? (
+                        <BellWithBadge color={color} />
+                      ) : href === "/chat" ? (
+                        <ChatWithBadge color={color} />
+                      ) : (
+                        <Icon className="h-5 w-5" color={color} />
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </nav>
       )}
