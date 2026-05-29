@@ -266,7 +266,7 @@ export default function ProfileClient({
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">My profile</p>
                 <br />
                 <h1 className="text-3xl font-semibold">
-                {data.full_name || "My Profile"}
+                {data?.full_name || "My Profile"}
                 </h1>
               </>
             ) : (
