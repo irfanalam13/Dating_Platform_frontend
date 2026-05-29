@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useAuth } from "@/features/auth";
 import { NotificationProvider } from "@/features/notification/context/NotificationContext";
+import AppToaster from "@/shared/ui/toaster";
 
 // ─────────────────────────────────────────────────────────
 // Public routes — no auth check, no loading spinner
@@ -37,6 +38,7 @@ function InnerProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <NotificationProvider>
+      <AppToaster />
       {children}
     </NotificationProvider>
   );

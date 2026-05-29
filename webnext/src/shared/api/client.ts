@@ -2,6 +2,7 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
+import { showError } from "@/shared/utils/toast";
 
 // ─────────────────────────────────────────────────────────
 // Axios instance
@@ -209,6 +210,10 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
 
+    if (error.code === "ERR_CANCELED") {
+      return Promise.reject(error);
+    }
+
     if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
@@ -264,9 +269,22 @@ api.interceptors.response.use(
         isRefreshing = false;
 
         console.error("REFRESH FAILED — forcing logout", refreshError);
+        showError(refreshError, "Your session expired. Please log in again.");
         return forceLogout();
       }
     }
+
+    const responseData = error.response?.data as
+      | { detail?: string; message?: string; error?: string }
+      | undefined;
+
+    showError(
+      responseData ?? error,
+      responseData?.detail ||
+        responseData?.message ||
+        responseData?.error ||
+        "Request failed. Please try again.",
+    );
 
     return Promise.reject(error);
   }

@@ -28,33 +28,6 @@ function get(obj: unknown, ...keys: string[]): unknown {
 }
 
 // ─────────────────────────────────────────────────────────
-// Error helper
-// ─────────────────────────────────────────────────────────
-function getApiErrorMessage(err: unknown, fallback: string): string {
-  const responseData = (err as { response?: { data?: unknown } })?.response?.data;
-
-  if (responseData && typeof responseData === "object") {
-    const data = responseData as Record<string, unknown>;
-
-    const fieldErrors = (data.data ?? data.errors) as
-      | Record<string, unknown>
-      | undefined;
-
-    if (fieldErrors && typeof fieldErrors === "object") {
-      const firstError = Object.values(fieldErrors)
-        .flat()
-        .find((msg) => typeof msg === "string");
-      if (firstError) return firstError as string;
-    }
-
-    if (typeof data.detail  === "string") return data.detail;
-    if (typeof data.message === "string") return data.message;
-  }
-
-  return fallback;
-}
-
-// ─────────────────────────────────────────────────────────
 // Token extractor
 // ─────────────────────────────────────────────────────────
 function extractToken(res: unknown): string | null {
@@ -130,7 +103,7 @@ export const useRegister = () => {
 
     onError: (err: unknown) => {
       console.error("REGISTER ERROR", err);
-      showError(getApiErrorMessage(err, "Registration failed. Please try again."));
+      showError(err, "Registration failed. Please try again.");
     },
   });
 };
@@ -180,7 +153,7 @@ export const useLogin = () => {
         router.push("/verify-email");
         return;
       }
-      showError(getApiErrorMessage(err, "Login failed"));
+      showError(err, "Login failed");
     },
   });
 };
@@ -217,7 +190,7 @@ export const useVerifyEmail = () => {
 
     onError: (err: unknown) => {
       console.error("VERIFY EMAIL ERROR", err);
-      showError(getApiErrorMessage(err, "Invalid or expired verification link."));
+      showError(err, "Invalid or expired verification link.");
     },
   });
 };
@@ -235,7 +208,7 @@ export const useResendVerification = () => {
 
     onError: (err: unknown) => {
       console.error("RESEND VERIFICATION ERROR", err);
-      showError(getApiErrorMessage(err, "Could not resend verification email."));
+      showError(err, "Could not resend verification email.");
     },
   });
 };
@@ -253,7 +226,7 @@ export const useForgotPassword = () => {
 
     onError: (err: unknown) => {
       console.error("FORGOT PASSWORD ERROR", err);
-      showError(getApiErrorMessage(err, "Could not send reset email. Please try again."));
+      showError(err, "Could not send reset email. Please try again.");
     },
   });
 };
@@ -274,7 +247,7 @@ export const useResetPassword = () => {
 
     onError: (err: unknown) => {
       console.error("RESET PASSWORD ERROR", err);
-      showError(getApiErrorMessage(err, "Invalid or expired reset link."));
+      showError(err, "Invalid or expired reset link.");
     },
   });
 };

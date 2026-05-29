@@ -409,7 +409,9 @@ export default function HomePage() {
             <h1 className="text-2xl font-semibold">Meaningful matches</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#7A2432]">
+            <button
+              onClick={() => router.push("/ypref")}
+              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#000000]">
               <SlidersHorizontal className="h-5 w-5" />
             </button>
           </div>
