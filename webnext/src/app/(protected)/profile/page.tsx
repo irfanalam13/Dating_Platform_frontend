@@ -4,8 +4,19 @@
 //   return <ProfileClient />;
 // }
 
-import ProfileCard from "@/features/profile/components/ProfileCard";
+"use client";
 
-export default function ProfileRoutePage() {
-  return <ProfileCard />;
+import { useMyProfile } from "@/features/profile/hooks/useProfile";
+import ProfileClient from "@/features/profile/components/ProfileClient";
+
+export default function MyProfilePage() {
+  const { data, isLoading } = useMyProfile(); // ✅ no args needed
+
+  return (
+    <ProfileClient
+      mode="own"
+      data={data}
+      isLoading={isLoading}
+    />
+  );
 }

@@ -78,3 +78,62 @@ export interface ImageListResponse {
   count: number;
   images: ProfileImage[];
 }
+
+
+// types/profile.ts
+
+export type SocialPlatform =
+  | "instagram"
+  | "spotify"
+  | "linkedin"
+  | "twitter"
+  | "facebook"
+  | "snapchat"
+  | "tiktok"
+  | "other";
+
+export interface SocialLink {
+  id: number;
+  platform: SocialPlatform;
+  url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// shared/types/profile.types.ts
+
+export interface PublicProfile {
+  id: number;
+  user: number;
+  full_name: string;
+  bio: string;
+  city: string | null;
+  profile_image_url: string | null;
+  age: number;
+  gender: string | null;
+  relationship_intent: string;
+  education: string;
+  career: string;
+  values: string;
+  hobbies: string;
+  ethnicity: string;
+  gan: string;
+  horoscope: string;
+  religion_name?: string;
+  caste_name?: string;
+  gotra_name?: string;
+  is_profile_public: boolean;
+  verified: boolean;
+  is_online?: boolean;
+  // social_links added later when backend is ready
+  social_links?: { platform: string; url: string }[];
+}
+
+export interface SocialLinkPayload {
+  platform: SocialPlatform;
+  url: string;
+}
+
+export interface BulkSocialLinkPayload {
+  links: SocialLinkPayload[];
+}
