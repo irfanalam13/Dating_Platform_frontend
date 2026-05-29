@@ -57,7 +57,7 @@ export function MessageInbox() {
     participants.find((p) => p.id !== user?.id);
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] text-[#2D2424]">
+    <main className="min-h-[100dvh] text-[#2D2424]">
       <div className="mx-auto max-w-md px-4 py-5">
 
         {/* Header */}
@@ -65,7 +65,7 @@ export function MessageInbox() {
           <button
             onClick={() => router.back()}
             aria-label="Go back"
-            className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white"
+            className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -78,7 +78,7 @@ export function MessageInbox() {
         </header>
 
         {/* Safety banner */}
-        <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#EADDD2] bg-white p-4">
+        <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4">
           <ShieldCheck className="h-5 w-5 shrink-0 text-[#3F7D63]" />
           <p className="text-sm text-[#746767]">
             Report and block controls are available in every chat.
@@ -91,7 +91,7 @@ export function MessageInbox() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex animate-pulse items-center gap-3 rounded-lg border border-[#EADDD2] bg-white p-4"
+                className="flex animate-pulse items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
               >
                 <div className="h-12 w-12 rounded-full bg-[#EADDD2]" />
                 <div className="flex-1 space-y-2">
@@ -105,7 +105,7 @@ export function MessageInbox() {
 
         {/* Empty state */}
         {!isLoading && sorted.length === 0 && (
-          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] bg-white p-8 text-center">
+          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
               <MessageCircle className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No conversations yet</h2>
@@ -132,8 +132,7 @@ export function MessageInbox() {
                 <button
                   key={conversation.id}
                   onClick={() => router.push(`/chat/${conversation.id}`)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-[#EADDD2]
-                             bg-white p-4 text-left transition-colors hover:bg-[#FFF8F1]"
+                  className="flex w-full items-center gap-3 rounded-lg border border-[#EADDD2] p-4 text-left transition-colors hover:bg-[#FFF8F1]"
                 >
                   {/* Avatar with online dot */}
                   <div className="relative shrink-0">
@@ -147,8 +146,7 @@ export function MessageInbox() {
                       }}
                     />
                     {isOnline && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full
-                                       border-2 border-white bg-green-500" />
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
                     )}
                   </div>
 
@@ -170,9 +168,7 @@ export function MessageInbox() {
                       </p>
                       {/* Unread badge */}
                       {unread > 0 && (
-                        <span className="shrink-0 grid h-5 w-5 place-items-center
-                                         rounded-full bg-[#7A2432] text-[10px]
-                                         font-bold text-white">
+                        <span className="shrink-0 grid h-5 w-5 place-items-center rounded-full bg-[#7A2432] text-[10px] font-bold text-white">
                           {unread > 9 ? "9+" : unread}
                         </span>
                       )}

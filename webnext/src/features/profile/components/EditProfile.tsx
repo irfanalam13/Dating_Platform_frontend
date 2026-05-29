@@ -77,10 +77,10 @@ export default function EditProfile() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
         <header className="mb-5">
-          <button onClick={() => router.back()} className="mb-4 grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white">
+          <button onClick={() => router.back()} className="mb-4 grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
@@ -92,7 +92,7 @@ export default function EditProfile() {
           </div>
         </header>
 
-        <section className="rounded-lg border border-[#EADDD2] bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-[#EADDD2] p-5 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-4">
               {step === 0 && (
@@ -102,9 +102,7 @@ export default function EditProfile() {
                     <button
                       key={intent}
                       onClick={() => update("relationship_intent", intent)}
-                      className={`h-14 w-full rounded-md border text-left px-4 font-medium ${
-                        form.relationship_intent === intent ? "border-[#7A2432] bg-[#F8EFE6] text-[#7A2432]" : "border-[#EADDD2]"
-                      }`}
+                      className={`h-14 w-full rounded-md border text-left px-4 font-medium ${ form.relationship_intent === intent ? "border-[#7A2432] text-[#7A2432]" : "border-[#EADDD2]" }`}
                     >
                       {intent}
                     </button>
@@ -146,7 +144,7 @@ export default function EditProfile() {
 
               {step === 4 && (
                 <>
-                  <div className="rounded-md bg-[#F8EFE6] p-4">
+                  <div className="rounded-md p-4">
                     <Lock className="mb-3 h-5 w-5 text-[#7A2432]" />
                     <h2 className="font-semibold">Choose profile visibility</h2>
                     <p className="mt-1 text-sm leading-6 text-[#746767]">Messages are limited to mutual matches. You can browse with more comfort and adjust privacy anytime.</p>
@@ -181,7 +179,7 @@ function Field({ label, value, onChange, type = "text", placeholder, optional }:
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label} {optional && <span className="text-[#746767]">(optional)</span>}</span>
-      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] bg-white px-3 text-sm outline-none focus:border-[#7A2432]" />
+      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]" />
     </label>
   );
 }
@@ -190,7 +188,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-md border border-[#EADDD2] bg-white p-3 text-sm outline-none focus:border-[#7A2432]" />
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-md border border-[#EADDD2] p-3 text-sm outline-none focus:border-[#7A2432]" />
     </label>
   );
 }
@@ -199,7 +197,7 @@ function Select({ label, value, onChange, options, labels }: { label: string; va
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] bg-white px-3 text-sm outline-none focus:border-[#7A2432]">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]">
         <option value="">Select</option>
         {options.map((option) => (
           <option key={option} value={option}>{labels?.[option] ?? option}</option>

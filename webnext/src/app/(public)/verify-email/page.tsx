@@ -45,7 +45,7 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-[#FFF8F1] to-[#FFF0E8]">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 32 }}
         animate={{ opacity: 1, y: 0 }}
@@ -53,11 +53,11 @@ export default function VerifyEmailPage() {
         className="w-full max-w-md"
       >
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
+        <div className="rounded-3xl shadow-xl p-8 space-y-6">
 
           {/* Icon */}
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="h-16 w-16 rounded-full bg-[#FFF0F2] flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full flex items-center justify-center">
               <Mail className="h-8 w-8 text-[#7A2432]" />
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Verify your email</h1>
@@ -125,7 +125,7 @@ export default function VerifyEmailPage() {
                 <div className="w-full border-t border-[#EADDD2]" />
               </div>
               <div className="relative flex justify-center">
-                <span className="bg-white px-3 text-xs text-[#BFAAA0]">Didn't get the email?</span>
+                <span className="px-3 text-xs text-[#BFAAA0]">Didn't get the email?</span>
               </div>
             </div>
           )}

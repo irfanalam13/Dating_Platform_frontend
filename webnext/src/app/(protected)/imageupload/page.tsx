@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen">
       <UploadImage />
     </main>
   );

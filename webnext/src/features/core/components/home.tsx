@@ -32,7 +32,7 @@ function displayImage(profile: Profile) {
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function DiscoverSkeleton() {
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#EADDD2] bg-white shadow-sm animate-pulse">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#EADDD2] shadow-sm animate-pulse">
       <div className="h-[430px] w-full bg-[#EADDD2]" />
       <div className="space-y-4 p-5">
         <div className="space-y-2">
@@ -84,7 +84,7 @@ function MatchModal({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.92, opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 24 }}
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="w-full max-w-sm overflow-hidden rounded-2xl shadow-xl"
       >
         <div className="relative h-40 w-full">
           <img
@@ -161,7 +161,7 @@ function ViewProfileModal({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 32, opacity: 0 }}
         transition={{ type: "spring", stiffness: 280, damping: 26 }}
-        className="mb-4 max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-xl"
+        className="mb-4 max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-2xl shadow-xl"
       >
         {/* Image header */}
         <div className="relative h-56 w-full shrink-0">
@@ -204,7 +204,7 @@ function ViewProfileModal({
               {(profile.compatibility_tags ?? []).map((tag) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1 rounded-full bg-[#FFF0F2] px-3 py-1 text-xs font-medium text-[#7A2432]"
+                  className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-[#7A2432]"
                 >
                   <Sparkles className="h-3 w-3" />
                   {tag}
@@ -397,7 +397,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] text-[#2D2424]">
+    <main className="min-h-[100dvh] text-[#2D2424]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pb-24 pt-4">
 
         {/* ── Header ── */}
@@ -409,7 +409,7 @@ export default function HomePage() {
             <h1 className="text-2xl font-semibold">Meaningful matches</h1>
           </div>
           <div className="flex items-center gap-2">
-            <button className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white text-[#7A2432]">
+            <button className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#7A2432]">
               <SlidersHorizontal className="h-5 w-5" />
             </button>
           </div>
@@ -420,7 +420,7 @@ export default function HomePage() {
 
         {/* ── Empty state ── */}
         {!isLoading && !isRefetching && queueReady && !current && (
-          <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] bg-white p-8 text-center">
+          <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] p-8 text-center">
             <div>
               <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="text-lg font-semibold">You've seen everyone</h2>
@@ -471,10 +471,10 @@ export default function HomePage() {
                 dragYRef.current = 0;
                 setDragYDisplay(0);
               }}
-              className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#EADDD2] bg-white shadow-sm cursor-grab active:cursor-grabbing select-none"
+              className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#EADDD2] shadow-sm cursor-grab active:cursor-grabbing select-none"
             >
               {/* Image */}
-              <div className="relative h-[430px] shrink-0 bg-[#F8EFE6]">
+              <div className="relative h-[430px] shrink-0">
                 <img
                   src={displayImage(current)}
                   alt={current.full_name || "Profile"}
@@ -543,7 +543,7 @@ export default function HomePage() {
                     {(current.compatibility_tags ?? []).map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-[#F8EFE6] px-3 py-1 text-xs font-medium text-[#7A2432]"
+                        className="rounded-full px-3 py-1 text-xs font-medium text-[#7A2432]"
                       >
                         {tag}
                       </span>
@@ -577,14 +577,14 @@ export default function HomePage() {
                   <button
                     onClick={() => handleAction("pass")}
                     disabled={interestMutation.isPending}
-                    className="flex h-12 items-center justify-center rounded-xl border border-[#EADDD2] bg-white text-[#746767] transition-colors hover:bg-[#F8EFE6] disabled:opacity-50"
+                    className="flex h-12 items-center justify-center rounded-xl border border-[#EADDD2] text-[#746767] transition-colors hover:bg-[#F8EFE6] disabled:opacity-50"
                   >
                     <X className="h-5 w-5" />
                   </button>
 
                   <button
                     onClick={() => setViewProfile(current)}
-                    className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-[#EADDD2] bg-[#F8EFE6] text-sm font-semibold text-[#7A2432]"
+                    className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-[#EADDD2] text-sm font-semibold text-[#7A2432]"
                   >
                     <Eye className="h-4 w-4" />
                     View
@@ -637,7 +637,7 @@ export default function HomePage() {
         </AnimatePresence>
       {/* ── Error state ── */}
       {!isLoading && !isRefetching && isError && (
-        <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] bg-white p-8 text-center">
+        <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] p-8 text-center">
           <div>
             <RefreshCw className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
             <h2 className="text-lg font-semibold">Something went wrong</h2>

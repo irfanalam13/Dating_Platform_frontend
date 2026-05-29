@@ -13,10 +13,10 @@ export function AccountDeactivationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 flex items-center justify-center">
+    <div className="min-h-screen py-8 px-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* Mobile Phone Frame */}
-        {/* <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-slate-900"> */}
+        {/* <div className="rounded-3xl shadow-2xl overflow-hidden border-8 border-slate-900"> */}
           
           {/* STATUS BAR */}
           {/* <div className="bg-slate-900 text-white px-6 py-2 flex justify-between items-center text-xs font-semibold">
@@ -29,7 +29,7 @@ export function AccountDeactivationPage() {
           </div> */}
 
           {/* HEADER */}
-          <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+          <div className="border-b border-slate-200 px-4 py-3 flex items-center gap-3">
             <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors active:scale-95">
               <ChevronLeft className="w-6 h-6 text-slate-900" strokeWidth={2.5} />
             </button>
@@ -37,7 +37,7 @@ export function AccountDeactivationPage() {
           </div>
 
           {/* SCROLLABLE CONTENT */}
-          <div className="overflow-y-auto bg-white" style={{ maxHeight: 'calc(667px - 100px)' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(667px - 100px)' }}>
             <div className="px-6 py-8">
               
               {!isDeactivated ? (
@@ -82,7 +82,7 @@ export function AccountDeactivationPage() {
                     >
                       {isLoading ? 'Deactivating...' : 'Deactivate my account'}
                     </button>
-                    <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
+                    <button className="w-full hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
                       Cancel deactivation
                     </button>
                   </div>

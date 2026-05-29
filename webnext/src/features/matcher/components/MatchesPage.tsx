@@ -22,7 +22,7 @@ export default function MatchesPage() {
   const isLoading = matchesLoading || receivedLoading;
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 pb-24 pt-5 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
         <header className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">
@@ -36,7 +36,7 @@ export default function MatchesPage() {
 
         {/* ── Pending interests ── */}
         {received.length > 0 && (
-          <section className="mb-5 rounded-lg border border-[#EADDD2] bg-white p-4">
+          <section className="mb-5 rounded-lg border border-[#EADDD2] p-4">
             <div className="mb-3 flex items-center gap-2">
               <UserCheck className="h-5 w-5 text-[#7A2432]" />
               <h2 className="font-semibold">Pending interests</h2>
@@ -45,7 +45,7 @@ export default function MatchesPage() {
               {received.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-md bg-[#F8EFE6] p-3"
+                  className="flex items-center justify-between rounded-md p-3"
                 >
                   <div>
                     <p className="text-sm font-semibold">
@@ -59,7 +59,7 @@ export default function MatchesPage() {
                     <button
                       onClick={() => rejectMutation.mutate(item.id)}
                       disabled={rejectMutation.isPending}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-white text-[#746767] disabled:opacity-50"
+                      className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -83,7 +83,7 @@ export default function MatchesPage() {
             {[...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="flex animate-pulse items-center gap-3 rounded-lg border border-[#EADDD2] bg-white p-4"
+                className="flex animate-pulse items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
               >
                 <div className="h-14 w-14 rounded-full bg-[#EADDD2]" />
                 <div className="flex-1 space-y-2">
@@ -97,7 +97,7 @@ export default function MatchesPage() {
 
         {/* ── Empty state ── */}
         {!isLoading && matches.length === 0 && (
-          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] bg-white p-8 text-center">
+          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
               <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No mutual matches yet</h2>
@@ -119,7 +119,7 @@ export default function MatchesPage() {
           {matches.map((match) => (
             <div
               key={match.id}
-              className="flex items-center gap-3 rounded-lg border border-[#EADDD2] bg-white p-4"
+              className="flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
             >
               <img
                 src={match.profile_image || "/default.png"}

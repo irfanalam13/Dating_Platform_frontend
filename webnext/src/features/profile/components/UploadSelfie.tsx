@@ -94,7 +94,7 @@ export default function UploadSelfie() {
 
   return (
     <div className="max-w-xl mx-auto p-6 mt-8">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/50 dark:border-zinc-800/50 shadow-2xl p-8 transition-all">
+      <div className="rounded-3xl border border-gray-200/50 dark:border-zinc-800/50 shadow-2xl p-8 transition-all">
         
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -127,7 +127,7 @@ export default function UploadSelfie() {
               className="hidden"
             />
             <div className="flex flex-col items-center space-y-4">
-              <div className="p-4 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-700">
+              <div className="p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-zinc-700">
                 <UploadCloud size={32} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
@@ -177,7 +177,7 @@ export default function UploadSelfie() {
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder="How are you feeling today?"
-            className="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-2xl text-gray-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all text-sm"
+            className="w-full px-4 py-3 dark:bg-zinc-900/50 border border-gray-200 dark:border-zinc-800 rounded-2xl text-gray-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all text-sm"
             rows={3}
           />
         </div>

@@ -15,9 +15,9 @@ export default function ChatPage() {
 
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+      <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800">
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">

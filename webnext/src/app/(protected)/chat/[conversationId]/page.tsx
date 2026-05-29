@@ -81,8 +81,8 @@ export default function ConversationPage() {
   };
 
   return (
-    <main className="flex min-h-[100dvh] flex-col bg-[#FFF8F1] text-[#2D2424]">
-      <header className="mx-auto flex w-full max-w-md items-center gap-2 border-b border-[#EADDD2] bg-white px-4 py-3">
+    <main className="flex min-h-[100dvh] flex-col text-[#2D2424]">
+      <header className="mx-auto flex w-full max-w-md items-center gap-2 border-b border-[#EADDD2] px-4 py-3">
         <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -110,19 +110,19 @@ export default function ConversationPage() {
         {isLoading && <p className="text-sm text-[#746767]">Loading messages...</p>}
         
         {!isLoading && messagesList.length === 0 && (
-          <div className="mt-20 rounded-lg border border-[#EADDD2] bg-white p-5 text-center text-sm leading-6 text-[#746767]">
+          <div className="mt-20 rounded-lg border border-[#EADDD2] p-5 text-center text-sm leading-6 text-[#746767]">
             Start with respect and curiosity. Share only what you are comfortable sharing.
           </div>
         )}
         
         {messagesList.map((message: any) => (
-          <div key={message?.id} className="max-w-[82%] rounded-lg border border-[#EADDD2] bg-white p-3 text-sm leading-6 shadow-sm">
+          <div key={message?.id} className="max-w-[82%] rounded-lg border border-[#EADDD2] p-3 text-sm leading-6 shadow-sm">
             {message?.content}
           </div>
         ))}
       </section>
 
-      <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-md gap-2 border-t border-[#EADDD2] bg-white p-3">
+      <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-md gap-2 border-t border-[#EADDD2] p-3">
         <input
           value={content}
           onChange={(event) => setContent(event.target.value)}
@@ -136,7 +136,7 @@ export default function ConversationPage() {
 
       {showReport && participant?.profile_id && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4">
-          <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center">
+          <div className="w-full max-w-sm rounded-lg p-5 text-center">
             <Flag className="mx-auto mb-3 h-8 w-8 text-[#7A2432]" />
             <h2 className="text-lg font-semibold">Report this conversation?</h2>
             <p className="mt-2 text-sm leading-6 text-[#746767]">Your report goes to the safety team. The other person will not be notified.</p>

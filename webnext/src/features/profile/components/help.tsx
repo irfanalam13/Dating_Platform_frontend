@@ -19,10 +19,10 @@ export default function HelpSectionPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 flex items-center justify-center">
+    <div className="min-h-screen py-8 px-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* Mobile Phone Frame */}
-        {/* <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-slate-900">
+        {/* <div className="rounded-3xl shadow-2xl overflow-hidden border-8 border-slate-900">
            */}
           {/* STATUS BAR */}
           {/* <div className="bg-slate-900 text-white px-6 py-2 flex justify-between items-center text-xs font-semibold">
@@ -35,7 +35,7 @@ export default function HelpSectionPage() {
           </div> */}
 
           {/* HEADER */}
-          <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+          <div className="border-b border-slate-200 px-4 py-3 flex items-center gap-3">
             <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:scale-95">
               <ChevronLeft className="w-6 h-6 text-slate-900" strokeWidth={2.5} />
             </button>
@@ -43,7 +43,7 @@ export default function HelpSectionPage() {
           </div>
 
           {/* SCROLLABLE CONTENT */}
-          <div className="overflow-y-auto bg-white" style={{ maxHeight: 'calc(667px - 100px)' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(667px - 100px)' }}>
             <div className="px-6 py-6">
               
               {/* Search Bar */}
@@ -54,7 +54,7 @@ export default function HelpSectionPage() {
                     placeholder="Search your query"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 pl-4 pr-12 bg-slate-100 rounded-full border-2 border-transparent focus:border-slate-400 focus:bg-white outline-none transition-all text-sm"/>
+                    className="w-full px-4 py-3 pl-4 pr-12 rounded-full border-2 border-transparent focus:border-slate-400 focus:bg-white outline-none transition-all text-sm"/>
                   <Search className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
@@ -65,11 +65,7 @@ export default function HelpSectionPage() {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full p-4 rounded-xl transition-all duration-200 text-left font-semibold text-sm ${
-                      selectedCategory === category.id
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'bg-slate-100 border-2 border-slate-200 hover:border-blue-300 text-slate-900'
-                    }`}
+                    className={`w-full p-4 rounded-xl transition-all duration-200 text-left font-semibold text-sm ${ selectedCategory === category.id ? 'bg-blue-500 text-white shadow-lg' : 'bg-slate-100 border-2 border-slate-200 hover:border-blue-300 text-slate-900' }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{category.icon}</span>
@@ -80,7 +76,7 @@ export default function HelpSectionPage() {
               </div>
 
               {/* Contact Support */}
-              <div className="mt-8 p-4   rounded-xl text-center">
+              <div className="mt-8 p-4 rounded-xl text-center">
                 {/* <div className="mt-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-center"></div> */}
                   Couldn't find your query on search?
                 

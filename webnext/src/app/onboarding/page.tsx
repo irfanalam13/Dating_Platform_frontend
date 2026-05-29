@@ -23,7 +23,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-6 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 py-6 text-[#2D2424]">
       <div className="mx-auto flex min-h-[calc(100dvh-48px)] max-w-md flex-col">
         <div className="mb-8 grid grid-cols-3 gap-2">
           {[0, 1, 2].map((item) => (
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
               <ShieldCheck className="h-10 w-10 text-[#7A2432]" />
               <h1 className="text-2xl font-semibold">Choose your intention</h1>
               {["Serious Relationship", "Marriage"].map((item) => (
-                <button key={item} onClick={() => setIntent(item)} className={`h-16 w-full rounded-lg border px-4 text-left font-semibold ${intent === item ? "border-[#7A2432] bg-[#F8EFE6] text-[#7A2432]" : "border-[#EADDD2] bg-white"}`}>
+                <button key={item} onClick={() => setIntent(item)} className={`h-16 w-full rounded-lg border px-4 text-left font-semibold ${intent === item ? "border-[#7A2432] text-[#7A2432]" : "border-[#EADDD2] bg-white"}`}>
                   {item}
                 </button>
               ))}
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
                 ["true", "Public profile"],
                 ["false", "Private profile"],
               ].map(([value, label]) => (
-                <button key={value} onClick={() => setPrivacy(value)} className={`h-14 w-full rounded-lg border px-4 text-left font-semibold ${privacy === value ? "border-[#7A2432] bg-[#F8EFE6] text-[#7A2432]" : "border-[#EADDD2] bg-white"}`}>
+                <button key={value} onClick={() => setPrivacy(value)} className={`h-14 w-full rounded-lg border px-4 text-left font-semibold ${privacy === value ? "border-[#7A2432] text-[#7A2432]" : "border-[#EADDD2] bg-white"}`}>
                   {label}
                 </button>
               ))}
@@ -70,7 +70,7 @@ export default function OnboardingPage() {
         </motion.section>
 
         <div className="grid grid-cols-2 gap-3">
-          <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] bg-white font-semibold disabled:opacity-40">
+          <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] font-semibold disabled:opacity-40">
             Back
           </button>
           {step < 2 ? (

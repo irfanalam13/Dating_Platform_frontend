@@ -38,10 +38,10 @@ export default function SettingsPage() {
   });
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
         <header className="mb-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white">
+          <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]">
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
@@ -50,7 +50,7 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] bg-white p-4">
+        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
           <SectionTitle icon={Lock} title="Account privacy" detail="MVP privacy works with your Django privacy app." />
           <Toggle
             label="Public profile"
@@ -67,12 +67,12 @@ export default function SettingsPage() {
             checked={privacy?.show_location ?? true}
             onChange={(value) => privacyMutation.mutate({ show_location: value })}
           />
-          <div className="mt-3 rounded-md bg-[#F8EFE6] p-3 text-sm text-[#746767]">
+          <div className="mt-3 rounded-md p-3 text-sm text-[#746767]">
             Messages are locked to mutual matches for MVP safety.
           </div>
         </section>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] bg-white p-4">
+        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
           <SectionTitle icon={ShieldCheck} title="Browse comfort" detail="Use private browsing and blur controls." />
           <Toggle
             label="Browse anonymously"
@@ -86,14 +86,14 @@ export default function SettingsPage() {
           />
         </section>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] bg-white p-4">
+        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
           <SectionTitle icon={SlidersHorizontal} title="Match preferences" detail="Basic filters are powered by profile and preference APIs." />
           <button onClick={() => router.push("/profile/edit")} className="mt-3 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white">
             Update profile and preferences
           </button>
         </section>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] bg-white p-4">
+        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
           <SectionTitle icon={UserRound} title="Blocked contacts" detail="People you block are hidden from discover and chat." />
           {blocked.length === 0 && <p className="mt-3 text-sm text-[#746767]">No blocked users.</p>}
           <div className="mt-3 space-y-2">
@@ -109,12 +109,12 @@ export default function SettingsPage() {
         </section>
 
         <section className="mb-4 grid grid-cols-2 gap-3">
-          <button onClick={() => router.push("/college")} className="rounded-lg border border-[#EADDD2] bg-white p-4 text-left">
+          <button onClick={() => router.push("/college")} className="rounded-lg border border-[#EADDD2] p-4 text-left">
             <GraduationCap className="mb-3 h-5 w-5 text-[#7A2432]" />
             <span className="block font-semibold">College Mode</span>
             <span className="block text-xs text-[#746767]">Student verification</span>
           </button>
-          <button className="rounded-lg border border-[#EADDD2] bg-white p-4 text-left">
+          <button className="rounded-lg border border-[#EADDD2] p-4 text-left">
             <Bell className="mb-3 h-5 w-5 text-[#7A2432]" />
             <span className="block font-semibold">Subscription</span>
             <span className="block text-xs text-[#746767]">Minimal MVP emphasis</span>
@@ -126,7 +126,7 @@ export default function SettingsPage() {
           <button
             onClick={() => logout.mutate()}
             disabled={logout.isPending}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white text-sm font-semibold text-[#7A2432] disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 text-sm font-semibold text-[#7A2432] disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
             {logout.isPending ? "Logging out..." : "Log out"}
@@ -140,7 +140,7 @@ export default function SettingsPage() {
 function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: string; detail: string }) {
   return (
     <div className="mb-3 flex gap-3">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#F8EFE6] text-[#7A2432]">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[#7A2432]">
         <Icon className="h-5 w-5" />
       </span>
       <div>

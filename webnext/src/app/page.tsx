@@ -14,7 +14,7 @@ export default function Page() {
   }, [loading, isAuthenticated, router]);
 
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-[#FFF8F1] text-sm text-[#746767]">
+    <main className="grid min-h-[100dvh] place-items-center text-sm text-[#746767]">
       Opening your app...
     </main>
   );

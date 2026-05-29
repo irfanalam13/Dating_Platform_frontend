@@ -80,7 +80,7 @@ export default function SocialLinksManager() {
             return (
               <div
                 key={link.id}
-                className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3"
+                className="flex items-center gap-3 border border-gray-100 rounded-2xl px-4 py-3"
               >
                 <span className="text-xl">{meta?.icon ?? "🔗"}</span>
                 <div className="flex-1 min-w-0">
@@ -119,7 +119,7 @@ export default function SocialLinksManager() {
             placeholder={
               PLATFORMS.find((p) => p.value === addingPlatform)?.placeholder
             }
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 bg-white"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300"
             autoFocus
           />
           {formError && <p className="text-xs text-red-500">{formError}</p>}

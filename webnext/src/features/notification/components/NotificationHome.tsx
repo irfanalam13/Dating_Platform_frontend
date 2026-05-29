@@ -88,14 +88,14 @@ export default function NotificationHome() {
   };
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 pb-24 pt-5 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
         <header className="mb-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
               aria-label="Go back"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] bg-white"
+              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -108,7 +108,7 @@ export default function NotificationHome() {
             <button
               onClick={() => markAllRead()}
               disabled={isMarkingAll}
-              className="shrink-0 rounded-full border border-[#EADDD2] bg-white px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
+              className="shrink-0 rounded-full border border-[#EADDD2] px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
             >
               {isMarkingAll ? "Marking..." : "Mark all read"}
             </button>
@@ -118,13 +118,13 @@ export default function NotificationHome() {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-lg border border-[#EADDD2] bg-white" />
+              <div key={i} className="h-20 animate-pulse rounded-lg border border-[#EADDD2]" />
             ))}
           </div>
         )}
 
         {!isLoading && data.length === 0 && (
-          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] bg-white p-8 text-center">
+          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
               <Bell className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No notifications yet</h2>

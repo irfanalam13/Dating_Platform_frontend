@@ -61,7 +61,7 @@
 //   };
 
 //   return (
-//     <div className=" flex items-center justify-center px-4 mt-0">
+//     <div className="flex items-center justify-center px-4 mt-0">
       
 //       <motion.form
 //         initial={{ opacity: 0, y: 40 }}
@@ -313,9 +313,9 @@ export default function RegisterForm() {
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md p-8 rounded-3xl bg-white shadow-xl text-center space-y-4"
+          className="w-full max-w-md p-8 rounded-3xl shadow-xl text-center space-y-4"
         >
-          <div className="h-16 w-16 rounded-full bg-[#FFF0F2] flex items-center justify-center mx-auto">
+          <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto">
             <Mail className="h-8 w-8 text-[#7A2432]" />
           </div>
           <h2 className="text-2xl font-bold text-[#2D2424]">Check your email</h2>

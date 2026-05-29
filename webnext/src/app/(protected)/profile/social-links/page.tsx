@@ -10,7 +10,7 @@ export default function SocialLinksPage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4">
+    <main className="min-h-screen py-8 px-4">
       <div className="max-w-sm mx-auto">
 
         {/* Header */}
@@ -30,7 +30,7 @@ export default function SocialLinksPage() {
         </div>
 
         {/* Manager */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+        <div className="rounded-3xl shadow-sm border border-gray-100 p-5">
           <SocialLinksManager />
         </div>
 

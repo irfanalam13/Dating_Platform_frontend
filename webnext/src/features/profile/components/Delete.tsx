@@ -20,8 +20,7 @@ export default function AccountDeletionPage() {
   };
 
   return (
-    <div className=
-    "min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 flex items-center justify-center">
+    <div className="min-h-screen py-8 px-4 flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* Mobile Phone Frame */}
         <div className="">
@@ -37,7 +36,7 @@ export default function AccountDeletionPage() {
           </div> */}
 
           {/* HEADER */}
-          <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+          <div className="border-b border-slate-200 px-4 py-3 flex items-center gap-3">
             <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:scale-95">
               <ChevronLeft className="w-6 h-6 text-slate-900" strokeWidth={2.5} />
             </button>
@@ -45,7 +44,7 @@ export default function AccountDeletionPage() {
           </div>
 
           {/* SCROLLABLE CONTENT */}
-          <div className="overflow-y-auto bg-white" style={{ maxHeight: 'calc(667px - 100px)' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(667px - 100px)' }}>
             <div className="px-6 py-8">
               
               {step === 'confirm' && (
@@ -86,7 +85,7 @@ export default function AccountDeletionPage() {
                       {isLoading ? 'Deleting...' : 'Yes, delete my account'}
                     </button>
                     <button 
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
+                    className="w-full hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
                       No, cancel the deletion
                     </button>
                   </div>
@@ -128,7 +127,7 @@ export default function AccountDeletionPage() {
                     >
                       {isLoading ? 'Confirming...' : 'Confirm deletion'}
                     </button>
-                    <button className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
+                    <button className="w-full hover:bg-slate-200 text-slate-900 font-bold py-3 rounded-full transition-colors text-sm">
                       Cancel
                     </button>
                   </div>

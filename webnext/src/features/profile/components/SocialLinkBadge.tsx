@@ -61,10 +61,7 @@ export default function SocialLinkBadge({ platform, url }: SocialLinkBadgeProps)
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`
-        inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm
-        font-medium transition-colors duration-150 ${meta.color}
-      `}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors duration-150 ${meta.color}`}
     >
       <span>{meta.icon}</span>
       <span>{meta.label}</span>

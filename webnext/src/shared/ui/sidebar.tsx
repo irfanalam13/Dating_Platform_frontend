@@ -14,7 +14,7 @@
 //   const router = useRouter();
 
 //   return (
-//     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md py-4 px-8 flex justify-between items-center max-w-lg mx-auto rounded-t-2xl md:max-w-2xl z-50">
+//     <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-200 shadow-md py-4 px-8 flex justify-between items-center max-w-lg mx-auto rounded-t-2xl md:max-w-2xl z-50">
 //       <button 
 //         onClick={() => router.push('/home')}
 //         className="text-black hover:text-gray-600 transition-colors"

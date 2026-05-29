@@ -30,9 +30,9 @@ export default function CollegeModePage() {
   const verified = status === "approved";
 
   return (
-    <main className="min-h-[100dvh] bg-[#FFF8F1] px-4 py-5 text-[#2D2424]">
+    <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 rounded-lg border border-[#EADDD2] bg-white p-5">
+        <header className="mb-5 rounded-lg border border-[#EADDD2] p-5">
           <GraduationCap className="mb-4 h-10 w-10 text-[#7A2432]" />
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">College Mode</p>
           <h1 className="mt-1 text-2xl font-semibold">Campus connections with verification</h1>
@@ -40,7 +40,7 @@ export default function CollegeModePage() {
         </header>
 
         {!verified && (
-          <form onSubmit={submit} className="mb-5 space-y-3 rounded-lg border border-[#EADDD2] bg-white p-5">
+          <form onSubmit={submit} className="mb-5 space-y-3 rounded-lg border border-[#EADDD2] p-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-[#7A2432]">
               <ShieldCheck className="h-4 w-4" />
               Verification status: {status.replace("_", " ")}
@@ -59,7 +59,7 @@ export default function CollegeModePage() {
 
         <div className="space-y-3">
           {(data?.sections ?? []).map((section) => (
-            <div key={section.id} className={`rounded-lg border border-[#EADDD2] bg-white p-4 ${!verified ? "opacity-60" : ""}`}>
+            <div key={section.id} className={`rounded-lg border border-[#EADDD2] p-4 ${!verified ? "opacity-60" : ""}`}>
               <h2 className="font-semibold">{section.title}</h2>
               <p className="mt-1 text-sm leading-6 text-[#746767]">{section.description}</p>
               {!verified && <p className="mt-2 text-xs font-semibold text-[#B78A3B]">Available after student verification</p>}

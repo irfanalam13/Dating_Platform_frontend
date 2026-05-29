@@ -49,7 +49,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const isTyping = typingUsers.size > 0
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-950">
+    <div className="flex flex-col h-full">
 
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800">

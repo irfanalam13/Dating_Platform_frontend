@@ -8,7 +8,7 @@ export default function ProfilePage({ data }: any) {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className="min-h-screen pb-20">
 
       {/* ===== Top Image Header ===== */}
       <div className="relative h-[420px] w-full">
@@ -27,7 +27,7 @@ export default function ProfilePage({ data }: any) {
           
           <button
             onClick={() => router.push("/settings")}
-            className="p-2 bg-white/80 backdrop-blur rounded-full shadow"
+            className="p-2 backdrop-blur rounded-full shadow"
           >
             <Settings className="w-5 h-5 text-gray-700" />
           </button>
@@ -130,14 +130,7 @@ export default function ProfilePage({ data }: any) {
         </div>
 
         {/* Action Button */}
-        <button className="
-          w-full mt-4
-          py-3 rounded-2xl
-          bg-gradient-to-r from-pink-500 to-red-500
-          text-white font-semibold
-          flex items-center justify-center gap-2
-          active:scale-95 transition
-        ">
+        <button className="w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-red-500 text-white font-semibold flex items-center justify-center gap-2 active:scale-95 transition">
           <Heart className="w-5 h-5" />
           Like Profile
         </button>
