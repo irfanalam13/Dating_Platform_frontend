@@ -3,14 +3,10 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Cookies from "js-cookie";
 import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
-import { refreshOnce } from "@/shared/api/client";
-
-// ✅ Helper to check hint cookie
-function hasRefreshTokenHint(): boolean {
-  return document.cookie.includes("rt_exists=true");
-}
+import { getAccessToken, refreshOnce } from "@/shared/api/client";
 
 export function useCurrentUser() {
   const { user: storeUser, setAuth } = useAuthStore();
@@ -20,15 +16,14 @@ export function useCurrentUser() {
 
     queryFn: async () => {
       try {
-        // ✅ Skip refresh entirely if no hint cookie
-        if (!hasRefreshTokenHint()) {
-          return null;
-        }
-
-        const token = await refreshOnce();
+        const loggedIn = Cookies.get("logged_in") === "true";
+        let token = getAccessToken();
 
         if (!token) {
-          setAuth(null);
+          token = await refreshOnce();
+        }
+
+        if (!token && !loggedIn) {
           return null;
         }
 
@@ -37,17 +32,18 @@ export function useCurrentUser() {
           ?? (res as Record<string, unknown>)?.user
           ?? res
           ?? null;
-
       } catch {
-        setAuth(null);
+        if (Cookies.get("logged_in") !== "true" && !getAccessToken()) {
+          setAuth(null);
+        }
         return null;
       }
     },
 
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
     staleTime: Infinity,
   });
 
@@ -58,7 +54,7 @@ export function useCurrentUser() {
       if (JSON.stringify(storeUser) !== JSON.stringify(data)) {
         setAuth(data as Parameters<typeof setAuth>[0]);
       }
-    } else if (storeUser !== null) {
+    } else if (storeUser !== null && Cookies.get("logged_in") !== "true") {
       setAuth(null);
     }
   }, [data, isFetched, storeUser, setAuth]);

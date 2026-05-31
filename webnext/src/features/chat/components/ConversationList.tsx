@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function ConversationList({ activeId, onSelect }: Props) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['conversations'],
     queryFn: getConversations,
     refetchInterval: 30_000,
@@ -29,7 +29,13 @@ export default function ConversationList({ activeId, onSelect }: Props) {
           </div>
         )}
 
-        {data?.results.map((conv) => (
+        {!isLoading && error && (
+          <div className="px-4 py-12 text-center text-sm text-red-500">
+            Failed to load conversations. Please try again.
+          </div>
+        )}
+
+        {!isLoading && !error && data?.results?.map((conv) => (
           <ConversationItem
             key={conv.id}
             conversation={conv}
@@ -38,7 +44,7 @@ export default function ConversationList({ activeId, onSelect }: Props) {
           />
         ))}
 
-        {!isLoading && !data?.results.length && (
+        {!isLoading && !error && !data?.results?.length && (
           <div className="px-4 py-12 text-center text-sm text-gray-400">
             No conversations yet
           </div>

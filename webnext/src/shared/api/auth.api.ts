@@ -108,8 +108,7 @@
 
 
 
-import api from "./client";
-import { setAccessToken } from "./client";
+import api, { parseAccessToken, setAccessToken } from "./client";
 import {
   LoginPayload,
   RegisterPayload,
@@ -120,23 +119,42 @@ import {
   ResendVerificationPayload,
 } from "../types/auth.types";
 
+export function extractAccessToken(payload: unknown): string | null {
+  return parseAccessToken(payload);
+}
+
 export async function loginUser(credentials: LoginPayload) {
   const res = await api.post("/auth/login/", credentials);
-  const refreshRes = await api.post("/auth/refresh/");
-  console.log("REFRESH RESPONSE:", JSON.stringify(refreshRes?.data, null, 2));
+
+  // Try to get token from login response
+  const fromLogin = extractAccessToken(res.data);
+  if (fromLogin) {
+    setAccessToken(fromLogin);
+    return res;
+  }
+
+  // If no token in login response, the backend likely uses httpOnly cookies
+  // Call refresh to get the access token from the cookie
   try {
+    console.log("📍 No token in login response, calling refresh...");
     const refreshRes = await api.post("/auth/refresh/");
-    const token = refreshRes?.data?.data?.access || null;
+    const token = extractAccessToken(refreshRes.data);
+    
     if (token) {
       setAccessToken(token);
-      console.log("✅ Token obtained after login:", token.slice(0, 20) + "...");
+      console.log("✅ Token obtained from refresh after login:", token.slice(0, 20) + "...");
+      // Return the original login response but with token now stored
+      return res;
     } else {
-      console.warn("⚠️ Refresh returned no token:", refreshRes?.data);
+      console.warn("⚠️ Refresh also returned no token");
+      // Still return login response - user data is there, just no token
+      return res;
     }
   } catch (e) {
     console.warn("⚠️ Could not get access token after login:", e);
+    // Return login response anyway - let the app try to proceed
+    return res;
   }
-  return res;
 }
 
 export async function registerUser(credentials: RegisterPayload) {
@@ -148,18 +166,9 @@ export async function registerUser(credentials: RegisterPayload) {
 export async function verifyEmail(payload: VerifyEmailPayload): Promise<VerifyEmailResponse> {
   const res = await api.post("/auth/verify_email/", payload);
 
-  // After verification, store the access token and set cookies
-  try {
-    const token =
-      res?.data?.data?.tokens?.access || null;
-    if (token) {
-      setAccessToken(token);
-      console.log("✅ Token obtained after email verification");
-    }
-    // Also call refresh to sync httpOnly cookie
-    await api.post("/auth/refresh/");
-  } catch (e) {
-    console.warn("⚠️ Could not sync token after verification:", e);
+  const token = parseAccessToken(res.data);
+  if (token) {
+    setAccessToken(token);
   }
 
   return res.data;
@@ -186,14 +195,6 @@ export const logoutUser = async (refresh: string) => {
 };
 
 export const getMe = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/auth/me/`,
-    {
-      method: "GET",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-  if (!res.ok) return null;
-  return res.json();
+  const res = await api.get("/auth/me/");
+  return res.data;
 };

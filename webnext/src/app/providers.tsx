@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useAuth } from "@/features/auth";
 import { NotificationProvider } from "@/features/notification/context/NotificationContext";
+import { hydrateAccessToken } from "@/shared/api/client";
+import { getMyProfile } from "@/shared/api/profile.api";
 
 // ─────────────────────────────────────────────────────────
 // Public routes — no auth check, no loading spinner
@@ -22,6 +24,22 @@ function isPublicRoute(pathname: string): boolean {
 // QueryClientProvider (hooks need the client above them)
 // ─────────────────────────────────────────────────────────
 
+function AuthHydration() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const token = hydrateAccessToken();
+    if (token) {
+      void queryClient.prefetchQuery({
+        queryKey: ["myProfile"],
+        queryFn: getMyProfile,
+      });
+    }
+  }, [queryClient]);
+
+  return null;
+}
+
 function InnerProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { loading } = useAuth(); // ← "loading" not "isLoading" — matches useCurrentUser
@@ -37,6 +55,7 @@ function InnerProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <NotificationProvider>
+      <AuthHydration />
       {children}
     </NotificationProvider>
   );

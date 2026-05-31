@@ -38,6 +38,14 @@ function isAlwaysAllowed(pathname: string): boolean {
 // Middleware
 // ─────────────────────────────────────────────────────────
 
+function normalizeNextPath(pathname: string): string {
+  // Backend API path — not a frontend page
+  if (pathname === "/profile/me" || pathname.startsWith("/profile/me/")) {
+    return "/profile";
+  }
+  return pathname;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -46,10 +54,17 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // API-style path opened in browser → real profile page
+  if (pathname === "/profile/me" || pathname.startsWith("/profile/me/")) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
   // 2. Read auth signal from cookie
   //    "logged_in" is a plain cookie your frontend sets on login
   //    It is NOT the httpOnly refresh token — middleware can't read httpOnly
-  const loggedIn = request.cookies.get("logged_in")?.value === "true";
+  const loggedIn =
+    request.cookies.get("logged_in")?.value === "true" ||
+    !!request.cookies.get("access_token")?.value;
 
   // 3. Logged-in user hitting a public route → send to app
   if (isPublicRoute(pathname) && loggedIn) {
@@ -61,7 +76,7 @@ export function proxy(request: NextRequest) {
     const loginUrl = new URL("/login", request.url);
 
     // Preserve the intended destination so we can redirect back after login
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", normalizeNextPath(pathname));
 
     return NextResponse.redirect(loginUrl);
   }

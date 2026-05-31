@@ -31,10 +31,13 @@
 import { getAccessToken, refreshOnce } from '@/shared/api/client'
 
 export const getFreshToken = async (): Promise<string | null> => {
+  const existing = getAccessToken()
+  if (existing) return existing
+
   const token = await refreshOnce()
   if (!token) {
     console.warn('getFreshToken: refresh failed — no token available')
-    return null              // ✅ return null, not the expired token
+    return null
   }
   return token
 }

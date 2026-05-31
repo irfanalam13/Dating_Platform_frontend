@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { isAxiosError } from "axios";
 import {
   BadgeCheck,
   MapPin,
@@ -17,6 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useMyProfile } from "@/features/profile/hooks/useProfile";
+import { refreshOnce } from "@/shared/api/client";
 import type { Profile } from "@/shared/types/profile.types";
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
@@ -158,11 +161,21 @@ function Section({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProfileClient() {
   const router = useRouter();
-  const { data, isLoading } = useMyProfile();
+  const { data, isLoading, isPending, isError, error, refetch, isFetching } = useMyProfile();
 
-  if (isLoading) return <ProfileSkeleton />;
+  useEffect(() => {
+    void refreshOnce().then(() => refetch());
+  }, [refetch]);
 
-  if (!data) {
+  useEffect(() => {
+    if (isAxiosError(error) && error.response?.status === 404) {
+      router.replace("/profile/edit");
+    }
+  }, [error, router]);
+
+  if (isLoading || isPending || isFetching) return <ProfileSkeleton />;
+
+  if (!data || isError) {
     return (
       <main className="grid min-h-[100dvh] place-items-center bg-[#FFF8F1] px-4 text-center">
         <div>
@@ -173,10 +186,17 @@ export default function ProfileClient() {
             Something went wrong loading your profile.
           </p>
           <button
-            onClick={() => router.refresh()}
-            className="mt-4 rounded-lg bg-[#7A2432] px-5 py-2.5 text-sm font-semibold text-white"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="mt-4 rounded-lg bg-[#7A2432] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-70"
           >
-            Try again
+            {isFetching ? "Loading..." : "Try again"}
+          </button>
+          <button
+            onClick={() => router.push("/profile/edit")}
+            className="mt-3 block w-full text-sm font-medium text-[#7A2432] underline"
+          >
+            Create or edit profile
           </button>
         </div>
       </main>

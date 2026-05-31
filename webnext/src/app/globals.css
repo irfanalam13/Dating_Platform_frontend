@@ -17,6 +17,13 @@ body {
 
 .log-font {
   font-family: "Beau Rivage", cursive;
-  
 }
 
+/* Hide scrollbar for horizontal scroll areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

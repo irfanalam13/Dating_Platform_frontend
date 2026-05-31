@@ -115,27 +115,60 @@ export function getAccessToken(): string | null {
   return null;
 }
 
-// shared/api/client.ts — add this
+/** Parse JWT access token from any backend envelope (login, refresh, verify). */
+export function parseAccessToken(payload: unknown): string | null {
+  const p = payload as Record<string, unknown> | null;
+  if (!p) return null;
 
-let refreshPromise: Promise<string | null> | null = null
+  const data = p.data as Record<string, unknown> | undefined;
+  const nested = data?.data as Record<string, unknown> | undefined;
+  const tokens =
+    (nested?.tokens ?? data?.tokens ?? p.tokens) as Record<string, unknown> | undefined;
 
+  const candidates = [
+    nested?.access,
+    tokens?.access,
+    data?.access,
+    p.access,
+    (p as { access_token?: string }).access_token,
+  ];
+
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length > 0) return c;
+  }
+  return null;
+}
+
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Localhost + remote API: refresh cookies often fail cross-origin.
+ * Prefer the JWT already stored from login (sessionStorage).
+ */
 export const refreshOnce = async (): Promise<string | null> => {
-  if (refreshPromise) return refreshPromise
+  const existing = getAccessToken();
+  if (existing) return existing;
 
-  refreshPromise = api.post('/auth/refresh/')
-    .then(res => {
-      const token = res?.data?.data?.access ?? null
-      if (token) setAccessToken(token)
-      return token
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = api
+    .post("/auth/refresh/")
+    .then((res) => {
+      const token = parseAccessToken(res.data);
+      if (token) setAccessToken(token);
+      return token ?? getAccessToken();
     })
-    .catch(() => {
-      return null
-    })
+    .catch(() => getAccessToken())
     .finally(() => {
-      refreshPromise = null    // ✅ reset immediately, not after 5s
-    })
+      refreshPromise = null;
+    });
 
-  return refreshPromise
+  return refreshPromise;
+}
+
+/** Restore token from sessionStorage into memory on app load. */
+export function hydrateAccessToken(): string | null {
+  return getAccessToken();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -188,6 +221,11 @@ function isAuthRoute(url: string): boolean {
 
 api.interceptors.request.use(
   (config) => {
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     if (typeof document !== "undefined") {
       const match = document.cookie.match(/csrftoken=([^;]+)/);
       if (match) {
@@ -243,16 +281,13 @@ api.interceptors.response.use(
         //   refreshRes?.data?.access_token         ||
         //   null;
         // interceptor in client.ts — fix this
-        const newToken =
-          refreshRes?.data?.data?.access ||  // 👈 add this as first check
-          refreshRes?.data?.data?.tokens?.access ||
-          refreshRes?.data?.tokens?.access ||
-          refreshRes?.data?.access ||
-          null;
+        const newToken = parseAccessToken(refreshRes.data);
 
         if (newToken) {
           setAccessToken(newToken);
-          console.log("✅ Token refreshed via interceptor");
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        } else if (getAccessToken()) {
+          originalRequest.headers.Authorization = `Bearer ${getAccessToken()}`;
         }
 
         processQueue(null);
@@ -262,6 +297,11 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         isRefreshing = false;
+
+        // Keep session if we still have a stored access token (common on localhost + remote API)
+        if (getAccessToken()) {
+          return Promise.reject(error);
+        }
 
         console.error("REFRESH FAILED — forcing logout", refreshError);
         return forceLogout();

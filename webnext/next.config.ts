@@ -28,8 +28,13 @@
 // module.exports = nextConfig;
 
 
+import path from "path";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
+  // Allow opening dev app from LAN IP (e.g. http://192.168.135.1:3001)
+  allowedDevOrigins: ["192.168.135.1"],
   images: {
     remotePatterns: [
       // ✅ Unsplash

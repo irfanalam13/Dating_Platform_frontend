@@ -305,6 +305,7 @@ import { useRouter } from "next/navigation";
 import {
   registerUser,
   loginUser,
+  extractAccessToken,
   verifyEmail,
   forgotPassword,
   resetPassword,
@@ -313,7 +314,8 @@ import {
 import { useAuthStore } from "../store/auth.store";
 import { showSuccess, showError } from "@/shared/utils/toast";
 import Cookies from "js-cookie";
-import { setAccessToken } from "@/shared/api/client";
+import { setAccessToken, getAccessToken } from "@/shared/api/client";
+import { getMyProfile } from "@/shared/api/profile.api";
 
 // ─────────────────────────────────────────────────────────
 // Safe deep-get helper
@@ -438,6 +440,12 @@ export const useRegister = () => {
 // ─────────────────────────────────────────────────────────
 // Login
 // ─────────────────────────────────────────────────────────
+function sanitizeRedirectPath(next: string | null): string {
+  if (!next || !next.startsWith("/")) return "/dashboard";
+  if (next === "/profile/me" || next.startsWith("/profile/me/")) return "/profile";
+  return next;
+}
+
 export const useLogin = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
   const queryClient = useQueryClient();
@@ -447,14 +455,27 @@ export const useLogin = () => {
     mutationFn: loginUser,
 
     onSuccess: (res: unknown) => {
-      const token = extractToken(res);
+      const axiosData = (res as { data?: unknown })?.data;
+      const token = extractToken(res) ?? extractAccessToken(axiosData);
       const user  = extractUser(res);
+
+      // ✅ Allow login even if token wasn't in response
+      // (backend may use httpOnly cookies + loginUser already called refresh)
+      if (!token) {
+        console.warn("⚠️ No token in login response, but checking if refresh worked...");
+        // Try to get token from session storage (loginUser may have set it via refresh)
+        const storedToken = getAccessToken();
+        if (!storedToken) {
+          console.error("❌ No token available after login");
+          showError("Login OK but no access token available. Please try again.");
+          return;
+        }
+        console.log("✅ Token found in storage from refresh call");
+      }
 
       if (token) {
         setAccessToken(token);
         console.log("✅ Login token stored:", token.slice(0, 20) + "...");
-      } else {
-        console.warn("⚠️ No token in login response", res);
       }
 
       if (!user) {
@@ -466,8 +487,17 @@ export const useLogin = () => {
       setAuth(user as unknown as Parameters<typeof setAuth>[0]);
       queryClient.setQueryData(["authUser"], user);
       setLoggedInCookie();
+
+      void queryClient
+        .prefetchQuery({ queryKey: ["myProfile"], queryFn: getMyProfile })
+        .catch(() => {});
+
       showSuccess("Welcome back!");
-      router.push("/dashboard");
+      const next =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("next")
+          : null;
+      router.push(sanitizeRedirectPath(next));
     },
 
     onError: (err: unknown) => {

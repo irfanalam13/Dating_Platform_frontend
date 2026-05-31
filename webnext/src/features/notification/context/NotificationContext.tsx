@@ -28,6 +28,7 @@ import type {
   WSUserOnlineEvent,
   WSUserOfflineEvent,
   WSMessageReadEvent,
+  WSInterestClaimedEvent,
 } from "@/shared/types/notification.types";
 import {
   isNewMessageEvent,

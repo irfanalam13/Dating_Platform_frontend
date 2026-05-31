@@ -44,8 +44,9 @@ export interface Profile {
   is_complete: boolean;
   is_profile_public: boolean;
   verified: boolean;
+  is_upgraded?: boolean;
 
-  compatibility_tags?: string[]; // Add this line
+  compatibility_tags?: string[];// Add this line
 
   created_at: string;
   updated_at: string;

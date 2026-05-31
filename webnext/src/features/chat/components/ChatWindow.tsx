@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getConversations } from '@/shared/api/chat.api'
@@ -9,6 +8,7 @@ import { useChat } from '../hooks/useChat'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import TypingIndicator from './TypingIndicator'
+
 import Avatar from '@/features/profile/components/Avatar'
 import OnlineIndicator from './OnlineIndicator'
 import type { ConversationParticipant } from '@/shared/types/chat.types'
@@ -32,10 +32,10 @@ export default function ChatWindow({ conversationId }: Props) {
     queryFn: getConversations,
   })
 
-  const conversation = conversations?.results.find((c) => c.id === conversationId)
+  const conversation = conversations?.results?.find?.((c) => c.id === conversationId)
 
   const other: ConversationParticipant | undefined =
-    conversation?.participants.find((p) => p.id !== user?.id)
+    conversation?.participants?.find((p) => p.id !== user?.id)
 
   const isOtherOnline: boolean = other
     ? onlineUsers.has(other.id) || other.is_online
