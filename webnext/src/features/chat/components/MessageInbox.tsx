@@ -2,12 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, MessageCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import { Inter } from "next/font/google";
 import { getConversations } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
 import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
+
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 // ─────────────────────────────────────────────────────────
 // Helpers
@@ -56,34 +59,95 @@ export function MessageInbox() {
   ): ConversationParticipant | undefined =>
     participants.find((p) => p.id !== user?.id);
 
+  // Get all participants for the horizontal match bar
+  const matchParticipants = sorted
+    .map((conv) => {
+      const person = getOtherParticipant(conv.participants);
+      if (!person) return null;
+      const isOnline = onlineUsers.has(person.id) || person.is_online;
+      return { person, isOnline, conversationId: conv.id };
+    })
+    .filter(Boolean) as { person: ConversationParticipant; isOnline: boolean; conversationId: string }[];
+
   return (
-    <main className="min-h-[100dvh] text-[#2D2424]">
-      <div className="mx-auto max-w-md px-4 py-5">
+    <main
+      className={`${inter.className} min-h-[100dvh] text-[#1a1a2e] lg:min-h-screen`}
+      style={{
+        background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)",
+      }}
+    >
+      <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pb-24 pt-4">
 
         {/* Header */}
-        <header className="mb-5 flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold">Conversations</h1>
-            <p className="text-sm text-[#746767]">
-              Only mutual matches can message you.
-            </p>
+        <header className="mb-4 rounded-[28px] border border-white/70 bg-white/65 px-4 py-3 shadow-[0_10px_28px_rgba(16,24,40,0.10)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
+            >
+              <ArrowLeft className="h-4.5 w-4.5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#1a1a2e]">Message inbox</h1>
+            </div>
           </div>
         </header>
 
-        {/* Safety banner */}
-        <div className="mb-5 flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4">
-          <ShieldCheck className="h-5 w-5 shrink-0 text-[#3F7D63]" />
-          <p className="text-sm text-[#746767]">
-            Report and block controls are available in every chat.
-          </p>
+        {/* Search bar */}
+        <div className="mb-5">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search your matches"
+              className="w-full rounded-full border border-white/70 bg-white/75 py-3 pl-5 pr-12 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none shadow-[0_8px_20px_rgba(16,24,40,0.08)] backdrop-blur-md transition-all focus:border-[#4cc9f0] focus:ring-2 focus:ring-[#4cc9f0]/20"
+            />
+            <Search className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#1a1a2e]" />
+          </div>
         </div>
+
+        {/* Horizontal match avatars */}
+        {matchParticipants.length > 0 && (
+          <div className="mb-4 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-3 pb-3">
+              {matchParticipants.map(({ person, isOnline, conversationId }) => (
+                <button
+                  key={person.id}
+                  onClick={() => router.push(`/chat/${conversationId}`)}
+                  className="flex shrink-0 flex-col items-center gap-1"
+                >
+                  <div className="relative">
+                    <div
+                      className="rounded-full p-[2px]"
+                      style={{
+                        background: isOnline
+                          ? "linear-gradient(135deg, #ff4fa3, #ff7a59)"
+                          : "linear-gradient(135deg, #7a2432, #ff4f6d)",
+                      }}
+                    >
+                      <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
+                        <img
+                          src={getProfileImage(person)}
+                          alt={getDisplayName(person)}
+                          className="h-14 w-14 rounded-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/default.png";
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {isOnline && (
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-2 h-px w-full bg-white/70" />
+          </div>
+        )}
 
         {/* Loading skeleton */}
         {isLoading && (
@@ -91,12 +155,12 @@ export function MessageInbox() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex animate-pulse items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
+                className="flex animate-pulse items-center gap-3 rounded-[22px] border border-white/65 bg-white/60 p-4 shadow-[0_8px_20px_rgba(16,24,40,0.06)] backdrop-blur-md"
               >
-                <div className="h-12 w-12 rounded-full bg-[#EADDD2]" />
+                <div className="h-14 w-14 rounded-full bg-gray-200" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-1/3 rounded bg-[#EADDD2]" />
-                  <div className="h-3 w-2/3 rounded bg-[#EADDD2]" />
+                  <div className="h-4 w-1/3 rounded-full bg-gray-200" />
+                  <div className="h-3 w-2/3 rounded-full bg-gray-200" />
                 </div>
               </div>
             ))}
@@ -105,11 +169,15 @@ export function MessageInbox() {
 
         {/* Empty state */}
         {!isLoading && sorted.length === 0 && (
-          <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
+          <div className="grid min-h-[420px] place-items-center rounded-[28px] border border-white/60 bg-white/50 p-8 text-center shadow-[0_10px_26px_rgba(16,24,40,0.08)] backdrop-blur-md">
             <div>
-              <MessageCircle className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
-              <h2 className="font-semibold">No conversations yet</h2>
-              <p className="mt-2 text-sm leading-6 text-[#746767]">
+              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[#e8f4fd] shadow-[0_8px_18px_rgba(16,24,40,0.08)]">
+                <svg className="h-8 w-8 text-[#4cc9f0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-bold text-[#1a1a2e]">No conversations yet</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-500">
                 When both people show interest, a conversation will open here.
               </p>
             </div>
@@ -132,48 +200,40 @@ export function MessageInbox() {
                 <button
                   key={conversation.id}
                   onClick={() => router.push(`/chat/${conversation.id}`)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-[#EADDD2] p-4 text-left transition-colors hover:bg-[#FFF8F1]"
+                  className="flex w-full items-center gap-3 rounded-[24px] border border-white/65 bg-white/50 p-4 text-left shadow-[0_8px_20px_rgba(16,24,40,0.06)] backdrop-blur-md transition-all hover:bg-white/70 active:scale-[0.99]"
                 >
                   {/* Avatar with online dot */}
                   <div className="relative shrink-0">
                     <img
                       src={profileImage}
                       alt={displayName}
-                      className="h-12 w-12 rounded-full object-cover"
+                      className="h-14 w-14 rounded-full object-cover"
                       loading="eager"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/default.png";
                       }}
                     />
                     {isOnline && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" />
                     )}
                   </div>
 
                   {/* Name + last message */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`truncate font-semibold ${unread > 0 ? "text-[#2D2424]" : "text-[#2D2424]"}`}>
-                        {displayName}
-                      </p>
-                      <span className="shrink-0 text-xs text-[#746767]">
-                        {conversation.last_message
-                          ? formatTime(conversation.last_message.created_at)
-                          : formatTime(conversation.updated_at)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <p className={`truncate text-sm ${unread > 0 ? "font-medium text-[#2D2424]" : "text-[#746767]"}`}>
-                        {getLastMessageText(conversation)}
-                      </p>
-                      {/* Unread badge */}
-                      {unread > 0 && (
-                        <span className="shrink-0 grid h-5 w-5 place-items-center rounded-full bg-[#7A2432] text-[10px] font-bold text-white">
-                          {unread > 9 ? "9+" : unread}
-                        </span>
-                      )}
-                    </div>
+                    <p className={`truncate text-[15px] font-bold ${unread > 0 ? "text-[#1a1a2e]" : "text-[#1a1a2e]"}`}>
+                      {displayName}
+                    </p>
+                    <p className={`mt-0.5 truncate text-sm ${unread > 0 ? "font-medium text-[#1a1a2e]" : "text-gray-500"}`}>
+                      {getLastMessageText(conversation)}
+                    </p>
                   </div>
+
+                  {/* Unread badge */}
+                  {unread > 0 && (
+                    <span className="shrink-0 grid h-6 w-6 place-items-center rounded-full bg-[#63d6f6] text-[11px] font-bold text-white shadow-sm">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
                 </button>
               );
             })}

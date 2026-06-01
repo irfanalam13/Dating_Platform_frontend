@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, GraduationCap, Lock, LogOut, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
+import { Bell, GraduationCap, Lock, LogOut, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
@@ -40,13 +40,20 @@ export default function SettingsPage() {
   return (
     <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]">
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold">Settings</h1>
-            <p className="text-sm text-[#746767]">Control privacy, preferences, and safety.</p>
+        <header className="mb-5 rounded-full border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+            >
+              <span className="text-lg leading-none">←</span>
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold">Settings</h1>
+              <p className="text-sm text-[#746767]">Control privacy, preferences, and safety.</p>
+            </div>
           </div>
         </header>
 

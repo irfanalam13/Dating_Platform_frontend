@@ -6,12 +6,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
   BookOpen,
-  Briefcase,
   Eye,
   HeartHandshake,
   MapPin,
   RefreshCw,
-  SlidersHorizontal,
   X,
   Sparkles,
 } from "lucide-react";
@@ -23,6 +21,7 @@ import { useAuth } from "@/features/auth";
 import { createOrGetConversation } from "@/shared/api/chat.api";
 import { showError } from "@/shared/utils/toast";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useMyProfile } from "@/features/profile/hooks/useProfile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function displayImage(profile: Profile) {
@@ -214,7 +213,6 @@ function ViewProfileModal({
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            <Detail label="Intent" value={profile.relationship_intent} />
             <Detail label="Career" value={profile.career} />
             <Detail label="Education" value={profile.education} />
             <Detail label="Ethnicity" value={profile.ethnicity} />
@@ -283,6 +281,8 @@ function ViewProfileModal({
 export default function HomePage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { data: myProfile } = useMyProfile();
+  const [activeSection, setActiveSection] = useState<"discover" | "myType">("discover");
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const [queue, setQueue] = useState<Profile[]>([]);
@@ -401,21 +401,67 @@ export default function HomePage() {
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pb-24 pt-4">
 
         {/* ── Header ── */}
-        <header className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">
-              Discover
-            </p>
-            <h1 className="text-2xl font-semibold">Meaningful matches</h1>
-          </div>
-          <div className="flex items-center gap-2">
+        <header className="mb-5 rounded-[26px] border border-white/60 bg-white/55 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+          <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => router.push("/ypref")}
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#000000]">
-              <SlidersHorizontal className="h-5 w-5" />
+              type="button"
+              onClick={() => setActiveSection("discover")}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.16em] transition ${
+                activeSection === "discover"
+                  ? "border border-white/75 bg-white/80 text-[#B78A3B] shadow-[0_6px_16px_rgba(16,24,40,0.08)]"
+                  : "text-[#746767]"
+              }`}
+            >
+              DISCOVER
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection("myType")}
+              className={`rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.16em] transition ${
+                activeSection === "myType"
+                  ? "border border-white/75 bg-white/80 text-[#2D2424] shadow-[0_6px_16px_rgba(16,24,40,0.08)]"
+                  : "text-[#746767]"
+              }`}
+            >
+              MY TYPE
             </button>
           </div>
         </header>
+
+        {activeSection === "myType" && (
+          <section className="grid flex-1 place-items-center rounded-2xl border border-white/55 bg-white/35 p-8 text-center shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
+            {!myProfile?.preferences ? (
+              <div>
+                <h2 className="text-xl font-semibold">You haven&apos;t chosen your type yet</h2>
+                <p className="mt-2 text-sm text-[#746767]">
+                  Set your vibe so we can tune better matches.
+                </p>
+                <button
+                  onClick={() => router.push("/preferences")}
+                  className="glass-btn mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold"
+                >
+                  Choose
+                </button>
+              </div>
+            ) : (
+              <div className="w-full max-w-sm text-left">
+                <h2 className="text-lg font-semibold">Your type is set</h2>
+                <p className="mt-2 text-sm text-[#746767]">
+                  You can refine your preferences anytime for better recommendations.
+                </p>
+                <button
+                  onClick={() => router.push("/preferences")}
+                  className="glass-btn mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold"
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeSection === "discover" && (
+          <>
 
         {/* ── Loading ── */}
         {(isLoading || isRefetching) && <DiscoverSkeleton />}
@@ -553,22 +599,13 @@ export default function HomePage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-1 gap-2 text-sm">
                   <div className="flex items-center gap-2 rounded-xl border border-[#EADDD2] p-3">
                     <BookOpen className="h-4 w-4 shrink-0 text-[#7A2432]" />
                     <div className="min-w-0">
                       <p className="text-xs text-[#746767]">Education</p>
                       <p className="truncate font-medium">
                         {current.education || "Not added"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-[#EADDD2] p-3">
-                    <Briefcase className="h-4 w-4 shrink-0 text-[#7A2432]" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-[#746767]">Intent</p>
-                      <p className="truncate font-medium">
-                        {current.relationship_intent || "Not added"}
                       </p>
                     </div>
                   </div>
@@ -608,21 +645,9 @@ export default function HomePage() {
             </motion.section>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* ── Match modal ── */}
-      <AnimatePresence>
-        {viewProfile && (
-          <ViewProfileModal
-            profile={viewProfile}
-            onClose={() => setViewProfile(null)}
-            onLike={() => handleAction("like")}
-            onPass={() => handleAction("pass")}
-            onViewFull={() => router.push(`/profile/${viewProfile.id}`)}  // 👈 add
-            isPending={interestMutation.isPending}
-          />
+          </>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* ── View profile modal ── */}
         <AnimatePresence>

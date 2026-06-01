@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getConversations } from '@/shared/api/chat.api'
@@ -9,6 +8,7 @@ import { useChat } from '../hooks/useChat'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import TypingIndicator from './TypingIndicator'
+
 import Avatar from '@/features/profile/components/Avatar'
 import OnlineIndicator from './OnlineIndicator'
 import type { ConversationParticipant } from '@/shared/types/chat.types'
@@ -32,10 +32,10 @@ export default function ChatWindow({ conversationId }: Props) {
     queryFn: getConversations,
   })
 
-  const conversation = conversations?.results.find((c) => c.id === conversationId)
+  const conversation = conversations?.results?.find?.((c) => c.id === conversationId)
 
   const other: ConversationParticipant | undefined =
-    conversation?.participants.find((p) => p.id !== user?.id)
+    conversation?.participants?.find((p) => p.id !== user?.id)
 
   const isOtherOnline: boolean = other
     ? onlineUsers.has(other.id) || other.is_online
@@ -49,7 +49,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const isTyping = typingUsers.size > 0
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-950">
 
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800">

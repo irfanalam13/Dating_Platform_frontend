@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronLeft, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export default function HelpSectionPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,10 +35,7 @@ export default function HelpSectionPage() {
           </div> */}
 
           {/* HEADER */}
-          <div className="border-b border-slate-200 px-4 py-3 flex items-center gap-3">
-            <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors active:scale-95">
-              <ChevronLeft className="w-6 h-6 text-slate-900" strokeWidth={2.5} />
-            </button>
+          <div className="border-b border-slate-200 px-4 py-3">
             <h1 className="text-lg font-bold text-slate-900 flex-1">Help Section</h1>
           </div>
 

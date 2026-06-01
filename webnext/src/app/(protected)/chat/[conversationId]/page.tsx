@@ -1,158 +1,53 @@
-"use client";
+'use client'
 
-import { FormEvent, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
-import { Ban, ChevronLeft, Flag, Send } from "lucide-react";
-import { getConversations, getMessages, sendMessage } from "@/shared/api/chat.api";
-import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/features/auth'
+import { MessageInbox } from '@/features/chat/components/MessageInbox'
+import ChatWindow from '@/features/chat/components/ChatWindow'
+import ConversationList from '@/features/chat/components/ConversationList'
+import NotificationBell from '@/features/notification/components/NotificationBell'
 
-export default function ConversationPage() {
-  const router = useRouter();
-  const params = useParams<{ conversationId: string }>();
-  
-  // Keep the ID as a string to perfectly match your API signatures
-  const conversationIdStr = String(params.conversationId);
-  const queryClient = useQueryClient();
-  const [content, setContent] = useState("");
-  const [showReport, setShowReport] = useState(false);
-
-  // 1. MESSAGES QUERY
-  const { data: messagesData, isLoading } = useQuery({
-    queryKey: ["messages", conversationIdStr],
-    queryFn: () => getMessages(conversationIdStr),
-    enabled: !!params.conversationId,
-    retry: false,
-  });
-
-  // Safely extract messages whether it returns an Array or a PaginatedResponse
-  const messagesList = Array.isArray(messagesData)
-    ? messagesData
-    : messagesData?.results || [];
-
-  // 2. CONVERSATIONS QUERY
-  const { data: conversationsData } = useQuery({
-    queryKey: ["conversations"],
-    queryFn: getConversations,
-    retry: false,
-  });
-
-  // Safely extract conversations whether it returns an Array or a PaginatedResponse
-  const conversationList = Array.isArray(conversationsData)
-    ? conversationsData
-    : conversationsData?.results || [];
-
-  // Safely find the conversation
-  const conversation = conversationList.find(
-    (item: any) => String(item?.id) === conversationIdStr
-  );
-  // Add an extra ? before [0] to prevent runtime crashes if conversation is undefined
-  const participant = conversation?.participants?.[0];
-
-  // 3. MUTATIONS
-  const mutation = useMutation({
-    mutationFn: (variables: { content: string }) => 
-      sendMessage(conversationIdStr, variables.content),
-    onSuccess: () => {
-      setContent("");
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationIdStr] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
-
-  const blockMutation = useMutation({
-    mutationFn: blockProfile,
-    onSuccess: () => router.push("/chat"),
-  });
-
-  const reportMutation = useMutation({
-    mutationFn: (profileId: number) => 
-      reportProfile(profileId, { reason: "other", description: "Reported from chat safety controls." }),
-    onSuccess: () => setShowReport(false),
-  });
-
-  // 4. FORM HANDLER
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!content.trim()) return;
-    
-    // Fix: Only pass 'content' since that's all the mutationFn expects
-    mutation.mutate({ content: content.trim() });
-  };
+export default function ChatPage() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   return (
-    <main className="flex min-h-[100dvh] flex-col text-[#2D2424]">
-      <header className="mx-auto flex w-full max-w-md items-center gap-2 border-b border-[#EADDD2] px-4 py-3">
-        <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-semibold">Matched conversation</h1>
-          <p className="text-xs text-[#746767]">Mutual match only</p>
-        </div>
-        <button
-          onClick={() => setShowReport(true)}
-          disabled={!participant?.profile_id}
-          className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-40"
-        >
-          <Flag className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => participant?.profile_id && blockMutation.mutate(participant.profile_id)}
-          disabled={!participant?.profile_id || blockMutation.isPending}
-          className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-40"
-        >
-          <Ban className="h-4 w-4" />
-        </button>
-      </header>
+    <>
+      {/* Mobile: show the new MessageInbox */}
+      <div className="block lg:hidden">
+        <MessageInbox />
+      </div>
 
-      <section className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 overflow-y-auto px-4 py-5">
-        {isLoading && <p className="text-sm text-[#746767]">Loading messages...</p>}
-        
-        {!isLoading && messagesList.length === 0 && (
-          <div className="mt-20 rounded-lg border border-[#EADDD2] p-5 text-center text-sm leading-6 text-[#746767]">
-            Start with respect and curiosity. Share only what you are comfortable sharing.
+      {/* Desktop: keep the two-panel layout */}
+      <div className="hidden lg:flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+        {/* Sidebar */}
+        <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+          {/* Sidebar header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {user?.username}
+            </span>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+            </div>
           </div>
-        )}
-        
-        {messagesList.map((message: any) => (
-          <div key={message?.id} className="max-w-[82%] rounded-lg border border-[#EADDD2] p-3 text-sm leading-6 shadow-sm">
-            {message?.content}
-          </div>
-        ))}
-      </section>
 
-      <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-md gap-2 border-t border-[#EADDD2] p-3">
-        <input
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder="Write a respectful message"
-          className="h-12 min-w-0 flex-1 rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]"
-        />
-        <button disabled={mutation.isPending} className="grid h-12 w-12 place-items-center rounded-md bg-[#7A2432] text-white disabled:opacity-60">
-          <Send className="h-5 w-5" />
-        </button>
-      </form>
+          <ConversationList activeId={activeId} onSelect={setActiveId} />
+        </aside>
 
-      {showReport && participant?.profile_id && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4">
-          <div className="w-full max-w-sm rounded-lg p-5 text-center">
-            <Flag className="mx-auto mb-3 h-8 w-8 text-[#7A2432]" />
-            <h2 className="text-lg font-semibold">Report this conversation?</h2>
-            <p className="mt-2 text-sm leading-6 text-[#746767]">Your report goes to the safety team. The other person will not be notified.</p>
-            <button
-              onClick={() => reportMutation.mutate(participant.profile_id!)}
-              disabled={reportMutation.isPending}
-              className="mt-5 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Submit report
-            </button>
-            <button onClick={() => setShowReport(false)} className="mt-3 text-sm font-semibold text-[#746767]">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </main>
-  );
+        {/* Chat area */}
+        <main className="flex-1 flex flex-col min-w-0">
+          {activeId ? (
+            <ChatWindow conversationId={activeId} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+              Select a conversation to start chatting
+            </div>
+          )}
+        </main>
+      </div>
+    </>
+  )
 }

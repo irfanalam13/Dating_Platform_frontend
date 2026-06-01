@@ -1,9 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   Bell,
-  ChevronLeft,
   HeartHandshake,
   MessageCircle,
   ShieldCheck,
@@ -18,6 +16,7 @@ import {
   useMarkAllNotificationsRead,
 } from "@/features/notification/hooks/useNotifications";
 import { formatTime } from "@/shared/utils/time";
+import { useRouter } from "next/navigation";
 
 function NotificationIcon({ type }: { type: NotificationType }) {
   switch (type) {
@@ -75,7 +74,7 @@ function useNotificationNavigation() {
 }
 
 export default function NotificationHome() {
-  const router   = useRouter();
+  const router = useRouter();
   const navigate = useNotificationNavigation();
   const { data, isLoading }                              = useNotificationList();
   const { mutate: markRead }                             = useMarkNotificationsRead();
@@ -90,29 +89,30 @@ export default function NotificationHome() {
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 flex items-center justify-between gap-3">
+        <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2]"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <span className="text-lg leading-none">←</span>
             </button>
             <div>
               <h1 className="text-2xl font-semibold">Notifications</h1>
               <p className="text-sm text-[#746767]">Matches, messages, and safety updates.</p>
             </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={() => markAllRead()}
+                disabled={isMarkingAll}
+                className="ml-auto shrink-0 rounded-full border border-[#EADDD2] px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
+              >
+                {isMarkingAll ? "Marking..." : "Mark all read"}
+              </button>
+            )}
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={() => markAllRead()}
-              disabled={isMarkingAll}
-              className="shrink-0 rounded-full border border-[#EADDD2] px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
-            >
-              {isMarkingAll ? "Marking..." : "Mark all read"}
-            </button>
-          )}
         </header>
 
         {isLoading && (

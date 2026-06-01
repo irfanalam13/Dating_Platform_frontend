@@ -1,6 +1,5 @@
 'use client';
 import React, { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
 
 export function AccountDeactivationPage() {
   const [isDeactivated, setIsDeactivated] = useState(false);
@@ -29,10 +28,7 @@ export function AccountDeactivationPage() {
           </div> */}
 
           {/* HEADER */}
-          <div className="border-b border-slate-200 px-4 py-3 flex items-center gap-3">
-            <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors active:scale-95">
-              <ChevronLeft className="w-6 h-6 text-slate-900" strokeWidth={2.5} />
-            </button>
+          <div className="border-b border-slate-200 px-4 py-3">
             <h1 className="text-lg font-bold text-slate-900 flex-1">Account Deactivation</h1>
           </div>
 

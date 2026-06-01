@@ -46,7 +46,6 @@ body {
   transform: translateY(1px);
 }
 
-/* Glass-style borders: apply a soft frosted look to elements that use Tailwind border utilities */
 [class*="border"] {
   border-color: rgba(255, 255, 255, 0.45) !important;
   box-shadow: 0 6px 18px rgba(16,24,40,0.06);
@@ -54,19 +53,17 @@ body {
   backdrop-filter: blur(6px);
 }
 
-/* More subtle variant for thin borders */
 [class*="border-2"],
 [class*="border-4"] {
   border-color: rgba(255,255,255,0.55) !important;
 }
 
-/* Bottom nav helper (used by mvp-shell) */
 .bottom-nav-glass {
   background: rgba(255,255,255,0.55);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-radius: 9999px;
-  padding: 6px 10px; /* thinner dock */
+  padding: 6px 10px;
   box-shadow: 0 6px 20px rgba(16,24,40,0.10);
 }
 
@@ -83,5 +80,13 @@ body {
 
 .bottom-nav-item.activated {
   background: white;
-  transform: none; /* keep consistent color, no red on click */
+  transform: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

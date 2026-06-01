@@ -21,7 +21,10 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left ${isActive ? 'bg-indigo-50 dark:bg-indigo-950/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+      className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left
+        ${isActive
+          ? 'bg-indigo-50 dark:bg-indigo-950/40'
+          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
     >
       <Avatar name={other?.username ?? '?'} size="md" isOnline={isOnline} />
 
@@ -41,7 +44,8 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
             {conversation.last_message?.content ?? 'No messages yet'}
           </p>
           {unread > 0 && (
-            <span className="flex-shrink-0 ml-2 w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="flex-shrink-0 ml-2 w-5 h-5 rounded-full bg-indigo-600
+                             text-white text-[10px] font-bold flex items-center justify-center">
               {unread > 9 ? '9+' : unread}
             </span>
           )}

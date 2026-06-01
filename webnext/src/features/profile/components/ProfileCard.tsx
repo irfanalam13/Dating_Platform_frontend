@@ -47,7 +47,7 @@ function ProfileSkeleton() {
 function completionScore(data: Profile): number {
   const fields: (keyof Profile)[] = [
     "full_name", "bio", "city", "age", "gender",
-    "relationship_intent", "education", "career",
+    "education", "career",
     "profile_image", "hobbies", "values",
   ];
   const filled = fields.filter((f) => {
@@ -247,7 +247,6 @@ export default function ProfileCard() {
         {/* ── About ── */}
         <Section title="About">
           <div className="grid grid-cols-2 gap-3">
-            <InfoCard icon={Heart} label="Intent" value={data.relationship_intent || "Not added"} />
             <InfoCard icon={Briefcase} label="Career" value={data.career || "Not added"} />
             <InfoCard icon={BookOpen} label="Education" value={data.education || "Not added"} />
             <InfoCard icon={Globe} label="Ethnicity" value={data.ethnicity || "Not added"} />

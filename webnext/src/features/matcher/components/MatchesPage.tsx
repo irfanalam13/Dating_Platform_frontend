@@ -24,14 +24,22 @@ export default function MatchesPage() {
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">
-            Matches
-          </p>
-          <h1 className="text-2xl font-semibold">People who chose you too</h1>
-          <p className="mt-1 text-sm text-[#746767]">
-            Conversation opens only after mutual interest.
-          </p>
+        <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+            >
+              <span className="text-lg leading-none">←</span>
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Matches</p>
+              <h1 className="text-2xl font-semibold">People who chose you too</h1>
+              <p className="mt-1 text-sm text-[#746767]">Conversation opens only after mutual interest.</p>
+            </div>
+          </div>
         </header>
 
         {/* ── Pending interests ── */}

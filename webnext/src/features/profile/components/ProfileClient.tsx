@@ -15,7 +15,6 @@ import {
   Globe,
   Sparkles,
   ChevronRight,
-  ArrowLeft,
   Link,
   Music,
   ExternalLink,
@@ -286,12 +285,7 @@ export default function ProfileClient({
                 <Settings className="h-5 w-5" />
               </button>
             ) : (
-              <button
-                onClick={() => router.back()}
-                className="glass-btn grid h-10 w-10 place-items-center rounded-full"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+              <div className="h-10 w-10" />
             )}
           </div>
         </header>

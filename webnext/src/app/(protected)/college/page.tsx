@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GraduationCap, ShieldCheck } from "lucide-react";
 import { getCollegeMode, submitStudentVerification } from "@/shared/api/college.api";
 
 export default function CollegeModePage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [collegeName, setCollegeName] = useState("");
   const [collegeEmail, setCollegeEmail] = useState("");
@@ -32,11 +34,22 @@ export default function CollegeModePage() {
   return (
     <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 rounded-lg border border-[#EADDD2] p-5">
-          <GraduationCap className="mb-4 h-10 w-10 text-[#7A2432]" />
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">College Mode</p>
-          <h1 className="mt-1 text-2xl font-semibold">Campus connections with verification</h1>
-          <p className="mt-2 text-sm leading-6 text-[#746767]">A slightly brighter space for students, still respectful and safety-first.</p>
+        <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+            >
+              <span className="text-lg leading-none">←</span>
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">College Mode</p>
+              <h1 className="text-2xl font-semibold">Campus connections with verification</h1>
+              <p className="mt-2 text-sm leading-6 text-[#746767]">A slightly brighter space for students, still respectful and safety-first.</p>
+            </div>
+          </div>
         </header>
 
         {!verified && (

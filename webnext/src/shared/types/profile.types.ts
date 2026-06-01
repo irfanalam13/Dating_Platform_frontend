@@ -16,7 +16,7 @@ export interface Profile {
   gender: string;
   date_of_birth: string | null;
 
-  relationship_intent: string;
+  // relationship_intent: string;
   education: string;
   career: string;
   values: string;
@@ -111,7 +111,7 @@ export interface PublicProfile {
   profile_image_url: string | null;
   age: number;
   gender: string | null;
-  relationship_intent: string;
+  // relationship_intent: string;
   education: string;
   career: string;
   values: string;

@@ -9,14 +9,12 @@ import { updateProfile } from "@/shared/api/profile.api";
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [intent, setIntent] = useState("Serious Relationship");
   const [privacy, setPrivacy] = useState("true");
   const [saving, setSaving] = useState(false);
 
   const finish = async () => {
     setSaving(true);
     const data = new FormData();
-    data.append("relationship_intent", intent);
     data.append("is_profile_public", privacy);
     await updateProfile(data);
     router.push("/profile/edit");
@@ -25,8 +23,8 @@ export default function OnboardingPage() {
   return (
     <main className="min-h-[100dvh] px-4 py-6 text-[#2D2424]">
       <div className="mx-auto flex min-h-[calc(100dvh-48px)] max-w-md flex-col">
-        <div className="mb-8 grid grid-cols-3 gap-2">
-          {[0, 1, 2].map((item) => (
+        <div className="mb-8 grid grid-cols-2 gap-2">
+          {[0, 1].map((item) => (
             <div key={item} className={`h-1.5 rounded-full ${item <= step ? "bg-[#7A2432]" : "bg-[#EADDD2]"}`} />
           ))}
         </div>
@@ -41,18 +39,6 @@ export default function OnboardingPage() {
           )}
 
           {step === 1 && (
-            <div className="space-y-4">
-              <ShieldCheck className="h-10 w-10 text-[#7A2432]" />
-              <h1 className="text-2xl font-semibold">Choose your intention</h1>
-              {["Serious Relationship", "Marriage"].map((item) => (
-                <button key={item} onClick={() => setIntent(item)} className={`h-16 w-full rounded-lg border px-4 text-left font-semibold ${intent === item ? "border-[#7A2432] text-[#7A2432]" : "border-[#EADDD2] bg-white"}`}>
-                  {item}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {step === 2 && (
             <div className="space-y-4">
               <Lock className="h-10 w-10 text-[#7A2432]" />
               <h1 className="text-2xl font-semibold">Set your comfort level</h1>
@@ -73,7 +59,7 @@ export default function OnboardingPage() {
           <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] font-semibold disabled:opacity-40">
             Back
           </button>
-          {step < 2 ? (
+          {step < 1 ? (
             <button onClick={() => setStep((value) => value + 1)} className="h-12 rounded-md bg-[#7A2432] font-semibold text-white">
               Continue
             </button>
