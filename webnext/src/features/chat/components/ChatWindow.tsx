@@ -107,6 +107,7 @@ export default function ChatWindow({ conversationId }: Props) {
             <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
           </div>
         )}
+        {/*Message Bubble key*/}
 
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
