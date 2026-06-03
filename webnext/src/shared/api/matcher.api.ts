@@ -1,17 +1,14 @@
-
-
 import api from "./client";
 import type { AcceptedMatch, PendingMatch } from "../types/matcher.types";
 
+// Tolerates both a bare list and a DRF-paginated { results: [...] } envelope.
 export const getAcceptedMatches = async (): Promise<AcceptedMatch[]> => {
   const res = await api.get("/matcher/accepted/");
-  console.log("✅ ACCEPTED:", res.data); // ← remove after confirming shape
   return Array.isArray(res.data) ? res.data : res.data?.results ?? [];
 };
 
 export const getReceivedMatches = async (): Promise<PendingMatch[]> => {
   const res = await api.get("/matcher/received/");
-  console.log("📥 RECEIVED:", res.data); // ← remove after confirming shape
   return Array.isArray(res.data) ? res.data : res.data?.results ?? [];
 };
 

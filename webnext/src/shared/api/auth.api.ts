@@ -1,115 +1,5 @@
-// import api from "./client";
-// import { setAccessToken } from "./client";
-// import { LoginPayload, RegisterPayload, AuthResponse } from "../types/auth.types";
-
-// // export const registerUser = async (data: RegisterPayload): Promise<AuthResponse> => {
-// //   const res = await api.post("/auth/register/", data);
-// //   const token = res.data?.data?.tokens?.access;
-// //   if (token) setAccessToken(token);
-// //   return res.data;
-// // };
-
-// // // export const loginUser = async (data: LoginPayload): Promise<AuthResponse> => {
-// // //   const res = await api.post("/auth/login/", data);
-// // //   const token = res.data?.data?.tokens?.access;
-// // //   if (token) setAccessToken(token);
-// // //   return res.data;
-// // // };
-// // export const loginUser = async (data: LoginPayload): Promise<AuthResponse> => {
-// //   const res = await api.post("/auth/login/", data);
-// //   console.log("Login response:", JSON.stringify(res.data));
-// //   const token = res.data?.data?.tokens?.access;
-// //   console.log("Token extracted:", token);
-// //   if (token) setAccessToken(token);
-// //   return res.data;
-// // };
-
-
-// export async function loginUser(credentials: LoginPayload) {
-//   // 1. Login — Django sets httpOnly refresh cookie in Set-Cookie header
-//   const res = await api.post("/auth/login/", credentials);
-//   const refreshRes = await api.post("/auth/refresh/");
-//   console.log("REFRESH RESPONSE:", JSON.stringify(refreshRes?.data, null, 2));
-//   // 2. Immediately call refresh to get the access token into JS memory
-//   // Django reads the httpOnly cookie it just set and returns the access token
-//   try {
-//     const refreshRes = await api.post("/auth/refresh/");
-//     // const token =
-//     //   refreshRes?.data?.data?.tokens?.access ||
-//     //   refreshRes?.data?.tokens?.access       ||
-//     //   refreshRes?.data?.access               ||
-//     //   refreshRes?.data?.access_token         ||
-//     //   null;
-
-//     const token = refreshRes?.data?.data?.access || null;
-
-//     if (token) {
-//       setAccessToken(token);
-//       console.log("✅ Token obtained after login:", token.slice(0, 20) + "...");
-//     } else {
-//       console.warn("⚠️ Refresh returned no token:", refreshRes?.data);
-//     }
-//   } catch (e) {
-//     console.warn("⚠️ Could not get access token after login:", e);
-//   }
-
-//   return res;
-// }
-
-// export async function registerUser(credentials: RegisterPayload) {
-//   const res = await api.post("/auth/register/", credentials);
-
-//   // Same pattern — get token after register
-//   try {
-//     const refreshRes = await api.post("/auth/refresh/");
-//     const token =
-//       refreshRes?.data?.data?.tokens?.access ||
-//       refreshRes?.data?.tokens?.access       ||
-//       refreshRes?.data?.access               ||
-//       refreshRes?.data?.access_token         ||
-//       null;
-
-//     if (token) {
-//       setAccessToken(token);
-//       console.log("✅ Token obtained after register:", token.slice(0, 20) + "...");
-//     }
-//   } catch (e) {
-//     console.warn("⚠️ Could not get access token after register:", e);
-//   }
-
-//   return res;
-// }
-
-// export const logoutUser = async (refresh: string) => {
-//   const res = await api.post("/auth/logout/", { refresh }, { withCredentials: true });
-//   return res.data;
-// };
-
-// export const getMe = async () => {
-//   const res = await fetch(
-//     `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/auth/me/`,
-//     {
-//       method: "GET",
-//       credentials: "include",
-//       headers: { "Content-Type": "application/json" },
-//     }
-//   );
-//   if (!res.ok) return null;
-//   return res.json();
-// };
-
-
-
-
-
-
-
-
-
-
-
 import api from "./client";
-import { setAccessToken } from "./client";
+import { refreshOnce } from "./client";
 import {
   LoginPayload,
   RegisterPayload,
@@ -121,47 +11,25 @@ import {
 } from "../types/auth.types";
 
 export async function loginUser(credentials: LoginPayload) {
+  // Django sets the HttpOnly refresh cookie on login but doesn't return the
+  // access token in the body. A single refresh reads that cookie and pulls the
+  // access token into JS memory. refreshOnce() dedupes concurrent refreshes so
+  // we never rotate the refresh token twice and log ourselves out.
   const res = await api.post("/auth/login/", credentials);
-  const refreshRes = await api.post("/auth/refresh/");
-  console.log("REFRESH RESPONSE:", JSON.stringify(refreshRes?.data, null, 2));
-  try {
-    const refreshRes = await api.post("/auth/refresh/");
-    const token = refreshRes?.data?.data?.access || null;
-    if (token) {
-      setAccessToken(token);
-      console.log("✅ Token obtained after login:", token.slice(0, 20) + "...");
-    } else {
-      console.warn("⚠️ Refresh returned no token:", refreshRes?.data);
-    }
-  } catch (e) {
-    console.warn("⚠️ Could not get access token after login:", e);
-  }
+  await refreshOnce();
   return res;
 }
 
 export async function registerUser(credentials: RegisterPayload) {
   const res = await api.post("/auth/register/", credentials);
-  // No token after register — user must verify email first
+  // No token after register — user must verify email first.
   return res;
 }
 
 export async function verifyEmail(payload: VerifyEmailPayload): Promise<VerifyEmailResponse> {
   const res = await api.post("/auth/verify_email/", payload);
-
-  // After verification, store the access token and set cookies
-  try {
-    const token =
-      res?.data?.data?.tokens?.access || null;
-    if (token) {
-      setAccessToken(token);
-      console.log("✅ Token obtained after email verification");
-    }
-    // Also call refresh to sync httpOnly cookie
-    await api.post("/auth/refresh/");
-  } catch (e) {
-    console.warn("⚠️ Could not sync token after verification:", e);
-  }
-
+  // Verification logs the user in: sync the access token into JS memory.
+  await refreshOnce();
   return res.data;
 }
 

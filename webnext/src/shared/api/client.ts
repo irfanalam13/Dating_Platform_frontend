@@ -3,6 +3,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 import { showError } from "@/shared/utils/toast";
+import { logger } from "@/shared/utils/logger";
 
 // ─────────────────────────────────────────────────────────
 // Axios instance
@@ -77,8 +78,6 @@ export function setAccessToken(token: string | null): void {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
-
-    console.log("✅ Token stored — layers: memory + sessionStorage + cookie");
   } else {
     // Clear all three layers
     _accessToken = null;
@@ -237,27 +236,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Django uses httpOnly refresh cookie — no body needed
-        const refreshRes = await api.post("/auth/refresh/");
+        // Route through refreshOnce() so a refresh triggered here shares the
+        // SAME in-flight promise as one triggered by useCurrentUser. The refresh
+        // token rotates and blacklists the old one on every call, so two
+        // concurrent refreshes would make the second use a blacklisted token →
+        // 401 → false forced logout. Deduping prevents that.
+        const newToken = await refreshOnce();
 
-        // ✅ If backend returns new access token, store it
-        // const newToken =
-        //   refreshRes?.data?.data?.tokens?.access ||
-        //   refreshRes?.data?.tokens?.access       ||
-        //   refreshRes?.data?.access               ||
-        //   refreshRes?.data?.access_token         ||
-        //   null;
-        // interceptor in client.ts — fix this
-        const newToken =
-          refreshRes?.data?.data?.access ||  // 👈 add this as first check
-          refreshRes?.data?.data?.tokens?.access ||
-          refreshRes?.data?.tokens?.access ||
-          refreshRes?.data?.access ||
-          null;
-
-        if (newToken) {
-          setAccessToken(newToken);
-          console.log("✅ Token refreshed via interceptor");
+        if (!newToken) {
+          throw new Error("Token refresh returned no access token");
         }
 
         processQueue(null);
@@ -268,7 +255,7 @@ api.interceptors.response.use(
         processQueue(refreshError);
         isRefreshing = false;
 
-        console.error("REFRESH FAILED — forcing logout", refreshError);
+        logger.error("Refresh failed — forcing logout", refreshError);
         showError(refreshError, "Your session expired. Please log in again.");
         return forceLogout();
       }

@@ -12,59 +12,10 @@ import {
 } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { showSuccess, showError } from "@/shared/utils/toast";
+import { logger } from "@/shared/utils/logger";
 import Cookies from "js-cookie";
 import { setAccessToken } from "@/shared/api/client";
-
-// ─────────────────────────────────────────────────────────
-// Safe deep-get helper
-// ─────────────────────────────────────────────────────────
-function get(obj: unknown, ...keys: string[]): unknown {
-  let current: unknown = obj;
-  for (const key of keys) {
-    if (current === null || current === undefined) return undefined;
-    current = (current as Record<string, unknown>)[key];
-  }
-  return current;
-}
-
-// ─────────────────────────────────────────────────────────
-// Token extractor
-// ─────────────────────────────────────────────────────────
-function extractToken(res: unknown): string | null {
-  const candidates = [
-    get(res, "data", "data", "tokens", "access"),
-    get(res, "data", "tokens", "access"),
-    get(res, "data", "access"),
-    get(res, "access"),
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.length > 0) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-// ─────────────────────────────────────────────────────────
-// User extractor
-// ─────────────────────────────────────────────────────────
-function extractUser(res: unknown): Record<string, unknown> | null {
-  const candidates = [
-    get(res, "data", "data", "user"),
-    get(res, "data", "user"),
-    get(res, "data"),
-  ];
-
-  for (const candidate of candidates) {
-    if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) {
-      return candidate as Record<string, unknown>;
-    }
-  }
-
-  return null;
-}
+import { get, extractToken, extractUser } from "@/shared/api/parse";
 
 // ─────────────────────────────────────────────────────────
 // Cookie helpers
@@ -102,7 +53,7 @@ export const useRegister = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("REGISTER ERROR", err);
+      logger.error("REGISTER ERROR", err);
       showError(err, "Registration failed. Please try again.");
     },
   });
@@ -120,18 +71,12 @@ export const useLogin = () => {
     mutationFn: loginUser,
 
     onSuccess: (res: unknown) => {
-      const token = extractToken(res);
-      const user  = extractUser(res);
-
-      if (token) {
-        setAccessToken(token);
-        console.log("✅ Login token stored:", token.slice(0, 20) + "...");
-      } else {
-        console.warn("⚠️ No token in login response", res);
-      }
+      // The access token was already pulled into memory by loginUser()'s
+      // single refreshOnce() call; here we only need the user object.
+      const user = extractUser(res);
 
       if (!user) {
-        console.error("USER DATA MISSING IN RESPONSE", res);
+        logger.error("USER DATA MISSING IN RESPONSE", res);
         showError("Invalid login response from server");
         return;
       }
@@ -144,7 +89,7 @@ export const useLogin = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("LOGIN ERROR", err);
+      logger.error("LOGIN ERROR", err);
       // Handle unverified email specifically
       const code = (err as { response?: { data?: { code?: string } } })
         ?.response?.data?.code;
@@ -175,7 +120,7 @@ export const useVerifyEmail = () => {
 
       if (token) {
         setAccessToken(token);
-        console.log("✅ Email verified — token stored");
+        logger.log("Email verified — token stored");
       }
 
       if (user) {
@@ -189,7 +134,7 @@ export const useVerifyEmail = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("VERIFY EMAIL ERROR", err);
+      logger.error("VERIFY EMAIL ERROR", err);
       showError(err, "Invalid or expired verification link.");
     },
   });
@@ -207,7 +152,7 @@ export const useResendVerification = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("RESEND VERIFICATION ERROR", err);
+      logger.error("RESEND VERIFICATION ERROR", err);
       showError(err, "Could not resend verification email.");
     },
   });
@@ -225,7 +170,7 @@ export const useForgotPassword = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("FORGOT PASSWORD ERROR", err);
+      logger.error("FORGOT PASSWORD ERROR", err);
       showError(err, "Could not send reset email. Please try again.");
     },
   });
@@ -246,7 +191,7 @@ export const useResetPassword = () => {
     },
 
     onError: (err: unknown) => {
-      console.error("RESET PASSWORD ERROR", err);
+      logger.error("RESET PASSWORD ERROR", err);
       showError(err, "Invalid or expired reset link.");
     },
   });

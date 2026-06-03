@@ -7,9 +7,14 @@ import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { refreshOnce } from "@/shared/api/client";
 
-// ✅ Helper to check hint cookie
+// ✅ Helper to check hint cookie.
+// The backend (set_auth_cookies) and the login flow (setLoggedInCookie) both
+// set a JS-readable `logged_in=true` cookie. `rt_exists` is never set anywhere,
+// so checking it always failed → on a cold reload we short-circuited to null and
+// wiped the persisted user, disabling every `enabled: !!user` query (e.g. the
+// home discover feed) until a fresh login.
 function hasRefreshTokenHint(): boolean {
-  return document.cookie.includes("rt_exists=true");
+  return document.cookie.includes("logged_in=true");
 }
 
 export function useCurrentUser() {
