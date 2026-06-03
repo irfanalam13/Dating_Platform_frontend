@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
 import {
   BadgeCheck,
   Eye,
@@ -29,6 +36,8 @@ import { useMyProfile } from "@/features/profile/hooks/useProfile";
 function displayImage(profile: Profile) {
   return profile.profile_image_url || profile.profile_image || "/default.png";
 }
+
+type InterestKind = "like" | "superstar" | "undo";
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function DiscoverSkeleton() {
@@ -294,16 +303,23 @@ export default function HomePage() {
   const [viewProfile, setViewProfile] = useState<Profile | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<"up" | "down" | null>(null);
 
-  // ✅ FIX 1: Use ref for dragY so drag events don't cause re-renders
-  const dragYRef = useRef(0);
-  const [dragYDisplay, setDragYDisplay] = useState(0);
+  // ✅ Drag is tracked with a framer motion value, NOT React state — so the
+  // page does not re-render on every drag frame (that was the source of the
+  // mobile jank/glitches). Hint opacities are derived purely on the GPU.
+  const dragY = useMotionValue(0);
+  const prevHintOpacity = useTransform(dragY, [-90, -40], [1, 0]);
+  const nextHintOpacity = useTransform(dragY, [40, 90], [0, 1]);
 
-  // Double-tap-to-like (TikTok/Instagram style)
+  // Double-tap-to-superstar (TikTok/Instagram style)
   const [heartBurst, setHeartBurst] = useState(false);
   const lastTapRef = useRef(0);
 
-  // Profiles the user has liked — drives the heart fill (hollow → reddish)
+  // Profiles the user has liked via the heart button — drives the heart fill
+  // (hollow → reddish) and toggles on/off. Superstar (double-tap) does NOT
+  // touch this, so a double-tap never lights up the like button.
   const [liked, setLiked] = useState<Set<number>>(new Set());
+  const likedRef = useRef<Set<number>>(liked);
+  likedRef.current = liked;
 
   // ─── Query ────────────────────────────────────────────────────────────────────
   const { isLoading, refetch, isRefetching, data, isError } = useQuery({
@@ -331,16 +347,14 @@ export default function HomePage() {
   const goNext = useCallback(() => {
     setIndex((i) => (i >= queue.length - 1 ? i : i + 1));
     setSwipeDirection("up");
-    dragYRef.current = 0;
-    setDragYDisplay(0);
-  }, [queue.length]);
+    dragY.set(0);
+  }, [queue.length, dragY]);
 
   const goBack = useCallback(() => {
     setIndex((i) => (i <= 0 ? i : i - 1));
     setSwipeDirection("down");
-    dragYRef.current = 0;
-    setDragYDisplay(0);
-  }, []);
+    dragY.set(0);
+  }, [dragY]);
 
   // Express interest. kind === "superstar" (double-tap) vs "like" (heart button)
   // changes only the toast — the backend action is the same.
@@ -348,7 +362,11 @@ export default function HomePage() {
     mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass"; kind?: "like" | "superstar" }) =>
       sendInterest(profileId, action),
     onSuccess: (res, variables) => {
-      setLiked((prev) => new Set(prev).add(variables.profileId));
+      // Only the heart button lights up the "liked" state. A superstar
+      // (double-tap) must NOT fill the like button.
+      if (variables.kind === "like") {
+        setLiked((prev) => new Set(prev).add(variables.profileId));
+      }
       if (res.matched && currentRef.current) {
         setMatchProfile(currentRef.current);
       } else {
@@ -360,12 +378,10 @@ export default function HomePage() {
         );
       }
       setViewProfile(null);
-      dragYRef.current = 0;
-      setDragYDisplay(0);
+      dragY.set(0);
     },
     onError: () => {
-      dragYRef.current = 0;
-      setDragYDisplay(0);
+      dragY.set(0);
     },
   });
 
@@ -389,6 +405,22 @@ export default function HomePage() {
     if (!currentRef.current || isPendingRef.current) return;
     interestMutation.mutate({ profileId: currentRef.current.id, action: "like", kind });
   }, [interestMutation.mutate]);
+
+  // Heart button: toggles. Tap to like, tap again to unlike, again to like…
+  // When un-liking we only clear it locally (there is no un-send endpoint).
+  const toggleLike = useCallback(() => {
+    const cur = currentRef.current;
+    if (!cur || isPendingRef.current) return;
+    if (likedRef.current.has(cur.id)) {
+      setLiked((prev) => {
+        const next = new Set(prev);
+        next.delete(cur.id);
+        return next;
+      });
+    } else {
+      giveInterest("like");
+    }
+  }, [giveInterest]);
 
   // Double-tap the photo → star burst + superstar (TikTok/Instagram style)
   const handlePhotoTap = useCallback(() => {
@@ -535,34 +567,44 @@ export default function HomePage() {
           {current && !isLoading && !isRefetching && (
             <motion.section
               key={current.id}
-              initial={{ opacity: 0, scale: 0.97, y: 20 }}
+              initial={{
+                opacity: 0,
+                scale: 0.96,
+                // Enter from the direction we're heading: advancing (next)
+                // slides up from below, going back slides down from above.
+                y: swipeDirection === "up" ? 320 : swipeDirection === "down" ? -320 : 24,
+              }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={
                 swipeDirection === "up"
-                  ? { opacity: 0, y: -350, scale: 0.95 }
+                  ? { opacity: 0, y: -320, scale: 0.96 }
                   : swipeDirection === "down"
-                  ? { opacity: 0, y: 350, scale: 0.95 }
-                  : { opacity: 0, scale: 0.97 }
+                  ? { opacity: 0, y: 320, scale: 0.96 }
+                  : { opacity: 0, scale: 0.96 }
               }
-              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
               drag="y"
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.6}
+              dragElastic={0.5}
+              dragDirectionLock
               onDrag={(_, info) => {
-                dragYRef.current = info.offset.y;
-                setDragYDisplay(info.offset.y);
+                // Motion value only — does NOT trigger a React re-render.
+                dragY.set(info.offset.y);
               }}
               onDragEnd={(_, info) => {
-                const threshold = 80;
-                if (info.offset.y < -threshold) {
+                const offset = info.offset.y;
+                const velocity = info.velocity.y;
+                // Easier to trigger on a phone: small flick OR a short drag.
+                if (offset < -60 || velocity < -500) {
                   goBack();
-                } else if (info.offset.y > threshold) {
+                } else if (offset > 60 || velocity > 500) {
                   goNext();
+                } else {
+                  dragY.set(0);
                 }
-                dragYRef.current = 0;
-                setDragYDisplay(0);
               }}
-              className="relative flex flex-1 min-h-[520px] overflow-hidden rounded-[26px] border border-white/40 shadow-[0_12px_40px_rgba(16,24,40,0.18)] cursor-grab active:cursor-grabbing select-none"
+              style={{ touchAction: "none" }}
+              className="relative flex flex-1 min-h-[520px] touch-none overflow-hidden rounded-[26px] border border-white/40 shadow-[0_12px_40px_rgba(16,24,40,0.18)] cursor-grab active:cursor-grabbing select-none"
             >
               {/* Full-bleed photo */}
               <img
@@ -573,9 +615,10 @@ export default function HomePage() {
                 draggable={false}
               />
 
-              {/* Double-tap target over the photo (buttons sit above this, z-10) */}
+              {/* Double-tap target over the photo (buttons sit above this, z-10).
+                  touch-none lets the parent own the vertical drag gesture. */}
               <div
-                className="absolute inset-0 z-[6]"
+                className="absolute inset-0 z-[6] touch-none"
                 onClick={handlePhotoTap}
               />
 
@@ -599,10 +642,11 @@ export default function HomePage() {
               {/* Bottom gradient for legibility */}
               <div className="absolute inset-x-0 bottom-0 top-1/3 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
 
-              {/* Drag hints: UP = previous, DOWN = next */}
+              {/* Drag hints: UP = previous, DOWN = next.
+                  Opacity is driven by the drag motion value (GPU, no re-render). */}
               <motion.div
                 className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none"
-                animate={{ opacity: dragYDisplay < -40 ? Math.min((-dragYDisplay - 40) / 60, 1) : 0 }}
+                style={{ opacity: prevHintOpacity }}
               >
                 <span className="rounded-full bg-white/25 px-4 py-1 text-sm font-semibold text-white backdrop-blur-sm">
                   ↑ Previous
@@ -610,7 +654,7 @@ export default function HomePage() {
               </motion.div>
               <motion.div
                 className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none"
-                animate={{ opacity: dragYDisplay > 40 ? Math.min((dragYDisplay - 40) / 60, 1) : 0 }}
+                style={{ opacity: nextHintOpacity }}
               >
                 <span className="rounded-full bg-white/25 px-4 py-1 text-sm font-semibold text-white backdrop-blur-sm">
                   ↓ Next
@@ -690,9 +734,10 @@ export default function HomePage() {
                   </button>
 
                   <button
-                    onClick={() => giveInterest("like")}
+                    onClick={toggleLike}
                     disabled={interestMutation.isPending}
-                    aria-label="Like"
+                    aria-label={liked.has(current.id) ? "Unlike" : "Like"}
+                    aria-pressed={liked.has(current.id)}
                     className={`grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur-md transition hover:bg-white/30 disabled:opacity-50 ${
                       liked.has(current.id) ? "text-[#FF4458]" : "text-white"
                     }`}
@@ -700,10 +745,17 @@ export default function HomePage() {
                     {interestMutation.isPending ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     ) : (
-                      <Heart
-                        className="h-5 w-5"
-                        fill={liked.has(current.id) ? "currentColor" : "none"}
-                      />
+                      <motion.span
+                        key={liked.has(current.id) ? "liked" : "unliked"}
+                        initial={{ scale: 0.6 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                      >
+                        <Heart
+                          className="h-5 w-5"
+                          fill={liked.has(current.id) ? "currentColor" : "none"}
+                        />
+                      </motion.span>
                     )}
                   </button>
                 </div>
