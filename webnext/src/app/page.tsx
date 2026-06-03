@@ -15,7 +15,7 @@ export default function Page() {
 
   return (
     <main className="grid min-h-[100dvh] place-items-center text-sm text-[#746767]">
-      Opening your app...
+      MatchMaker Opening...
     </main>
   );
 }
