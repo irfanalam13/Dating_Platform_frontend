@@ -1,0 +1,48 @@
+[33m6a77b0e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m New updates to preferences page
+[33m2a09442[m new updates added, modified version
+[33m16640b2[m errors fixed
+[33mbe35dc2[m Added toaster and preference components
+[33md2119f1[m newer upgrades
+[33m5028ff6[m glass morphism, and frontend next level upgrades
+[33mea2a70c[m latest updates
+[33m383cc47[m redeploy fix
+[33m7a7a2a7[m everything working
+[33m47ce396[m[33m ([m[1;31morigin/irfan[m[33m)[m update
+[33m3335280[m now set mail verification
+[33m0962ce1[m Now working everything
+[33md5f02c1[m fix: single refresh, fresh token on WS, clean useNotifications
+[33m377e7a7[m fix: single refresh, fresh token on WS, clean useNotifications
+[33m89f7eb4[m fix: single refresh, fresh token on WS, clean useNotifications
+[33me136951[m fix: single refresh, fresh token on WS, clean useNotifications
+[33mc3367e5[m fix: fresh token on WS connect, clean up useNotifications, add wsToken helper
+[33m0c93bf6[m fix: fresh token on WS connect, clean up useNotifications, add wsToken helper
+[33mf7e3390[m update
+[33m2bed51c[m fix: rename notificationhome to NotificationHome
+[33mfff39ad[m solve error problem of notification
+[33m36cae6a[m New update to solve notification problem
+[33m206c321[m New update to solve notification problem
+[33mc2d42ba[m update notification problem
+[33mf664261[m  Now redis and chat system working
+[33m896cce8[m feat: add real-time chat with WebSocket support
+[33m252fccb[m[33m ([m[1;31morigin/ipsita[m[33m)[m new vesion of frontend
+[33m66dff96[m new vesion of frontend
+[33m1e42adf[m new vesion of frontend
+[33m5f82545[m new vesion of frontend
+[33maf96317[m Fix merge conflict in globals.css and integrate remote changes
+[33m329aeb8[m Fix merge conflict in globals.css and integrate remote changes
+[33m19a4dd0[m set neon
+[33m5f47fb2[m Add files via upload
+[33mdbf5c5a[m simplified code
+[33m60bc040[m coded on further
+[33m3f91383[m Update RegisterForm.tsx
+[33m431d235[m Update LoginForm.tsx
+[33m12f3def[m background changes for the app
+[33mec7b581[m hopefully success to host
+[33m8d52a02[m update for hosting try
+[33m485bc36[m update
+[33m191669d[m update
+[33mb852cce[m push
+[33m946852f[m everything working
+[33m9abba45[m for hosting
+[33m646c771[m update
+[33me462978[m deploy
