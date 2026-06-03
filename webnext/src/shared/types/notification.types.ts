@@ -10,7 +10,8 @@ export type NotificationType =
   | "friend_accepted"
   | "missed_call"
   | "safety_alert"
-  | "system";
+  | "system"
+  | "interest_claimed";
 
 // ─────────────────────────────────────────────────────────
 // Notification row — matches GET /notifications/ response
@@ -42,6 +43,7 @@ export type WSNotificationEventType =
   | "notification.unread_count"
   | "notification.safety_alert"
   | "notification.system"
+  | "notification.interest_claimed"
   | "pong"
   | "error";
 
@@ -122,6 +124,13 @@ export interface WSSystemEvent {
   timestamp: string;
 }
 
+export interface WSInterestClaimedEvent {
+  event: "notification.interest_claimed";
+  from_user_id: number;
+  from_name: string;
+  timestamp: string;
+}
+
 export interface WSPongEvent {
   event: "pong";
   timestamp: string;
@@ -147,6 +156,7 @@ export type WSNotificationEvent =
   | WSUnreadCountEvent
   | WSSafetyAlertEvent
   | WSSystemEvent
+  | WSInterestClaimedEvent
   | WSPongEvent
   | WSErrorEvent;
 

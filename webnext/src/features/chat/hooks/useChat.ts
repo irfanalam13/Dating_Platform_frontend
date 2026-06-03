@@ -77,11 +77,12 @@ export function useChat(conversationId: string | null): UseChatReturn {
 
         case "message": {
           const e = event as WSChatMessage;
+          const senderId = parseInt(e.sender_id, 10);
           const newMsg: Message = {
             id:           e.message_id,
             conversation: conversationId!,
             sender: {
-              id:        parseInt(e.sender_id, 10),
+              id:        senderId,
               username:  e.sender_name,
               email:     "",
               is_online: true,
@@ -93,16 +94,40 @@ export function useChat(conversationId: string | null): UseChatReturn {
             created_at: e.timestamp,
           };
 
+          const isOwnEcho = currentUser?.id === senderId;
+
           queryClient.setQueryData<{ results: Message[] }>(
             chatKeys.messages(conversationId!),
-            (old) => ({
-              ...old,
-              results: [...(old?.results ?? []), newMsg],
-            })
+            (old) => {
+              const existing = old?.results ?? [];
+
+              // Already have this server message — ignore the duplicate.
+              if (existing.some((m) => m.id === newMsg.id)) {
+                return { ...old, results: existing };
+              }
+
+              // Server echo of a message we just sent → swap the matching
+              // optimistic (temp) entry in place so it doesn't appear twice.
+              if (isOwnEcho) {
+                const tempIdx = existing.findIndex(
+                  (m) => m.id.startsWith("temp-") && m.content === newMsg.content
+                );
+                if (tempIdx !== -1) {
+                  const next = [...existing];
+                  next[tempIdx] = newMsg;
+                  return { ...old, results: next };
+                }
+              }
+
+              return { ...old, results: [...existing, newMsg] };
+            }
           );
 
-          wsRef.current?.sendRead();
-          markConversationRead(conversationId!);
+          // Only mark read for messages from the other person, not our own echo.
+          if (!isOwnEcho) {
+            wsRef.current?.sendRead();
+            markConversationRead(conversationId!);
+          }
           break;
         }
 
@@ -243,12 +268,6 @@ export function useChat(conversationId: string | null): UseChatReturn {
       const trimmed = text.trim();
       if (!trimmed || !conversationId) return;
 
-      console.log("send() called:", {
-        wsRef: !!wsRef.current,
-        wsStatusRef: wsStatusRef.current,
-        wsReadyState: (wsRef.current as any)?.ws?.readyState,
-      });
-
       if (!wsRef.current) {
         console.warn("❌ wsRef.current is null — WS not initialized");
         return;
@@ -259,9 +278,37 @@ export function useChat(conversationId: string | null): UseChatReturn {
         return;
       }
 
+      // ✅ Optimistic update — show the sender's own message immediately.
+      // Reconciled/deduped when the server echoes it back (see "message" handler).
+      if (currentUser) {
+        const optimistic: Message = {
+          id:           `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          conversation: conversationId,
+          sender: {
+            id:        currentUser.id,
+            username:  currentUser.username ?? "",
+            email:     currentUser.email ?? "",
+            is_online: true,
+            last_seen: null,
+          },
+          content:    trimmed,
+          is_read:    false,
+          read_at:    null,
+          created_at: new Date().toISOString(),
+        };
+
+        queryClient.setQueryData<{ results: Message[] }>(
+          chatKeys.messages(conversationId),
+          (old) => ({
+            ...old,
+            results: [...(old?.results ?? []), optimistic],
+          })
+        );
+      }
+
       wsRef.current.sendMessage(trimmed);
     },
-    [conversationId]   // ✅ no wsStatus dep — reads from ref instead
+    [conversationId, currentUser, queryClient]   // reads wsStatus from ref, not deps
   );
 
   const sendTyping = useCallback((isTyping: boolean) => {

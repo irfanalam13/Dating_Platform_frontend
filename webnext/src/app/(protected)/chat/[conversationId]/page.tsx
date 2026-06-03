@@ -1,53 +1,135 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/features/auth'
-import { MessageInbox } from '@/features/chat/components/MessageInbox'
-import ChatWindow from '@/features/chat/components/ChatWindow'
-import ConversationList from '@/features/chat/components/ConversationList'
-import NotificationBell from '@/features/notification/components/NotificationBell'
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
+import { Ban, ChevronLeft, Flag } from "lucide-react";
+import { getConversations } from "@/shared/api/chat.api";
+import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
+import { useAuth } from "@/features/auth";
+import ChatWindow from "@/features/chat/components/ChatWindow";
+import ConversationList from "@/features/chat/components/ConversationList";
+import NotificationBell from "@/features/notification/components/NotificationBell";
 
-export default function ChatPage() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [activeId, setActiveId] = useState<string | null>(null)
+export default function ConversationPage() {
+  const router = useRouter();
+  const params = useParams<{ conversationId: string }>();
+  const conversationIdStr = String(params.conversationId);
+  const { user } = useAuth();
+  const [showReport, setShowReport] = useState(false);
+
+  // Look up the conversation so we can identify the OTHER participant
+  // (needed for block/report — must NOT target yourself).
+  const { data: conversationsData } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: getConversations,
+    retry: false,
+  });
+
+  const conversation = conversationsData?.results?.find(
+    (c) => String(c.id) === conversationIdStr
+  );
+
+  const other = conversation?.participants?.find((p) => p.id !== user?.id);
+  // profile_id is returned by the backend but not on the base type — read it safely.
+  const otherProfileId = (other as { profile_id?: number } | undefined)?.profile_id;
+
+  const blockMutation = useMutation({
+    mutationFn: blockProfile,
+    onSuccess: () => router.push("/chat"),
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: (profileId: number) =>
+      reportProfile(profileId, {
+        reason: "other",
+        description: "Reported from chat safety controls.",
+      }),
+    onSuccess: () => setShowReport(false),
+  });
 
   return (
-    <>
-      {/* Mobile: show the new MessageInbox */}
-      <div className="block lg:hidden">
-        <MessageInbox />
-      </div>
+    <div className="flex h-[100dvh] overflow-hidden bg-gray-50 dark:bg-gray-950">
+      {/* ── Desktop-only sidebar (WhatsApp-style persistent list) ── */}
+      <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {user?.username}
+          </span>
+          <NotificationBell />
+        </div>
+        <ConversationList
+          activeId={conversationIdStr}
+          onSelect={(id) => router.push(`/chat/${id}`)}
+        />
+      </aside>
 
-      {/* Desktop: keep the two-panel layout */}
-      <div className="hidden lg:flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-        {/* Sidebar */}
-        <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-          {/* Sidebar header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {user?.username}
-            </span>
-            <div className="flex items-center gap-1">
-              <NotificationBell />
-            </div>
+      {/* ── Conversation panel: full width on mobile, right panel on desktop ── */}
+      <main className="flex flex-1 flex-col min-w-0 bg-white dark:bg-gray-950">
+        {/* Safety bar */}
+        <div className="flex items-center gap-2 border-b border-[#EADDD2] bg-white px-3 py-2">
+          {/* Back button only makes sense on mobile — desktop keeps the list visible */}
+          <button
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="grid h-9 w-9 place-items-center rounded-full text-[#2D2424] lg:hidden"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span className="flex-1 text-xs font-medium text-[#746767]">
+            Mutual match · keep it respectful
+          </span>
+          <button
+            onClick={() => setShowReport(true)}
+            disabled={!otherProfileId}
+            aria-label="Report"
+            className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-40"
+          >
+            <Flag className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => otherProfileId && blockMutation.mutate(otherProfileId)}
+            disabled={!otherProfileId || blockMutation.isPending}
+            aria-label="Block"
+            className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-40"
+          >
+            <Ban className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Live WebSocket chat — mounted once */}
+        <div className="min-h-0 flex-1">
+          <ChatWindow conversationId={conversationIdStr} />
+        </div>
+      </main>
+
+      {/* ── Report modal ── */}
+      {showReport && otherProfileId && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4">
+          <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center">
+            <Flag className="mx-auto mb-3 h-8 w-8 text-[#7A2432]" />
+            <h2 className="text-lg font-semibold text-[#2D2424]">
+              Report this conversation?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#746767]">
+              Your report goes to the safety team. The other person will not be notified.
+            </p>
+            <button
+              onClick={() => reportMutation.mutate(otherProfileId)}
+              disabled={reportMutation.isPending}
+              className="mt-5 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Submit report
+            </button>
+            <button
+              onClick={() => setShowReport(false)}
+              className="mt-3 text-sm font-semibold text-[#746767]"
+            >
+              Cancel
+            </button>
           </div>
-
-          <ConversationList activeId={activeId} onSelect={setActiveId} />
-        </aside>
-
-        {/* Chat area */}
-        <main className="flex-1 flex flex-col min-w-0">
-          {activeId ? (
-            <ChatWindow conversationId={activeId} />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              Select a conversation to start chatting
-            </div>
-          )}
-        </main>
-      </div>
-    </>
-  )
+        </div>
+      )}
+    </div>
+  );
 }

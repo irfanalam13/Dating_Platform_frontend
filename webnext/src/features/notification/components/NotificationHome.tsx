@@ -88,7 +88,7 @@ export default function NotificationHome() {
 
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-md lg:max-w-2xl">
         <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button

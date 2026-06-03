@@ -24,6 +24,7 @@ import type {
   WSMissedCallEvent,
   WSSafetyAlertEvent,
   WSSystemEvent,
+  WSInterestClaimedEvent,
   WSUnreadCountEvent,
   WSUserOnlineEvent,
   WSUserOfflineEvent,
@@ -55,6 +56,7 @@ const EVENT_TO_TYPE: Partial<Record<string, NotificationType>> = {
   "notification.missed_call":     "missed_call",
   "notification.safety_alert":    "safety_alert",
   "notification.system":          "system",
+  "notification.interest_claimed": "interest_claimed",
 };
 
 function buildNotification(event: WSNotificationEvent): Notification | null {
@@ -99,6 +101,12 @@ function buildNotification(event: WSNotificationEvent): Notification | null {
       const e = event as WSSystemEvent;
       title = "System notice";
       body  = e.message;
+      break;
+    }
+    case "notification.interest_claimed": {
+      const e = event as WSInterestClaimedEvent;
+      title = "Someone is interested in you!";
+      body  = `${e.from_name} claimed interest in your profile.`;
       break;
     }
   }

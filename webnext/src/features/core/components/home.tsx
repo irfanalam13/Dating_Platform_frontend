@@ -5,11 +5,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
-  BookOpen,
   Eye,
   HeartHandshake,
   MapPin,
   RefreshCw,
+  Star,
+  Undo2,
   X,
   Sparkles,
 } from "lucide-react";
@@ -19,7 +20,7 @@ import type { Profile } from "@/shared/types/profile.types";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth";
 import { createOrGetConversation } from "@/shared/api/chat.api";
-import { showError } from "@/shared/utils/toast";
+import { showError, showSuccess } from "@/shared/utils/toast";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useMyProfile } from "@/features/profile/hooks/useProfile";
 
@@ -286,6 +287,7 @@ export default function HomePage() {
 
   // ─── State ────────────────────────────────────────────────────────────────────
   const [queue, setQueue] = useState<Profile[]>([]);
+  const [index, setIndex] = useState(0);
   const [queueReady, setQueueReady] = useState(false);
   const [matchProfile, setMatchProfile] = useState<Profile | null>(null);
   const [viewProfile, setViewProfile] = useState<Profile | null>(null);
@@ -307,7 +309,7 @@ export default function HomePage() {
 
 
   // ─── Derived ──────────────────────────────────────────────────────────────────
-  const current = queue[0];
+  const current = queue[index];
 
   // ✅ FIX 2: Keep a stable ref to `current` so event handlers don't need it as dep
   const currentRef = useRef<Profile | undefined>(undefined);
@@ -317,24 +319,36 @@ export default function HomePage() {
 
   // ─── Mutations ────────────────────────────────────────────────────────────────
 
-  // ✅ FIX 3: Actually remove from queue — NOT recycle to end
-  const shiftQueue = useCallback(() => {
-    setQueue((prev) => prev.slice(1));
+  // ── Browse navigation: scroll/drag DOWN → next, UP → previous ──
+  const goNext = useCallback(() => {
+    setIndex((i) => (i >= queue.length - 1 ? i : i + 1));
+    setSwipeDirection("up");
+    dragYRef.current = 0;
+    setDragYDisplay(0);
+  }, [queue.length]);
+
+  const goBack = useCallback(() => {
+    setIndex((i) => (i <= 0 ? i : i - 1));
+    setSwipeDirection("down");
+    dragYRef.current = 0;
+    setDragYDisplay(0);
   }, []);
 
+  // Star → add to favourites (expresses interest; may create a mutual match)
   const interestMutation = useMutation({
     mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass" }) =>
       sendInterest(profileId, action),
     onSuccess: (res) => {
-      if (res.matched && currentRef.current) setMatchProfile(currentRef.current);
-      shiftQueue();
+      if (res.matched && currentRef.current) {
+        setMatchProfile(currentRef.current);
+      } else {
+        showSuccess("Added to favourites");
+      }
       setViewProfile(null);
-      setSwipeDirection(null);
       dragYRef.current = 0;
       setDragYDisplay(0);
     },
     onError: () => {
-      setSwipeDirection(null);
       dragYRef.current = 0;
       setDragYDisplay(0);
     },
@@ -355,32 +369,29 @@ export default function HomePage() {
     onError: () => showError("Could not open conversation. Please try again."),
   });
 
-  // ✅ FIX 5: handleAction only depends on mutate (stable), not the full mutation object
-  const handleAction = useCallback(
-    (action: "like" | "pass") => {
-      if (!currentRef.current || isPendingRef.current) return;
-      setSwipeDirection(action === "like" ? "up" : "down");
-      interestMutation.mutate({ profileId: currentRef.current.id, action });
-    },
-    [interestMutation.mutate]
-  );
+  // Favourite the current profile (stable — depends only on mutate)
+  const handleFavourite = useCallback(() => {
+    if (!currentRef.current || isPendingRef.current) return;
+    interestMutation.mutate({ profileId: currentRef.current.id, action: "like" });
+  }, [interestMutation.mutate]);
 
   useEffect(() => {
     if (data?.results) {
       setQueue(data.results);
+      setIndex(0); // start from the first profile on every (re)load
       setQueueReady(true); // ✅ always set ready, even if empty
     }
   }, [data]);
 
-  // ✅ FIX 6: Keyboard + scroll — stable because handleAction is now stable
+  // Keyboard + scroll — UP goes back a profile, DOWN advances to the next
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowUp")   handleAction("like");
-      if (e.key === "ArrowDown") handleAction("pass");
+      if (e.key === "ArrowUp")   goBack();
+      if (e.key === "ArrowDown") goNext();
     };
     const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY < -50) handleAction("like");
-      if (e.deltaY > 50)  handleAction("pass");
+      if (e.deltaY < -50) goBack();
+      if (e.deltaY > 50)  goNext();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -389,7 +400,7 @@ export default function HomePage() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("wheel", handleWheel);
     };
-  }, [handleAction]);
+  }, [goBack, goNext]);
 
   const handleRefresh = () => {
     setQueueReady(false);
@@ -503,8 +514,7 @@ export default function HomePage() {
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
               drag="y"
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.8}
-              // ✅ FIX 7: Write to ref first, only setDragYDisplay for animation
+              dragElastic={0.6}
               onDrag={(_, info) => {
                 dragYRef.current = info.offset.y;
                 setDragYDisplay(info.offset.y);
@@ -512,132 +522,120 @@ export default function HomePage() {
               onDragEnd={(_, info) => {
                 const threshold = 80;
                 if (info.offset.y < -threshold) {
-                  handleAction("like");
+                  goBack();
                 } else if (info.offset.y > threshold) {
-                  handleAction("pass");
+                  goNext();
                 }
                 dragYRef.current = 0;
                 setDragYDisplay(0);
               }}
-              className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#EADDD2] shadow-sm cursor-grab active:cursor-grabbing select-none"
+              className="relative flex flex-1 min-h-[520px] overflow-hidden rounded-[26px] border border-white/40 shadow-[0_12px_40px_rgba(16,24,40,0.18)] cursor-grab active:cursor-grabbing select-none"
             >
-              {/* Image */}
-              <div className="relative h-[430px] shrink-0">
-                <img
-                  src={displayImage(current)}
-                  alt={current.full_name || "Profile"}
-                  className="h-full w-full object-cover"
-                  loading="eager"
-                  draggable={false}
-                />
+              {/* Full-bleed photo */}
+              <img
+                src={displayImage(current)}
+                alt={current.full_name || "Profile"}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="eager"
+                draggable={false}
+              />
 
-                {/* LIKE indicator — fades in when dragging UP */}
-                <motion.div
-                  className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none"
-                  animate={{
-                    opacity: dragYDisplay < -40 ? Math.min((-dragYDisplay - 40) / 60, 1) : 0,
-                  }}
-                >
-                  <div className="rotate-[-5deg] rounded-xl border-4 border-[#3F7D63] bg-white/10 px-5 py-2 backdrop-blur-sm">
-                    <span className="text-2xl font-black text-[#3F7D63]">
-                      LIKE ❤️
-                    </span>
-                  </div>
-                </motion.div>
+              {/* Bottom gradient for legibility */}
+              <div className="absolute inset-x-0 bottom-0 top-1/3 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
 
-                {/* PASS indicator — fades in when dragging DOWN */}
-                <motion.div
-                  className="absolute inset-x-0 bottom-24 z-10 flex justify-center pointer-events-none"
-                  animate={{
-                    opacity: dragYDisplay > 40 ? Math.min((dragYDisplay - 40) / 60, 1) : 0,
-                  }}
-                >
-                  <div className="rotate-[5deg] rounded-xl border-4 border-[#7A2432] bg-white/10 px-5 py-2 backdrop-blur-sm">
-                    <span className="text-2xl font-black text-[#7A2432]">
-                      PASS ✕
-                    </span>
-                  </div>
-                </motion.div>
+              {/* Drag hints: UP = previous, DOWN = next */}
+              <motion.div
+                className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none"
+                animate={{ opacity: dragYDisplay < -40 ? Math.min((-dragYDisplay - 40) / 60, 1) : 0 }}
+              >
+                <span className="rounded-full bg-white/25 px-4 py-1 text-sm font-semibold text-white backdrop-blur-sm">
+                  ↑ Previous
+                </span>
+              </motion.div>
+              <motion.div
+                className="absolute inset-x-0 top-6 z-10 flex justify-center pointer-events-none"
+                animate={{ opacity: dragYDisplay > 40 ? Math.min((dragYDisplay - 40) / 60, 1) : 0 }}
+              >
+                <span className="rounded-full bg-white/25 px-4 py-1 text-sm font-semibold text-white backdrop-blur-sm">
+                  ↓ Next
+                </span>
+              </motion.div>
 
-                {/* Gradient + name overlay */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2D2424]/85 via-[#2D2424]/30 to-transparent p-5 pt-24 text-white">
-                  <div className="mb-1 flex items-center gap-2">
-                    <h2 className="text-2xl font-bold">
-                      {current.full_name || "Profile"}
-                    </h2>
-                    {current.verified && (
-                      <BadgeCheck className="h-5 w-5 text-[#B78A3B]" />
-                    )}
-                  </div>
-                  <p className="flex items-center gap-1 text-sm text-white/85">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {[current.age, current.city, current.career]
-                      .filter(Boolean)
-                      .join(" · ") || "Profile"}
-                  </p>
+              {/* Overlay content */}
+              <div className="relative z-10 mt-auto w-full p-5 text-white">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-3xl font-bold drop-shadow-sm">
+                    {current.full_name || "Profile"}
+                  </h2>
+                  {current.verified && <BadgeCheck className="h-6 w-6 text-[#FFD27A]" />}
                 </div>
-              </div>
 
-              {/* Card body */}
-              <div className="space-y-4 p-5">
-                {current.bio && (
-                  <p className="line-clamp-3 text-sm leading-6 text-[#746767]">
-                    {current.bio}
+                {(current.city || current.age) && (
+                  <p className="mt-1 flex items-center gap-1 text-sm text-white/90">
+                    <MapPin className="h-4 w-4" />
+                    {[current.city, current.age].filter(Boolean).join(" · ")}
                   </p>
                 )}
 
-                {(current.compatibility_tags ?? []).length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {(current.compatibility_tags ?? []).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full px-3 py-1 text-xs font-medium text-[#7A2432]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-2 text-sm">
-                  <div className="flex items-center gap-2 rounded-xl border border-[#EADDD2] p-3">
-                    <BookOpen className="h-4 w-4 shrink-0 text-[#7A2432]" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-[#746767]">Education</p>
-                      <p className="truncate font-medium">
-                        {current.education || "Not added"}
-                      </p>
+                {/* Tag pills */}
+                {(() => {
+                  // Drop the generic "Meaningful profile" tag the backend adds
+                  const realTags = (current.compatibility_tags ?? []).filter(
+                    (t) => t?.trim().toLowerCase() !== "meaningful profile"
+                  );
+                  const tags =
+                    realTags.length > 0
+                      ? realTags
+                      : ([current.career, current.values].filter(Boolean) as string[]);
+                  return tags.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-white/40 bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-                </div>
+                  ) : null;
+                })()}
 
-                {/* Action buttons */}
-                <div className="grid grid-cols-3 gap-3 pt-1">
+                {/* Hobbies */}
+                {current.hobbies && (
+                  <p className="mt-3 line-clamp-2 text-sm text-white/85">
+                    <span className="font-semibold">Hobbies:</span> {current.hobbies}
+                  </p>
+                )}
+
+                {/* Action row: Previous · View profile · Favourite */}
+                <div className="mt-5 flex items-center justify-between gap-3">
                   <button
-                    onClick={() => handleAction("pass")}
-                    disabled={interestMutation.isPending}
-                    className="flex h-12 items-center justify-center rounded-xl border border-[#EADDD2] text-[#746767] transition-colors hover:bg-[#F8EFE6] disabled:opacity-50"
+                    onClick={goBack}
+                    disabled={index === 0}
+                    aria-label="Previous profile"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 text-white backdrop-blur-md transition hover:bg-white/30 disabled:opacity-40"
                   >
-                    <X className="h-5 w-5" />
+                    <Undo2 className="h-5 w-5" />
                   </button>
 
                   <button
                     onClick={() => setViewProfile(current)}
-                    className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-[#EADDD2] text-sm font-semibold text-[#7A2432]"
+                    className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#FF4458] text-sm font-semibold text-white shadow-lg transition hover:brightness-105"
                   >
-                    <Eye className="h-4 w-4" />
-                    View
+                    View profile
                   </button>
 
                   <button
-                    onClick={() => handleAction("like")}
+                    onClick={handleFavourite}
                     disabled={interestMutation.isPending}
-                    className="flex h-12 items-center justify-center rounded-xl bg-[#7A2432] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    aria-label="Add to favourites"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 text-[#FFC94D] backdrop-blur-md transition hover:bg-white/30 disabled:opacity-50"
                   >
-                    {interestMutation.isPending && swipeDirection === "up" ? (
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    {interestMutation.isPending ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#FFC94D] border-t-transparent" />
                     ) : (
-                      <HeartHandshake className="h-5 w-5" />
+                      <Star className="h-5 w-5" fill="currentColor" />
                     )}
                   </button>
                 </div>
@@ -649,15 +647,30 @@ export default function HomePage() {
         )}
       </div>
 
+      {/* ── Match modal — shown when a favourite becomes a mutual match ── */}
+        <AnimatePresence>
+          {matchProfile && (
+            <MatchModal
+              profile={matchProfile}
+              onMessage={() => conversationMutation.mutate(matchProfile.user)}
+              onDismiss={() => setMatchProfile(null)}
+              isPending={conversationMutation.isPending}
+            />
+          )}
+        </AnimatePresence>
+
       {/* ── View profile modal ── */}
         <AnimatePresence>
           {viewProfile && (
             <ViewProfileModal
               profile={viewProfile}
               onClose={() => setViewProfile(null)}
-              onLike={() => handleAction("like")}
-              onPass={() => handleAction("pass")}
-              onViewFull={() => router.push(`/profile/${viewProfile.id}`)}  // 👈 add this
+              onLike={handleFavourite}
+              onPass={() => {
+                setViewProfile(null);
+                goNext();
+              }}
+              onViewFull={() => router.push(`/profile/${viewProfile.id}`)}
               isPending={interestMutation.isPending}
             />
           )}
