@@ -175,18 +175,22 @@ export default function PreferencesPage() {
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/45 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div className="grid grid-cols-2 gap-2">
             <button
-              type="button"
               onClick={() => setActiveScope("your_hobbies")}
-              style={{ color: activeScope === "your_hobbies" ? "#DC143C" : "#000000" }}
-              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
+              className={`glass-btn h-11 rounded-full text-sm font-semibold transition ${
+                activeScope === "your_hobbies"
+                  ? "text-[#2D2424]"
+                  : "text-[#746767]"
+              }`}
             >
               Your hobbies
             </button>
             <button
-              type="button"
               onClick={() => setActiveScope("partners_type")}
-              style={{ color: activeScope === "partners_type" ? "#DC143C" : "#000000" }}
-              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
+              className={`glass-btn h-11 rounded-full text-sm font-semibold transition ${
+                activeScope === "partners_type"
+                  ? "text-[#2D2424]"
+                  : "text-[#746767]"
+              }`}
             >
               Partner&apos;s type
             </button>
@@ -244,7 +248,6 @@ export default function PreferencesPage() {
           />
 
           <button
-            type="button"
             onClick={save}
             disabled={updateMutation.isPending}
             className="glass-btn mt-2 h-12 w-full rounded-full text-sm font-semibold text-[#1f6f54] disabled:opacity-60"
@@ -277,11 +280,11 @@ function ChipSection({
           return (
             <button
               key={option}
-              type="button"
               onClick={() => onSelect(option)}
-              style={{ color: active ? "#1f6f54" : "#2D2424" }}
               className={`glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                active ? "border border-[#1f6f54]/60 bg-white/70" : ""
+                active
+                  ? "border border-[#7A2432]/60 bg-white/70 text-[#7A2432]"
+                  : "text-[#2D2424]"
               }`}
             >
               {option}
