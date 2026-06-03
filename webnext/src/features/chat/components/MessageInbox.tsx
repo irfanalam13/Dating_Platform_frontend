@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
@@ -37,6 +38,7 @@ export function MessageInbox() {
   const router                      = useRouter();
   const { user }                    = useAuth();
   const { unreadCounts, onlineUsers } = useNotificationContext();
+  const [query, setQuery]           = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
@@ -56,11 +58,24 @@ export function MessageInbox() {
 
   const getOtherParticipant = (
     participants: ConversationParticipant[]
-  ): ConversationParticipant | undefined =>
-    participants.find((p) => p.id !== user?.id);
+  ): ConversationParticipant | undefined => {
+    // Coerce to Number so a string/number id mismatch doesn't make us
+    // accidentally pick ourselves (which showed the current user's profile).
+    const myId = Number(user?.id);
+    return participants.find((p) => Number(p.id) !== myId);
+  };
+
+  // Filter by the other participant's name/username (case-insensitive)
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? sorted.filter((conv) => {
+        const person = getOtherParticipant(conv.participants);
+        return person ? getDisplayName(person).toLowerCase().includes(q) : false;
+      })
+    : sorted;
 
   // Get all participants for the horizontal match bar
-  const matchParticipants = sorted
+  const matchParticipants = filtered
     .map((conv) => {
       const person = getOtherParticipant(conv.participants);
       if (!person) return null;
@@ -100,6 +115,8 @@ export function MessageInbox() {
           <div className="relative">
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search your matches"
               className="w-full rounded-full border border-white/70 bg-white/75 py-3 pl-5 pr-12 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none shadow-[0_8px_20px_rgba(16,24,40,0.08)] backdrop-blur-md transition-all focus:border-[#4cc9f0] focus:ring-2 focus:ring-[#4cc9f0]/20"
             />
@@ -111,10 +128,13 @@ export function MessageInbox() {
         {matchParticipants.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 pb-3">
-              {matchParticipants.map(({ person, isOnline, conversationId }) => (
+              {matchParticipants.map(({ person, isOnline }) => (
                 <button
                   key={person.id}
-                  onClick={() => router.push(`/chat/${conversationId}`)}
+                  // TODO(stories): if this person has an active story, open the
+                  // story viewer instead. No stories backend exists yet, so for
+                  // now tapping the avatar opens their profile page.
+                  onClick={() => router.push(`/profile/${person.id}`)}
                   className="flex shrink-0 flex-col items-center gap-1"
                 >
                   <div className="relative">
@@ -145,7 +165,7 @@ export function MessageInbox() {
               ))}
             </div>
 
-            <div className="mt-2 h-px w-full bg-white/70" />
+            <div className="mt-2 h-px w-full bg-gray-300" />
           </div>
         )}
 
@@ -168,7 +188,7 @@ export function MessageInbox() {
         )}
 
         {/* Empty state */}
-        {!isLoading && sorted.length === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-[28px] border border-white/60 bg-white/50 p-8 text-center shadow-[0_10px_26px_rgba(16,24,40,0.08)] backdrop-blur-md">
             <div>
               <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-[#e8f4fd] shadow-[0_8px_18px_rgba(16,24,40,0.08)]">
@@ -176,18 +196,22 @@ export function MessageInbox() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                 </svg>
               </div>
-              <h2 className="text-lg font-bold text-[#1a1a2e]">No conversations yet</h2>
+              <h2 className="text-lg font-bold text-[#1a1a2e]">
+                {q ? "No matches found" : "No conversations yet"}
+              </h2>
               <p className="mt-2 text-sm leading-6 text-gray-500">
-                When both people show interest, a conversation will open here.
+                {q
+                  ? `No one matching “${query}”.`
+                  : "When both people show interest, a conversation will open here."}
               </p>
             </div>
           </div>
         )}
 
         {/* Conversation list */}
-        {!isLoading && sorted.length > 0 && (
-          <div className="space-y-3">
-            {sorted.map((conversation) => {
+        {!isLoading && filtered.length > 0 && (
+          <div className="space-y-1">
+            {filtered.map((conversation) => {
               const person = getOtherParticipant(conversation.participants);
               if (!person) return null;
 
@@ -200,7 +224,7 @@ export function MessageInbox() {
                 <button
                   key={conversation.id}
                   onClick={() => router.push(`/chat/${conversation.id}`)}
-                  className="flex w-full items-center gap-3 rounded-[24px] border border-white/65 bg-white/50 p-4 text-left shadow-[0_8px_20px_rgba(16,24,40,0.06)] backdrop-blur-md transition-all hover:bg-white/70 active:scale-[0.99]"
+                  className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-white/40 active:scale-[0.99]"
                 >
                   {/* Avatar with online dot */}
                   <div className="relative shrink-0">

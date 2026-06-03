@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
   Eye,
+  Heart,
   HeartHandshake,
   MapPin,
   RefreshCw,
@@ -297,6 +298,13 @@ export default function HomePage() {
   const dragYRef = useRef(0);
   const [dragYDisplay, setDragYDisplay] = useState(0);
 
+  // Double-tap-to-like (TikTok/Instagram style)
+  const [heartBurst, setHeartBurst] = useState(false);
+  const lastTapRef = useRef(0);
+
+  // Profiles the user has liked — drives the heart fill (hollow → reddish)
+  const [liked, setLiked] = useState<Set<number>>(new Set());
+
   // ─── Query ────────────────────────────────────────────────────────────────────
   const { isLoading, refetch, isRefetching, data, isError } = useQuery({
     queryKey: ["discoverProfiles"],
@@ -334,15 +342,22 @@ export default function HomePage() {
     setDragYDisplay(0);
   }, []);
 
-  // Star → add to favourites (expresses interest; may create a mutual match)
+  // Express interest. kind === "superstar" (double-tap) vs "like" (heart button)
+  // changes only the toast — the backend action is the same.
   const interestMutation = useMutation({
-    mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass" }) =>
+    mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass"; kind?: "like" | "superstar" }) =>
       sendInterest(profileId, action),
-    onSuccess: (res) => {
+    onSuccess: (res, variables) => {
+      setLiked((prev) => new Set(prev).add(variables.profileId));
       if (res.matched && currentRef.current) {
         setMatchProfile(currentRef.current);
       } else {
-        showSuccess("Added to favourites");
+        const username = currentRef.current?.full_name || "this person";
+        showSuccess(
+          variables.kind === "superstar"
+            ? `you gave ${username} superstar`
+            : `you like ${username}`
+        );
       }
       setViewProfile(null);
       dragYRef.current = 0;
@@ -369,11 +384,23 @@ export default function HomePage() {
     onError: () => showError("Could not open conversation. Please try again."),
   });
 
-  // Favourite the current profile (stable — depends only on mutate)
-  const handleFavourite = useCallback(() => {
+  // Express interest — "like" (heart button) or "superstar" (double-tap)
+  const giveInterest = useCallback((kind: "like" | "superstar") => {
     if (!currentRef.current || isPendingRef.current) return;
-    interestMutation.mutate({ profileId: currentRef.current.id, action: "like" });
+    interestMutation.mutate({ profileId: currentRef.current.id, action: "like", kind });
   }, [interestMutation.mutate]);
+
+  // Double-tap the photo → star burst + superstar (TikTok/Instagram style)
+  const handlePhotoTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      lastTapRef.current = 0;
+      setHeartBurst(true);
+      giveInterest("superstar");
+    } else {
+      lastTapRef.current = now;
+    }
+  }, [giveInterest]);
 
   useEffect(() => {
     if (data?.results) {
@@ -383,15 +410,21 @@ export default function HomePage() {
     }
   }, [data]);
 
-  // Keyboard + scroll — UP goes back a profile, DOWN advances to the next
+  // Keyboard + scroll — UP goes back a profile, DOWN advances to the next.
+  // The wheel is throttled so one scroll gesture = exactly one profile.
   useEffect(() => {
+    let wheelLocked = false;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp")   goBack();
       if (e.key === "ArrowDown") goNext();
     };
     const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY < -50) goBack();
-      if (e.deltaY > 50)  goNext();
+      if (Math.abs(e.deltaY) < 30 || wheelLocked) return;
+      wheelLocked = true;
+      if (e.deltaY > 0) goNext();
+      else goBack();
+      window.setTimeout(() => { wheelLocked = false; }, 450);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -540,6 +573,29 @@ export default function HomePage() {
                 draggable={false}
               />
 
+              {/* Double-tap target over the photo (buttons sit above this, z-10) */}
+              <div
+                className="absolute inset-0 z-[6]"
+                onClick={handlePhotoTap}
+              />
+
+              {/* Star burst on double-tap → "super interested" */}
+              {heartBurst && (
+                <motion.div
+                  key="star-burst"
+                  className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0] }}
+                  transition={{ duration: 0.9, times: [0, 0.3, 1] }}
+                  onAnimationComplete={() => setHeartBurst(false)}
+                >
+                  <Star
+                    className="h-28 w-28 text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
+                    fill="#FFC94D"
+                  />
+                </motion.div>
+              )}
+
               {/* Bottom gradient for legibility */}
               <div className="absolute inset-x-0 bottom-0 top-1/3 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
 
@@ -570,12 +626,19 @@ export default function HomePage() {
                   {current.verified && <BadgeCheck className="h-6 w-6 text-[#FFD27A]" />}
                 </div>
 
-                {(current.city || current.age) && (
-                  <p className="mt-1 flex items-center gap-1 text-sm text-white/90">
-                    <MapPin className="h-4 w-4" />
-                    {[current.city, current.age].filter(Boolean).join(" · ")}
-                  </p>
-                )}
+                {(() => {
+                  const ageNum = Number(current.age);
+                  const bits = [
+                    current.city,
+                    Number.isFinite(ageNum) && ageNum > 0 ? String(ageNum) : null,
+                  ].filter(Boolean) as string[];
+                  return bits.length > 0 ? (
+                    <p className="mt-1 flex items-center gap-1 text-sm text-white/90">
+                      <MapPin className="h-4 w-4" />
+                      {bits.join(" · ")}
+                    </p>
+                  ) : null;
+                })()}
 
                 {/* Tag pills */}
                 {(() => {
@@ -608,7 +671,7 @@ export default function HomePage() {
                   </p>
                 )}
 
-                {/* Action row: Previous · View profile · Favourite */}
+                {/* Action row: Previous · View profile · Interested (like) */}
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <button
                     onClick={goBack}
@@ -620,22 +683,27 @@ export default function HomePage() {
                   </button>
 
                   <button
-                    onClick={() => setViewProfile(current)}
+                    onClick={() => router.push(`/profile/${current.id}`)}
                     className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#FF4458] text-sm font-semibold text-white shadow-lg transition hover:brightness-105"
                   >
                     View profile
                   </button>
 
                   <button
-                    onClick={handleFavourite}
+                    onClick={() => giveInterest("like")}
                     disabled={interestMutation.isPending}
-                    aria-label="Add to favourites"
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 text-[#FFC94D] backdrop-blur-md transition hover:bg-white/30 disabled:opacity-50"
+                    aria-label="Like"
+                    className={`grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur-md transition hover:bg-white/30 disabled:opacity-50 ${
+                      liked.has(current.id) ? "text-[#FF4458]" : "text-white"
+                    }`}
                   >
                     {interestMutation.isPending ? (
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#FFC94D] border-t-transparent" />
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     ) : (
-                      <Star className="h-5 w-5" fill="currentColor" />
+                      <Heart
+                        className="h-5 w-5"
+                        fill={liked.has(current.id) ? "currentColor" : "none"}
+                      />
                     )}
                   </button>
                 </div>
@@ -647,7 +715,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* ── Match modal — shown when a favourite becomes a mutual match ── */}
+      {/* ── Match modal — shown when a SuperStar becomes a mutual match ── */}
         <AnimatePresence>
           {matchProfile && (
             <MatchModal
@@ -665,7 +733,7 @@ export default function HomePage() {
             <ViewProfileModal
               profile={viewProfile}
               onClose={() => setViewProfile(null)}
-              onLike={handleFavourite}
+              onLike={() => giveInterest("like")}
               onPass={() => {
                 setViewProfile(null);
                 goNext();

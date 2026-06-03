@@ -14,5 +14,9 @@ export interface PendingMatch {
   sender?: string;   // ⚠️ likely a user id or email — add console.log to confirm
   receiver?: string;
   status: string;
+  // Backend should set one of these when the interest was a "superstar"
+  // (double-tap) rather than a normal like. Until then it reads as a like.
+  type?: "like" | "superstar" | string;
+  is_super?: boolean;
 }
 

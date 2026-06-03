@@ -60,7 +60,9 @@ export default function MatchesPage() {
                       {item.sender || "Someone"}
                     </p>
                     <p className="text-xs text-[#746767]">
-                      is interested in your profile
+                      {item.is_super || item.type === "superstar"
+                        ? "is super interested in your profile"
+                        : "is interested in your profile"}
                     </p>
                   </div>
                   <div className="flex gap-2">

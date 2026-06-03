@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ImageLightbox } from "@/shared/ui/image-lightbox";
 import {
   BadgeCheck,
   MapPin,
@@ -175,6 +177,7 @@ export default function ProfileClient({
   isPending,
 }: ProfileClientProps) {
   const router = useRouter();
+  const [zoomImage, setZoomImage] = useState(false);
 
   if (isLoading) return <ProfileSkeleton />;
 
@@ -296,11 +299,25 @@ export default function ProfileClient({
         {/* ── Top Section: Profile Pic & Cultural Info ── */}
         <section className="flex items-start gap-12 mb-6">
           <div className="flex-shrink-0 flex flex-col items-center gap-2">
-            <img
+            <button
+              type="button"
+              onClick={() => setZoomImage(true)}
+              aria-label="View profile picture"
+              className="rounded-full"
+            >
+              <img
+                src={image}
+                alt={name || "Profile"}
+                className="h-32 w-32 cursor-pointer rounded-full object-cover shadow-sm transition hover:opacity-90"
+                loading="eager"
+              />
+            </button>
+
+            <ImageLightbox
               src={image}
               alt={name || "Profile"}
-              className="h-32 w-32 rounded-full object-cover shadow-sm"
-              loading="eager"
+              open={zoomImage}
+              onClose={() => setZoomImage(false)}
             />
             
             {/* Own: public/private badge */}

@@ -50,12 +50,11 @@ function useNotificationNavigation() {
         break;
       }
       case "friend_request":
-      case "friend_accepted": {
-        const uid = (d.from_user_id ?? d.by_user_id) as string | undefined;
-        if (uid) router.push("/profile/" + uid);
-        else router.push("/matches");
+      case "friend_accepted":
+      case "interest_claimed":
+        // "Someone wants to match you" → go straight to the Matches page
+        router.push("/matches");
         break;
-      }
       case "missed_call": {
         const uid = d.from_user_id as string | undefined;
         if (uid) router.push("/profile/" + uid);
