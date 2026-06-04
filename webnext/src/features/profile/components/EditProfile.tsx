@@ -3,7 +3,7 @@
         import { useEffect, useState } from "react";
         import { useRouter } from "next/navigation";
         import { AnimatePresence, motion } from "framer-motion";
-        import { ArrowRight, Lock, Upload } from "lucide-react";
+        import { ArrowLeft, ArrowRight, Lock, Upload } from "lucide-react";
         import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
         import api from "@/shared/api/client";
 
@@ -30,6 +30,7 @@
             is_profile_public: "true",
           });
           const [photo, setPhoto] = useState<File | null>(null);
+          const [showDiscard, setShowDiscard] = useState(false);
 
           useEffect(() => {
             if (!data) return;
@@ -77,6 +78,16 @@
             <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
               <div className="mx-auto max-w-md">
                 <header className="mb-5">
+                  <div className="mb-3 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscard(true)}
+                      aria-label="Go back"
+                      className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </button>
+                  </div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
                   <h1 className="text-2xl font-semibold">Build a trustworthy profile</h1>
                   <div className="mt-4 grid grid-cols-4 gap-2">
@@ -150,6 +161,45 @@
                   </div>
                 </section>
               </div>
+
+              {/* ── Discard changes confirmation ── */}
+              <AnimatePresence>
+                {showDiscard && (
+                  <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/60 px-4 backdrop-blur-sm">
+                    <motion.div
+                      initial={{ scale: 0.92, opacity: 0, y: 16 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      exit={{ scale: 0.92, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                      className="w-full max-w-sm rounded-2xl border border-white/60 bg-white/85 p-6 text-center shadow-xl backdrop-blur-md"
+                    >
+                      <h2 className="text-lg font-bold text-[#2D2424]">Discard changes?</h2>
+                      <p className="mt-1.5 text-sm leading-6 text-[#746767]">
+                        Your changes won&apos;t be saved. Do you want to discard them?
+                      </p>
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowDiscard(false)}
+                          className="h-11 rounded-xl border border-[#EADDD2] text-sm font-semibold text-[#746767]"
+                        >
+                          No
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowDiscard(false);
+                            router.push("/profile");
+                          }}
+                          className="h-11 rounded-xl bg-[#7A2432] text-sm font-semibold text-white"
+                        >
+                          Yes, discard
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </main>
           );
         }
