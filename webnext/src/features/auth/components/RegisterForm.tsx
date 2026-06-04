@@ -6,6 +6,7 @@ import { showError } from "@/shared/utils/toast";
 import { Eye, EyeOff, CheckCircle, XCircle, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import GoogleAuthButton from "./GoogleAuthButton";
 
 export default function RegisterForm() {
   const { mutate, isPending, isSuccess } = useRegister();
@@ -107,6 +108,14 @@ export default function RegisterForm() {
           <p className="log-font text-black/70 text-4xl">MatchMakers</p>
         </div>
         <br />
+
+        <GoogleAuthButton text="signup_with" />
+
+        <div className="flex items-center gap-3 text-xs text-black/45">
+          <span className="h-px flex-1 bg-black/15" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-black/15" />
+        </div>
 
         <input
           name="full_name"

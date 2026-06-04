@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLogin } from "../hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import GoogleAuthButton from "./GoogleAuthButton";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -33,6 +34,14 @@ export default function LoginForm() {
           <p className="log-font text-black/70 text-4xl">MatchMakers</p>
         </div>
         <br /><br />
+
+        <GoogleAuthButton text="signin_with" />
+
+        <div className="flex items-center gap-3 text-xs text-black/45">
+          <span className="h-px flex-1 bg-black/15" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-black/15" />
+        </div>
 
         <input
           name="email"

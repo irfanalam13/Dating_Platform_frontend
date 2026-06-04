@@ -8,6 +8,7 @@ export { useCurrentUser as useAuth } from "./hooks/useCurrentUser";
 export { 
   useLogin, 
   useRegister, 
+  useGoogleAuth,
   useLogout,
   useVerifyEmail,
   useResendVerification,

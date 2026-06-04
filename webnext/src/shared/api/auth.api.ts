@@ -1,8 +1,10 @@
 import api from "./client";
-import { refreshOnce } from "./client";
+import { refreshOnce, setAccessToken } from "./client";
+import { extractToken } from "./parse";
 import {
   LoginPayload,
   RegisterPayload,
+  GoogleAuthPayload,
   VerifyEmailPayload,
   VerifyEmailResponse,
   ForgotPasswordPayload,
@@ -25,6 +27,19 @@ export async function loginUser(credentials: LoginPayload) {
 export async function registerUser(credentials: RegisterPayload) {
   const res = await api.post("/auth/register/", credentials);
   // No token after register — user must verify email first.
+  return res;
+}
+
+export async function googleAuth(payload: GoogleAuthPayload) {
+  const res = await api.post("/auth/google/", payload, { skipErrorToast: true });
+  const token = extractToken(res);
+
+  if (token) {
+    setAccessToken(token);
+  } else {
+    await refreshOnce();
+  }
+
   return res;
 }
 

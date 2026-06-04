@@ -82,6 +82,10 @@ export interface RegisterPayload {
   confirm_password: string;
 }
 
+export interface GoogleAuthPayload {
+  id_token: string;
+}
+
 export interface ApiError {
   message?: string;
   error?: string;

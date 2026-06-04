@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   registerUser,
   loginUser,
+  googleAuth,
   verifyEmail,
   forgotPassword,
   resetPassword,
@@ -99,6 +100,42 @@ export const useLogin = () => {
         return;
       }
       showError("Invalid email or password");
+    },
+  });
+};
+
+// ─────────────────────────────────────────────────────────
+// Google Login / Signup
+// ─────────────────────────────────────────────────────────
+export const useGoogleAuth = () => {
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: googleAuth,
+
+    onSuccess: (res: unknown) => {
+      const user = extractUser(res);
+
+      if (!user) {
+        logger.error("GOOGLE USER DATA MISSING IN RESPONSE", res);
+        showError("Invalid Google sign-in response from server");
+        return;
+      }
+
+      setAuth(user as unknown as Parameters<typeof setAuth>[0]);
+      queryClient.setQueryData(["authUser"], user);
+      setLoggedInCookie();
+      showSuccess("Signed in with Google!");
+
+      const isNew = get(res, "data", "data", "is_new") === true;
+      router.push(isNew ? "/onboarding" : "/dashboard");
+    },
+
+    onError: (err: unknown) => {
+      logger.error("GOOGLE AUTH ERROR", err);
+      showError(err, "Google sign-in failed. Please try again.");
     },
   });
 };

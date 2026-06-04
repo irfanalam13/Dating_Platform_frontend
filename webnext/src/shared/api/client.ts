@@ -19,7 +19,6 @@ declare module "axios" {
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
   withCredentials: true,
-  timeout: 15_000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -184,6 +183,7 @@ async function forceLogout(): Promise<never> {
 const AUTH_ROUTES = [
   "/auth/login/",
   "/auth/register",
+  "/auth/google/",
   "/auth/refresh/",
   "/auth/logout/",
   "/auth/me/",
