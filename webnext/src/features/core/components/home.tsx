@@ -31,6 +31,7 @@ import { createOrGetConversation } from "@/shared/api/chat.api";
 import { showError, showSuccess } from "@/shared/utils/toast";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useMyProfile } from "@/features/profile/hooks/useProfile";
+import ProfileImage from "@/shared/components/ProfileImage";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function displayImage(profile: Profile) {
@@ -97,10 +98,12 @@ function MatchModal({
         className="w-full max-w-sm overflow-hidden rounded-2xl shadow-xl"
       >
         <div className="relative h-40 w-full">
-          <img
+          <ProfileImage
             src={displayImage(profile)}
+            name={profile.full_name}
             alt={profile.full_name || "Match"}
-            className="h-full w-full object-cover"
+            className="h-full w-full"
+            textClassName="text-5xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#2D2424]/70 to-transparent" />
           <div className="absolute bottom-4 left-0 right-0 text-center">
@@ -175,10 +178,12 @@ function ViewProfileModal({
       >
         {/* Image header */}
         <div className="relative h-56 w-full shrink-0">
-          <img
+          <ProfileImage
             src={displayImage(profile)}
+            name={profile.full_name}
             alt={profile.full_name || "Profile"}
-            className="h-full w-full object-cover"
+            className="h-full w-full"
+            textClassName="text-6xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#2D2424]/80 to-transparent" />
           <button
@@ -616,12 +621,13 @@ export default function HomePage() {
               style={{ touchAction: "none" }}
               className="relative flex flex-1 min-h-[520px] touch-none overflow-hidden rounded-[26px] border border-white/40 shadow-[0_12px_40px_rgba(16,24,40,0.18)] cursor-grab active:cursor-grabbing select-none"
             >
-              {/* Full-bleed photo */}
-              <img
+              {/* Full-bleed photo (initials when no picture set) */}
+              <ProfileImage
                 src={displayImage(current)}
+                name={current.full_name}
                 alt={current.full_name || "Profile"}
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="eager"
+                className="absolute inset-0 h-full w-full"
+                textClassName="text-8xl"
                 draggable={false}
               />
 

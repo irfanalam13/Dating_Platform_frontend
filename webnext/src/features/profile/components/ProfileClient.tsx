@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import type { Profile, PublicProfile } from "@/shared/types/profile.types";
+import ProfileImage from "@/shared/components/ProfileImage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -305,11 +306,12 @@ export default function ProfileClient({
               aria-label="View profile picture"
               className="rounded-full"
             >
-              <img
+              <ProfileImage
                 src={image}
+                name={name}
                 alt={name || "Profile"}
-                className="h-32 w-32 cursor-pointer rounded-full object-cover shadow-sm transition hover:opacity-90"
-                loading="eager"
+                className="h-32 w-32 cursor-pointer rounded-full shadow-sm transition hover:opacity-90"
+                textClassName="text-4xl"
               />
             </button>
 

@@ -10,6 +10,7 @@ import { useAuth } from "@/features/auth";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
 import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
+import ProfileImage from "@/shared/components/ProfileImage";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -147,13 +148,12 @@ export function MessageInbox() {
                       }}
                     >
                       <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
-                        <img
+                        <ProfileImage
                           src={getProfileImage(person)}
+                          name={getDisplayName(person)}
                           alt={getDisplayName(person)}
-                          className="h-14 w-14 rounded-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/default.png";
-                          }}
+                          className="h-14 w-14 rounded-full"
+                          textClassName="text-lg"
                         />
                       </div>
                     </div>
@@ -228,14 +228,12 @@ export function MessageInbox() {
                 >
                   {/* Avatar with online dot */}
                   <div className="relative shrink-0">
-                    <img
+                    <ProfileImage
                       src={profileImage}
+                      name={displayName}
                       alt={displayName}
-                      className="h-14 w-14 rounded-full object-cover"
-                      loading="eager"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/default.png";
-                      }}
+                      className="h-14 w-14 rounded-full"
+                      textClassName="text-lg"
                     />
                     {isOnline && (
                       <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" />

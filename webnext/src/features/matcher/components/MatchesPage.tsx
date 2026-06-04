@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { HeartHandshake, MessageCircle, UserCheck, X } from "lucide-react";
+import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
   useReceivedMatches,
@@ -101,11 +102,12 @@ export default function MatchesPage() {
               key={match.id}
               className="flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
             >
-              <img
-                src={match.profile_image || "/default.png"}
+              <ProfileImage
+                src={match.profile_image}
+                name={match.name || match.email}
                 alt={match.name || "Match"}
-                className="h-14 w-14 rounded-full object-cover"
-                loading="eager"
+                className="h-14 w-14 shrink-0 rounded-full"
+                textClassName="text-lg"
               />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{match.name || match.email}</p>

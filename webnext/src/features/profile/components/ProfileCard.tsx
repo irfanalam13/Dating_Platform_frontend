@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useMyProfile } from "@/features/profile/hooks/useProfile";
 import type { Profile } from "@/shared/types/profile.types";
+import ProfileImage from "@/shared/components/ProfileImage";
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function ProfileSkeleton() {
@@ -184,11 +185,12 @@ export default function ProfileCard() {
         {/* ── Hero card ── */}
         <section className="overflow-hidden rounded-2xl border border-[#EADDD2] shadow-sm">
           <div className="relative h-80 w-full">
-            <img
+            <ProfileImage
               src={image}
+              name={data.full_name}
               alt={data.full_name || "Profile"}
-              className="h-full w-full object-cover"
-              loading="eager"
+              className="h-full w-full"
+              textClassName="text-7xl"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute bottom-4 left-4 right-4">

@@ -61,7 +61,9 @@ export default function ProfileImage({
     <div
       role="img"
       aria-label={label}
-      className={`flex select-none items-center justify-center font-semibold uppercase text-[#2D2424] ${textClassName} ${className}`}
+      // `className` is applied last so a caller can still override the default
+      // background/colour if needed.
+      className={`flex select-none items-center justify-center bg-[#EADDD2] font-semibold uppercase text-black ${textClassName} ${className}`}
     >
       {getInitials(name || "") || "?"}
     </div>
