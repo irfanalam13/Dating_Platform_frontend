@@ -29,7 +29,7 @@ export default function RegisterForm() {
   const password = form.password.trim();
   const confirm_password = form.confirm_password.trim();
 
-  const isLengthValid = password.length >= 6;
+  const isLengthValid = password.length >= 10;
   const hasNumber = /\d/.test(password);
   const hasLetter = /[A-Za-z]/.test(password);
   const passwordsMatch = password && confirm_password && password === confirm_password;
@@ -41,7 +41,7 @@ export default function RegisterForm() {
       return showError("All fields are required");
     }
     if (!isLengthValid) {
-      return showError("Password must be at least 8 characters");
+      return showError("Password must be at least 10 characters");
     }
     if (!passwordsMatch) {
       return showError("Passwords do not match");
@@ -111,7 +111,7 @@ export default function RegisterForm() {
 
         <input
           name="full_name"
-          placeholder="Type in your full name"
+          placeholder="Full name"
           value={form.full_name}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
@@ -160,7 +160,7 @@ export default function RegisterForm() {
               {isLengthValid
                 ? <CheckCircle className="text-green-400" size={16} />
                 : <XCircle className="text-red-400" size={16} />}
-              <span>At least 8 characters</span>
+              <span>At least 10 characters</span>
             </div>
             <div className="flex items-center gap-2">
               {hasLetter
