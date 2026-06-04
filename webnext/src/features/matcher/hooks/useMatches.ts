@@ -92,6 +92,6 @@ export function useStartConversation() {
   return useMutation({
     mutationFn: (participantId: number) => createOrGetConversation(participantId),
     onSuccess: (res) => router.push(`/chat/${res.id}`),
-    onError: () => showError("Could not open conversation. Please try again."),
+    onError: (err) => showError(err, "Could not open conversation. Please try again."),
   });
 }

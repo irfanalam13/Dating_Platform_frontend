@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Sparkles } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
 import { showError, showSuccess } from "@/shared/utils/toast";
 
@@ -149,11 +149,15 @@ export default function PreferencesPage() {
   const updateMutation = useUpdateProfile();
 
   const [activeScope, setActiveScope] = useState<PreferenceScope>("your_hobbies");
+  const [saved, setSaved] = useState(false);
   const [formState, setFormState] = useState<PreferencePayload>({
     your_hobbies: emptyForm(),
     partners_type: emptyForm(),
     filters: emptyFilters(),
   });
+
+  // Preferences were saved on a previous visit → show the "shortly" banner.
+  const hasSavedPrefs = Boolean(data?.preferences && data.preferences.trim());
 
   useEffect(() => {
     if (!data) return;
@@ -197,11 +201,30 @@ export default function PreferencesPage() {
     updateMutation.mutate(formData, {
       onSuccess: () => {
         showSuccess("Preferences saved.");
-        router.push("/home");
+        // Persist a flag so "My Type" permanently shows the saved state.
+        if (typeof window !== "undefined") localStorage.setItem("loviq_prefs_saved", "1");
+        setSaved(true);
+        // Show the success screen briefly, then head home.
+        setTimeout(() => router.push("/home"), 1500);
       },
       onError: (error) => showError(error, "Could not save preferences."),
     });
   };
+
+  // ── Success screen shown right after saving ──
+  if (saved) {
+    return (
+      <main className="grid min-h-[100dvh] place-items-center px-6 text-center text-[#2D2424]">
+        <div className="max-w-sm">
+          <Sparkles className="mx-auto mb-4 h-12 w-12 text-[#B78A3B]" />
+          <h2 className="text-lg font-semibold tracking-[0.04em]">
+            YOUR PREFERRED PARTNER WILL BE HERE SHORTLY
+          </h2>
+          <p className="mt-2 text-sm text-[#746767]">Preferences saved. Taking you home…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-[100dvh] px-4 pb-28 pt-4 text-[#2D2424]">
@@ -222,6 +245,15 @@ export default function PreferencesPage() {
             </div>
           </div>
         </header>
+
+        {hasSavedPrefs && (
+          <div className="mb-4 flex items-center gap-3 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+            <Sparkles className="h-5 w-5 shrink-0 text-[#B78A3B]" />
+            <p className="text-sm font-semibold tracking-[0.03em]">
+              YOUR PREFERRED PARTNER WILL BE HERE SHORTLY
+            </p>
+          </div>
+        )}
 
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/45 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div className="grid grid-cols-2 gap-2">

@@ -87,7 +87,7 @@ export default function UploadSelfie() {
         setCaption("");
       },
       onError: (err: any) => {
-        showError("Failed to upload. Please try again.");
+        showError(err, "Failed to upload. Please try again.");
       },
     });
   };

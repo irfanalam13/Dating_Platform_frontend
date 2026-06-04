@@ -295,6 +295,16 @@ export default function HomePage() {
   const { data: myProfile } = useMyProfile();
   const [activeSection, setActiveSection] = useState<"discover" | "myType">("discover");
 
+  // Once preferences are saved we persist a flag so the "My Type" page always
+  // shows the saved state — permanently, even across reloads/cache misses.
+  const [prefsSaved, setPrefsSaved] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("loviq_prefs_saved") === "1") {
+      setPrefsSaved(true);
+    }
+  }, []);
+  const hasChosenType = Boolean(myProfile?.preferences) || prefsSaved;
+
   // ─── State ────────────────────────────────────────────────────────────────────
   const [queue, setQueue] = useState<Profile[]>([]);
   const [index, setIndex] = useState(0);
@@ -397,7 +407,7 @@ export default function HomePage() {
   const conversationMutation = useMutation({
     mutationFn: (participantId: number) => createOrGetConversation(participantId),
     onSuccess: (res) => router.push(`/chat/${res.id}`),
-    onError: () => showError("Could not open conversation. Please try again."),
+    onError: (err) => showError(err, "Could not open conversation. Please try again."),
   });
 
   // Express interest — "like" (heart button) or "superstar" (double-tap)
@@ -506,7 +516,7 @@ export default function HomePage() {
 
         {activeSection === "myType" && (
           <section className="grid flex-1 place-items-center rounded-2xl border border-white/55 bg-white/35 p-8 text-center shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
-            {!myProfile?.preferences ? (
+            {!hasChosenType ? (
               <div>
                 <h2 className="text-xl font-semibold">You haven&apos;t chosen your type yet</h2>
                 <p className="mt-2 text-sm text-[#746767]">
