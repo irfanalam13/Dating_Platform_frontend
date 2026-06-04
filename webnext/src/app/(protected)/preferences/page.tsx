@@ -1,4 +1,4 @@
-import PreferencesPage from "@/features/core/components/preferences";
+import PreferencesPage from "@/features/preference/components/preferences";
 
 export default function Page() {
   return <PreferencesPage />;

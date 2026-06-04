@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
 import { showError, showSuccess } from "@/shared/utils/toast";
 
@@ -18,9 +18,19 @@ type ChoiceForm = {
   hobbies: string;
 };
 
+type Filters = {
+  preferred_gender: string;
+  preferred_city: string;
+  max_distance_km: number;
+  min_age: number;
+  max_age: number;
+  preferred_education: string;
+};
+
 type PreferencePayload = {
   your_hobbies: ChoiceForm;
   partners_type: ChoiceForm;
+  filters: Filters;
 };
 
 const emptyForm = (): ChoiceForm => ({
@@ -32,6 +42,37 @@ const emptyForm = (): ChoiceForm => ({
   preferences: "",
   hobbies: "",
 });
+
+const emptyFilters = (): Filters => ({
+  preferred_gender: "",
+  preferred_city: "",
+  max_distance_km: 50,
+  min_age: 18,
+  max_age: 60,
+  preferred_education: "",
+});
+
+const GENDER_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+];
+
+const DISTANCE_OPTIONS = [
+  { value: 10, label: "Within 10 km" },
+  { value: 25, label: "Within 25 km" },
+  { value: 50, label: "Within 50 km" },
+  { value: 100, label: "Within 100 km" },
+];
+
+const EDUCATION_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "high_school", label: "High school" },
+  { value: "bachelor", label: "Bachelor's" },
+  { value: "master", label: "Master's" },
+  { value: "phd", label: "PhD" },
+];
 
 const GOTRA_OPTIONS = [
   "Not Sure",
@@ -87,7 +128,7 @@ const GANS_OPTIONS = ["Dev", "Manushya", "Rakhshas", "Not sure"];
 
 function toPayload(input?: string): PreferencePayload {
   if (!input || !input.trim()) {
-    return { your_hobbies: emptyForm(), partners_type: emptyForm() };
+    return { your_hobbies: emptyForm(), partners_type: emptyForm(), filters: emptyFilters() };
   }
 
   try {
@@ -95,9 +136,10 @@ function toPayload(input?: string): PreferencePayload {
     return {
       your_hobbies: { ...emptyForm(), ...(parsed.your_hobbies ?? {}) },
       partners_type: { ...emptyForm(), ...(parsed.partners_type ?? {}) },
+      filters: { ...emptyFilters(), ...(parsed.filters ?? {}) },
     };
   } catch {
-    return { your_hobbies: emptyForm(), partners_type: emptyForm() };
+    return { your_hobbies: emptyForm(), partners_type: emptyForm(), filters: emptyFilters() };
   }
 }
 
@@ -110,6 +152,7 @@ export default function PreferencesPage() {
   const [formState, setFormState] = useState<PreferencePayload>({
     your_hobbies: emptyForm(),
     partners_type: emptyForm(),
+    filters: emptyFilters(),
   });
 
   useEffect(() => {
@@ -118,6 +161,14 @@ export default function PreferencesPage() {
   }, [data]);
 
   const current = formState[activeScope];
+  const filters = formState.filters;
+
+  const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
+    setFormState((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [key]: value },
+    }));
+  };
 
   const setChoice = (key: keyof ChoiceForm, value: string) => {
     setFormState((prev) => ({
@@ -176,25 +227,72 @@ export default function PreferencesPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setActiveScope("your_hobbies")}
-              className={`glass-btn h-11 rounded-full text-sm font-semibold transition ${
-                activeScope === "your_hobbies"
-                  ? "text-[#2D2424]"
-                  : "text-[#746767]"
-              }`}
+              style={{ color: activeScope === "your_hobbies" ? "#2D2424" : "#746767" }}
+              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
             >
               Your hobbies
             </button>
             <button
               onClick={() => setActiveScope("partners_type")}
-              className={`glass-btn h-11 rounded-full text-sm font-semibold transition ${
-                activeScope === "partners_type"
-                  ? "text-[#2D2424]"
-                  : "text-[#746767]"
-              }`}
+              style={{ color: activeScope === "partners_type" ? "#7A2432" : "#746767" }}
+              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
             >
               Partner&apos;s type
             </button>
           </div>
+        </section>
+
+        <section className="mb-4 space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <div>
+            <h2 className="text-[22px] font-semibold leading-none">Match filters</h2>
+            <p className="mt-1 text-xs text-[#746767]">Applies to everyone we recommend.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SelectField
+              label="Gender"
+              value={filters.preferred_gender}
+              onChange={(value) => setFilter("preferred_gender", value)}
+              options={GENDER_OPTIONS}
+            />
+
+            <TextField
+              label="City"
+              value={filters.preferred_city}
+              onChange={(value) => setFilter("preferred_city", value)}
+              placeholder="e.g. Kathmandu"
+            />
+
+            <SelectField
+              label="Max distance"
+              value={String(filters.max_distance_km)}
+              onChange={(value) => setFilter("max_distance_km", Number(value))}
+              options={DISTANCE_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))}
+            />
+
+            <SelectField
+              label="Education"
+              value={filters.preferred_education}
+              onChange={(value) => setFilter("preferred_education", value)}
+              options={EDUCATION_OPTIONS}
+            />
+          </div>
+
+          <RangeField
+            label="Min age"
+            value={filters.min_age}
+            min={18}
+            max={60}
+            onChange={(value) => setFilter("min_age", Math.min(value, filters.max_age))}
+          />
+
+          <RangeField
+            label="Max age"
+            value={filters.max_age}
+            min={18}
+            max={60}
+            onChange={(value) => setFilter("max_age", Math.max(value, filters.min_age))}
+          />
         </section>
 
         <section className="space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
@@ -250,7 +348,8 @@ export default function PreferencesPage() {
           <button
             onClick={save}
             disabled={updateMutation.isPending}
-            className="glass-btn mt-2 h-12 w-full rounded-full text-sm font-semibold text-[#1f6f54] disabled:opacity-60"
+            style={{ backgroundColor: updateMutation.isPending ? "#A8D63A" : "#C5F04E", color: "#2D2424" }}
+            className="mt-2 h-12 w-full rounded-full text-sm font-semibold shadow-[0_8px_24px_rgba(16,24,40,0.12)] transition hover:brightness-105 disabled:opacity-60"
           >
             {updateMutation.isPending ? "Saving..." : "Save Changes"}
           </button>
@@ -281,11 +380,12 @@ function ChipSection({
             <button
               key={option}
               onClick={() => onSelect(option)}
-              className={`glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+              style={
                 active
-                  ? "border border-[#7A2432]/60 bg-white/70 text-[#7A2432]"
-                  : "text-[#2D2424]"
-              }`}
+                  ? { backgroundColor: "#5FD08A", color: "#14532D" }
+                  : { color: "#2D2424" }
+              }
+              className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
             >
               {option}
             </button>
@@ -318,5 +418,95 @@ function OpenQuestion({
         className="glass-btn min-h-[86px] w-full rounded-2xl p-3 text-sm outline-none placeholder:text-[#9f9797]"
       />
     </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-[#2D2424]">{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="glass-btn h-11 w-full cursor-pointer appearance-none rounded-2xl pl-4 pr-10 text-sm font-medium text-[#2D2424] outline-none"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value} className="bg-white text-[#2D2424]">
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+      </div>
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-[#2D2424]">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="glass-btn h-11 w-full rounded-2xl px-4 text-sm outline-none placeholder:text-[#9f9797]"
+      />
+    </label>
+  );
+}
+
+function RangeField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-semibold text-[#2D2424]">{label}</span>
+        <span className="glass-btn rounded-full px-3 py-1 text-xs font-semibold text-[#7A2432]">
+          {value}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/55 accent-[#7A2432] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
+      />
+    </div>
   );
 }

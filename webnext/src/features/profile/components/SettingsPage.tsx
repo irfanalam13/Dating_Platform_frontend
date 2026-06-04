@@ -2,14 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Bell, GraduationCap, Lock, LogOut, ShieldCheck, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
+import { Bell, GraduationCap, Lock, LogOut, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
-  getProfileSettings,
   unblockProfile,
   updatePrivacySettings,
-  updateProfileSettings,
 } from "@/shared/api/mvp.api";
 import { useLogout } from "@/features/auth/hooks/useAuth";
 
@@ -19,17 +17,11 @@ export default function SettingsPage() {
   const logout = useLogout();
 
   const { data: privacy } = useQuery({ queryKey: ["privacy"], queryFn: getPrivacySettings, retry: false });
-  const { data: settings } = useQuery({ queryKey: ["profileSettings"], queryFn: getProfileSettings, retry: false });
   const { data: blocked = [] } = useQuery({ queryKey: ["blockedUsers"], queryFn: getBlockedUsers, retry: false });
 
   const privacyMutation = useMutation({
     mutationFn: updatePrivacySettings,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["privacy"] }),
-  });
-
-  const settingsMutation = useMutation({
-    mutationFn: updateProfileSettings,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profileSettings"] }),
   });
 
   const unblockMutation = useMutation({
@@ -57,57 +49,55 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <SectionTitle icon={Lock} title="Account privacy" detail="MVP privacy works with your Django privacy app." />
-          <Toggle
-            label="Public profile"
-            checked={privacy?.is_profile_public ?? true}
-            onChange={(value) => privacyMutation.mutate({ is_profile_public: value, allow_messages_from: "matches" })}
-          />
-          <Toggle
-            label="Show profile image"
-            checked={privacy?.show_profile_image ?? true}
-            onChange={(value) => privacyMutation.mutate({ show_profile_image: value })}
-          />
-          <Toggle
-            label="Show location"
-            checked={privacy?.show_location ?? true}
-            onChange={(value) => privacyMutation.mutate({ show_location: value })}
-          />
-          <div className="mt-3 rounded-md p-3 text-sm text-[#746767]">
+          <div className="overflow-hidden rounded-2xl">
+            <div className="divide-y divide-[#EADDD2]/70">
+              <Toggle
+                label="Private account"
+                checked={!(privacy?.is_profile_public ?? true)}
+                onChange={(value) => privacyMutation.mutate({ is_profile_public: !value, allow_messages_from: "matches" })}
+              />
+              <Toggle
+                label="Show profile image"
+                checked={privacy?.show_profile_image ?? true}
+                onChange={(value) => privacyMutation.mutate({ show_profile_image: value })}
+              />
+              <Toggle
+                label="Show location"
+                checked={privacy?.show_location ?? true}
+                onChange={(value) => privacyMutation.mutate({ show_location: value })}
+              />
+            </div>
+          </div>
+          <div className="mt-3 text-sm text-[#746767]">
             Messages are locked to mutual matches for MVP safety.
           </div>
         </section>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
-          <SectionTitle icon={ShieldCheck} title="Browse comfort" detail="Use private browsing and blur controls." />
-          <Toggle
-            label="Browse anonymously"
-            checked={settings?.anonymous_viewing ?? false}
-            onChange={(value) => settingsMutation.mutate({ anonymous_viewing: value })}
-          />
-          <Toggle
-            label="Blur profile image"
-            checked={settings?.blur_profile_image ?? false}
-            onChange={(value) => settingsMutation.mutate({ blur_profile_image: value })}
-          />
-        </section>
-
-        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
-          <SectionTitle icon={SlidersHorizontal} title="Match preferences" detail="Basic filters are powered by profile and preference APIs." />
-          <button onClick={() => router.push("/profile/edit")} className="mt-3 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white">
-            Update profile and preferences
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <SectionTitle icon={SlidersHorizontal} title="Match preferences" detail="Basic filters are powered by preference APIs." />
+          <div className="mt-2 h-px w-full bg-[#EADDD2]/70" />
+          <button
+            onClick={() => router.push("/preferences")}
+            className="flex h-11 w-full items-center justify-between pt-1 text-sm font-semibold text-[#2D2424]"
+          >
+            Update preferences
+            <span className="text-[#746767]">→</span>
           </button>
         </section>
 
-        <section className="mb-4 rounded-lg border border-[#EADDD2] p-4">
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <SectionTitle icon={UserRound} title="Blocked contacts" detail="People you block are hidden from discover and chat." />
           {blocked.length === 0 && <p className="mt-3 text-sm text-[#746767]">No blocked users.</p>}
-          <div className="mt-3 space-y-2">
+          <div className="mt-1 divide-y divide-[#EADDD2]/70">
             {blocked.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-md border border-[#EADDD2] p-3">
+              <div key={item.id} className="flex items-center justify-between py-3">
                 <span className="text-sm">{item.blocked_email}</span>
-                <button onClick={() => unblockMutation.mutate(item.blocked_profile_id)} className="text-sm font-semibold text-[#7A2432]">
+                <button
+                  onClick={() => unblockMutation.mutate(item.blocked_profile_id)}
+                  className="text-sm font-semibold text-[#7A2432]"
+                >
                   Unblock
                 </button>
               </div>
@@ -115,25 +105,26 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="mb-4 grid grid-cols-2 gap-3">
-          <button onClick={() => router.push("/college")} className="rounded-lg border border-[#EADDD2] p-4 text-left">
-            <GraduationCap className="mb-3 h-5 w-5 text-[#7A2432]" />
-            <span className="block font-semibold">College Mode</span>
-            <span className="block text-xs text-[#746767]">Student verification</span>
-          </button>
-          <button className="rounded-lg border border-[#EADDD2] p-4 text-left">
-            <Bell className="mb-3 h-5 w-5 text-[#7A2432]" />
-            <span className="block font-semibold">Subscription</span>
-            <span className="block text-xs text-[#746767]">Minimal MVP emphasis</span>
-          </button>
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-2 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <div className="grid grid-cols-2 divide-x divide-[#EADDD2]/70">
+            <button onClick={() => router.push("/college")} className="rounded-2xl p-4 text-left transition hover:bg-white/30">
+              <GraduationCap className="mb-3 h-5 w-5 text-[#2D2424]" />
+              <span className="block font-semibold">College Mode</span>
+              <span className="block text-xs text-[#746767]">Student verification</span>
+            </button>
+            <button className="rounded-2xl p-4 text-left transition hover:bg-white/30">
+              <Bell className="mb-3 h-5 w-5 text-[#2D2424]" />
+              <span className="block font-semibold">Subscription</span>
+              <span className="block text-xs text-[#746767]">Minimal MVP emphasis</span>
+            </button>
+          </div>
         </section>
 
-        {/* Logout */}
         <section className="mb-8">
           <button
             onClick={() => logout.mutate()}
             disabled={logout.isPending}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 text-sm font-semibold text-[#7A2432] disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 text-sm font-semibold text-[#ff3e3e] disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
             {logout.isPending ? "Logging out..." : "Log out"}
@@ -147,7 +138,7 @@ export default function SettingsPage() {
 function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: string; detail: string }) {
   return (
     <div className="mb-3 flex gap-3">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[#7A2432]">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[#2D2424]">
         <Icon className="h-5 w-5" />
       </span>
       <div>
@@ -160,14 +151,24 @@ function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: 
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex items-center justify-between border-t border-[#EADDD2] py-3 text-sm font-medium">
-      {label}
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-5 w-5 accent-[#7A2432]"
-      />
-    </label>
+    <div className="flex items-center justify-between py-3 text-sm font-medium">
+      <span>{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-7 w-[52px] shrink-0 items-center rounded-full transition-colors duration-300 ease-out ${
+          checked ? "bg-[#5FD08A]" : "bg-[#E5E5EA]"
+        }`}
+      >
+        <span
+          className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-[0_2px_4px_rgba(16,24,40,0.25)] transition-transform duration-300 ease-out ${
+            checked ? "translate-x-[24px]" : "translate-x-[2px]"
+          }`}
+        />
+      </button>
+    </div>
   );
 }

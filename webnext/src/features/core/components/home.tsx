@@ -520,16 +520,16 @@ export default function HomePage() {
                 </button>
               </div>
             ) : (
-              <div className="w-full max-w-sm text-left">
-                <h2 className="text-lg font-semibold">Your type is set</h2>
-                <p className="mt-2 text-sm text-[#746767]">
-                  You can refine your preferences anytime for better recommendations.
-                </p>
+              <div className="w-full max-w-sm">
+                <Sparkles className="mx-auto mb-4 h-9 w-9 text-[#B78A3B]" />
+                <h2 className="text-lg font-semibold tracking-[0.04em]">
+                  YOUR PREFERRED PARTNER WILL BE HERE SHORTLY
+                </h2>
                 <button
                   onClick={() => router.push("/preferences")}
-                  className="glass-btn mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold"
+                  className="mt-5 text-sm font-medium text-[#746767] underline-offset-4 hover:underline"
                 >
-                  Edit
+                  Edit preferences
                 </button>
               </div>
             )}
@@ -727,7 +727,7 @@ export default function HomePage() {
                   </button>
 
                   <button
-                    onClick={() => router.push(`/profile/${current.id}`)}
+                    onClick={() => router.push(`/profile/${current.user}`)}
                     className="flex h-12 flex-1 items-center justify-center rounded-full bg-[#FF4458] text-sm font-semibold text-white shadow-lg transition hover:brightness-105"
                   >
                     View profile
@@ -790,7 +790,7 @@ export default function HomePage() {
                 setViewProfile(null);
                 goNext();
               }}
-              onViewFull={() => router.push(`/profile/${viewProfile.id}`)}
+              onViewFull={() => router.push(`/profile/${viewProfile.user}`)}
               isPending={interestMutation.isPending}
             />
           )}
