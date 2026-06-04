@@ -21,6 +21,21 @@ export default function MatchesPage() {
 
   const isLoading = matchesLoading || receivedLoading;
 
+  // Once someone becomes a mutual match they must not linger in "Pending
+  // interests" — even if the backend still returns them on /matcher/received/.
+  // Build a set of identifiers for everyone already accepted, then drop any
+  // pending entry that points at one of them.
+  const acceptedKeys = new Set<string>();
+  matches.forEach((m) => {
+    if (m.user_id != null) acceptedKeys.add(String(m.user_id).toLowerCase());
+    if (m.email) acceptedKeys.add(m.email.toLowerCase());
+    if (m.name) acceptedKeys.add(m.name.toLowerCase());
+  });
+  const pending = received.filter((item) => {
+    if (item.sender == null) return true;
+    return !acceptedKeys.has(String(item.sender).toLowerCase());
+  });
+
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
@@ -41,51 +56,6 @@ export default function MatchesPage() {
             </div>
           </div>
         </header>
-
-        {/* ── Pending interests ── */}
-        {received.length > 0 && (
-          <section className="mb-5 rounded-lg border border-[#EADDD2] p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-[#7A2432]" />
-              <h2 className="font-semibold">Pending interests</h2>
-            </div>
-            <div className="space-y-3">
-              {received.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-md p-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {item.sender || "Someone"}
-                    </p>
-                    <p className="text-xs text-[#746767]">
-                      {item.is_super || item.type === "superstar"
-                        ? "is super interested in your profile"
-                        : "is interested in your profile"}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => rejectMutation.mutate(item.id)}
-                      disabled={rejectMutation.isPending}
-                      className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => acceptMutation.mutate(item.id)}
-                      disabled={acceptMutation.isPending}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
-                    >
-                      <HeartHandshake className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* ── Skeleton loader ── */}
         {isLoading && (
@@ -141,23 +111,11 @@ export default function MatchesPage() {
                 <p className="font-semibold">{match.name || match.email}</p>
                 <p className="text-sm text-[#746767]">Mutual match</p>
               </div>
-              {/* {match.profile_id && (
+              {typeof match.user_id === "number" && (
                 <button
-                  onClick={() => conversationMutation.mutate(match.profile_id!)}
+                  onClick={() => conversationMutation.mutate(match.user_id)}
                   disabled={conversationMutation.isPending}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
-                >
-                  {conversationMutation.isPending ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <MessageCircle className="h-5 w-5" />
-                  )}
-                </button>
-              )} */}
-              {typeof match.profile_id === "number" && (
-                <button
-                  onClick={() => conversationMutation.mutate(match.profile_id as number)}
-                  disabled={conversationMutation.isPending}
+                  aria-label={`Message ${match.name || match.email}`}
                   className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
                 >
                   {conversationMutation.isPending ? (
@@ -170,6 +128,53 @@ export default function MatchesPage() {
             </div>
           ))}
         </div>
+
+        {/* ── Pending interests (below mutual matches) ── */}
+        {!isLoading && pending.length > 0 && (
+          <section className="mt-6 rounded-lg border border-[#EADDD2] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-[#7A2432]" />
+              <h2 className="font-semibold">Pending interests</h2>
+            </div>
+            <div className="space-y-3">
+              {pending.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-md p-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {item.sender || "Someone"}
+                    </p>
+                    <p className="text-xs text-[#746767]">
+                      {item.is_super || item.type === "superstar"
+                        ? "is super interested in your profile"
+                        : "is interested in your profile"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => rejectMutation.mutate(item.id)}
+                      disabled={rejectMutation.isPending}
+                      aria-label="Decline"
+                      className="grid h-9 w-9 place-items-center rounded-full text-[#746767] disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => acceptMutation.mutate(item.id)}
+                      disabled={acceptMutation.isPending}
+                      aria-label="Match back"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
+                    >
+                      <HeartHandshake className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
