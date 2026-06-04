@@ -77,8 +77,8 @@
           return (
             <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
               <div className="mx-auto max-w-md">
-                <header className="mb-5">
-                  <div className="mb-3 flex items-center gap-3">
+                <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-4 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => setShowDiscard(true)}
@@ -87,9 +87,11 @@
                     >
                       <ArrowLeft className="h-5 w-5" />
                     </button>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
+                      <h1 className="text-2xl font-semibold leading-tight">Build a trustworthy profile</h1>
+                    </div>
                   </div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
-                  <h1 className="text-2xl font-semibold">Build a trustworthy profile</h1>
                   <div className="mt-4 grid grid-cols-4 gap-2">
                     {steps.map((_, i) => (
                       <div key={i} className={`h-1.5 rounded-full ${i <= step ? "bg-[#7A2432]" : "bg-[#EADDD2]"}`} />
