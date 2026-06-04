@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LockKeyhole, Eye, EyeOff, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import { useResetPassword } from "@/features/auth";
 import { showError } from "@/shared/utils/toast";
+import OTPInput from "@/shared/components/OTPInput";
+
+const CODE_LENGTH = 6;
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const tokenFromQuery = searchParams.get("token") || "";
+  const emailFromQuery = searchParams.get("email") || "";
 
-  const [token, setToken] = useState(tokenFromQuery);
+  const [email, setEmail] = useState(emailFromQuery);
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -29,8 +33,12 @@ export default function ResetPasswordPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token.trim()) {
-      showError("Reset token is missing.");
+    if (!email.trim()) {
+      showError("Please enter your email address.");
+      return;
+    }
+    if (code.length !== CODE_LENGTH) {
+      showError("Please enter the 6-digit code from your email.");
       return;
     }
     if (!isLengthValid) {
@@ -43,7 +51,8 @@ export default function ResetPasswordPage() {
     }
 
     resetMutation.mutate({
-      token: token.trim(),
+      email: email.trim(),
+      code: code,
       password: password,
     });
   };
@@ -89,21 +98,34 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Token field — only show if not in URL */}
-              {!tokenFromQuery && (
+              {/* Email — only show if not passed via the forgot-password redirect */}
+              {!emailFromQuery && (
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-widest text-[#B78A3B] mb-1 block">
-                    Reset Token
+                    Email Address
                   </label>
                   <input
-                    type="text"
-                    placeholder="Paste token from email"
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
                   />
                 </div>
               )}
+
+              {/* Reset code */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest text-[#B78A3B] mb-2 block">
+                  Reset Code
+                </label>
+                <OTPInput
+                  value={code}
+                  onChange={setCode}
+                  length={CODE_LENGTH}
+                  disabled={resetMutation.isPending}
+                />
+              </div>
 
               {/* New password */}
               <div>

@@ -128,7 +128,8 @@ export interface ForgotPasswordPayload {
 }
 
 export interface ResetPasswordPayload {
-  token: string;
+  email: string;
+  code: string;
   password: string;
 }
 

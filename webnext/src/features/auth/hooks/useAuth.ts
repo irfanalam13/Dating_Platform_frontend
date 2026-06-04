@@ -162,16 +162,20 @@ export const useResendVerification = () => {
 // Forgot Password
 // ─────────────────────────────────────────────────────────
 export const useForgotPassword = () => {
+  const router = useRouter();
+
   return useMutation({
     mutationFn: forgotPassword,
 
-    onSuccess: () => {
-      showSuccess("Reset link sent! Please check your email.");
+    onSuccess: (_res: unknown, variables: { email: string }) => {
+      showSuccess("Reset code sent! Please check your email.");
+      router.push(`/reset-password?email=${encodeURIComponent(variables.email)}`);
     },
 
     onError: (err: unknown) => {
       logger.error("FORGOT PASSWORD ERROR", err);
-      showError(err, "Could not send reset email. Please try again.");
+      // Surfaces the backend message (e.g. "No account is registered with this email.")
+      showError(err, "Could not send reset code. Please try again.");
     },
   });
 };
@@ -192,7 +196,7 @@ export const useResetPassword = () => {
 
     onError: (err: unknown) => {
       logger.error("RESET PASSWORD ERROR", err);
-      showError(err, "Invalid or expired reset link.");
+      showError(err, "Invalid or expired reset code.");
     },
   });
 };

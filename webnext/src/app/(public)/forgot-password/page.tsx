@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Forgot password?</h1>
             <p className="text-sm text-[#746767] leading-relaxed">
-              Enter your email and we'll send you a link to reset your password.
+              Enter your email and we'll send you a 6-digit code to reset your password.
             </p>
           </div>
 
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
               <div>
                 <p className="font-semibold text-[#2D2424]">Check your inbox</p>
                 <p className="text-sm text-[#746767] mt-1">
-                  If that email exists, a reset link has been sent to{" "}
+                  A reset code has been sent to{" "}
                   <span className="font-semibold text-[#2D2424]">{email}</span>.
                 </p>
               </div>
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                 {forgotMutation.isPending ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
-                  "Send Reset Link"
+                  "Send Reset Code"
                 )}
               </button>
             </form>
