@@ -135,7 +135,7 @@ export const useVerifyEmail = () => {
 
     onError: (err: unknown) => {
       logger.error("VERIFY EMAIL ERROR", err);
-      showError(err, "Invalid or expired verification link.");
+      showError(err, "Invalid or expired verification code.");
     },
   });
 };

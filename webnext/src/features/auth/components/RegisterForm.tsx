@@ -70,16 +70,15 @@ export default function RegisterForm() {
           </div>
           <h2 className="text-2xl font-bold text-[#2D2424]">Check your email</h2>
           <p className="text-sm text-[#746767] leading-relaxed">
-            We sent a verification link to{" "}
+            We sent a 6-digit verification code to{" "}
             <span className="font-semibold text-[#2D2424]">{form.email}</span>.
-            Click the link to activate your account.
+            Enter it to activate your account.
           </p>
           <button
-            // onClick={() => router.push(`/verify-email?email=${encodeURIComponent(form.email)}`)}
-            onClick={ () => router.push(`/onboarding`)}
+            onClick={() => router.push(`/verify-email?email=${encodeURIComponent(form.email)}`)}
             className="w-full py-3 rounded-full bg-[#0088FF] text-white font-medium hover:bg-[#006DCD] transition"
           >
-            Go to Verify Email
+            Enter Verification Code
           </button>
           <button
             type="button"

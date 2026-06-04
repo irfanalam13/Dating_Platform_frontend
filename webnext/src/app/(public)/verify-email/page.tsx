@@ -1,39 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, RefreshCw, CheckCircle, ArrowLeft } from "lucide-react";
 import { useVerifyEmail, useResendVerification } from "@/features/auth";
 import { showError } from "@/shared/utils/toast";
+import OTPInput from "@/shared/components/OTPInput";
+
+const CODE_LENGTH = 6;
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const emailFromQuery = searchParams.get("email") || "";
-  const tokenFromQuery = searchParams.get("token") || "";
 
-  const [token, setToken] = useState(tokenFromQuery);
+  const [code, setCode] = useState("");
   const [email, setEmail] = useState(emailFromQuery);
 
   const verifyMutation = useVerifyEmail();
   const resendMutation = useResendVerification();
 
-  // Auto-verify if token is in URL (user clicked email link)
-  useEffect(() => {
-    if (tokenFromQuery) {
-      verifyMutation.mutate({ token: tokenFromQuery });
+  const submitCode = (value: string) => {
+    if (!email.trim()) {
+      showError("Please enter your email address.");
+      return;
     }
-  }, [tokenFromQuery]);
+    if (value.length !== CODE_LENGTH) {
+      showError("Please enter the 6-digit code from your email.");
+      return;
+    }
+    verifyMutation.mutate({ email: email.trim(), code: value });
+  };
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token.trim()) {
-      showError("Please enter your verification token.");
-      return;
-    }
-    verifyMutation.mutate({ token: token.trim() });
+    submitCode(code);
   };
 
   const handleResend = () => {
@@ -62,23 +65,15 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Verify your email</h1>
             <p className="text-sm text-[#746767] leading-relaxed">
-              We sent a verification link to{" "}
+              We sent a 6-digit verification code to{" "}
               {emailFromQuery ? (
                 <span className="font-semibold text-[#2D2424]">{emailFromQuery}</span>
               ) : (
                 "your email"
               )}
-              . Click the link or paste the token below.
+              . Enter it below to verify your account.
             </p>
           </div>
-
-          {/* Auto-verifying state */}
-          {tokenFromQuery && verifyMutation.isPending && (
-            <div className="flex flex-col items-center gap-3 py-4">
-              <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#7A2432] border-t-transparent" />
-              <p className="text-sm text-[#746767]">Verifying your email...</p>
-            </div>
-          )}
 
           {/* Success state */}
           {verifyMutation.isSuccess && (
@@ -88,25 +83,25 @@ export default function VerifyEmailPage() {
             </div>
           )}
 
-          {/* Manual token form — shown when no token in URL */}
-          {!tokenFromQuery && !verifyMutation.isSuccess && (
+          {/* OTP code form */}
+          {!verifyMutation.isSuccess && (
             <form onSubmit={handleVerify} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-widest text-[#B78A3B] mb-1 block">
-                  Verification Token
+                <label className="text-xs font-semibold uppercase tracking-widest text-[#B78A3B] mb-2 block">
+                  Verification Code
                 </label>
-                <input
-                  type="text"
-                  placeholder="Paste token from email"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
+                <OTPInput
+                  value={code}
+                  onChange={setCode}
+                  length={CODE_LENGTH}
+                  disabled={verifyMutation.isPending}
+                  onComplete={submitCode}
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={verifyMutation.isPending}
+                disabled={verifyMutation.isPending || code.length !== CODE_LENGTH}
                 className="w-full h-12 rounded-2xl bg-[#7A2432] text-white font-semibold text-sm shadow-lg shadow-[#7A2432]/25 disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {verifyMutation.isPending ? (
