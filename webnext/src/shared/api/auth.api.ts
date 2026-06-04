@@ -15,7 +15,9 @@ export async function loginUser(credentials: LoginPayload) {
   // access token in the body. A single refresh reads that cookie and pulls the
   // access token into JS memory. refreshOnce() dedupes concurrent refreshes so
   // we never rotate the refresh token twice and log ourselves out.
-  const res = await api.post("/auth/login/", credentials);
+  // useLogin's onError shows a detailed toast, so suppress the interceptor's
+  // generic one to avoid a second toast overshadowing it.
+  const res = await api.post("/auth/login/", credentials, { skipErrorToast: true });
   await refreshOnce();
   return res;
 }

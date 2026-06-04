@@ -58,19 +58,21 @@ function collectMessages(data: Record<string, unknown>): string[] {
 		}
 	};
 
-	// General messages first.
-	for (const key of ["detail", "message", "error"] as const) {
-		const value = data[key];
-		if (typeof value === "string") push(value);
-	}
-
-	// Then field-level / nested errors, prefixed with a readable field label.
+	// Specific field-level / validation errors FIRST — these are the real,
+	// actionable reasons (e.g. "Password: This field is required."). They take
+	// priority over a generic envelope like { message: "Invalid input" }.
 	for (const [key, value] of Object.entries(data)) {
 		if (key === "detail" || key === "message" || key === "error") continue;
 		const label = humanizeField(key);
 		for (const message of leafMessages(value)) {
 			push(label ? `${label}: ${message}` : message);
 		}
+	}
+
+	// Then the general/top-level messages as a backstop.
+	for (const key of ["detail", "message", "error"] as const) {
+		const value = data[key];
+		if (typeof value === "string") push(value);
 	}
 
 	return messages;
@@ -235,5 +237,18 @@ export const showError = (
 	source: ToastSource,
 	fallback = "Something went wrong. Please try again.",
 ): void => {
+	// In development, log the raw error so the exact backend payload shape is
+	// visible — helps diagnose any case where the toast can't find a message.
+	if (process.env.NODE_ENV !== "production" && typeof source === "object" && source !== null) {
+		const err = source as { response?: { status?: number; data?: unknown } };
+		// eslint-disable-next-line no-console
+		console.groupCollapsed(`[toast] error → "${extractMessage(source, fallback)}"`);
+		// eslint-disable-next-line no-console
+		console.log("status:", err.response?.status);
+		// eslint-disable-next-line no-console
+		console.log("response.data:", err.response?.data ?? source);
+		// eslint-disable-next-line no-console
+		console.groupEnd();
+	}
 	showToast("error", source, fallback);
 };

@@ -5,6 +5,13 @@ import Cookies from "js-cookie";
 import { showError } from "@/shared/utils/toast";
 import { logger } from "@/shared/utils/logger";
 
+// Allow callers to opt out of the interceptor's automatic error toast.
+declare module "axios" {
+  interface AxiosRequestConfig {
+    skipErrorToast?: boolean;
+  }
+}
+
 // ─────────────────────────────────────────────────────────
 // Axios instance
 // ─────────────────────────────────────────────────────────
@@ -24,6 +31,10 @@ const api = axios.create({
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
+  // When true, the response interceptor will NOT auto-show an error toast for
+  // this request — the caller (e.g. a mutation's onError) owns the messaging,
+  // so we avoid a second, generic toast overshadowing the detailed one.
+  skipErrorToast?: boolean;
 }
 
 interface QueueEntry {
@@ -265,13 +276,17 @@ api.interceptors.response.use(
       | { detail?: string; message?: string; error?: string }
       | undefined;
 
-    showError(
-      responseData ?? error,
-      responseData?.detail ||
-        responseData?.message ||
-        responseData?.error ||
-        "Request failed. Please try again.",
-    );
+    // Skip the global toast when the caller opts to handle errors itself,
+    // so a single detailed toast shows instead of two competing ones.
+    if (!originalRequest.skipErrorToast) {
+      showError(
+        responseData ?? error,
+        responseData?.detail ||
+          responseData?.message ||
+          responseData?.error ||
+          "Request failed. Please try again.",
+      );
+    }
 
     return Promise.reject(error);
   }

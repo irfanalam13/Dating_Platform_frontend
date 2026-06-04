@@ -98,7 +98,7 @@ export const useLogin = () => {
         router.push("/verify-email");
         return;
       }
-      showError(err, "Login failed");
+      showError("Invalid email or password");
     },
   });
 };

@@ -128,7 +128,7 @@ export default function RegisterForm() {
         <input
           name="email"
           type="email"
-          placeholder="Type in your email"
+          placeholder="Type your email"
           value={form.email}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
