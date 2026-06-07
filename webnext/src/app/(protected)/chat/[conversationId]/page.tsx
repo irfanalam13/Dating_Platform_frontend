@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { Ban, ChevronLeft, Flag } from "lucide-react";
+import { ArrowLeft, Ban, ChevronLeft, Flag } from "lucide-react";
+import ProfileImage from "@/shared/components/ProfileImage";
 import { getConversations } from "@/shared/api/chat.api";
 import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
 import { useAuth } from "@/features/auth";
+import { showSuccess, showError } from "@/shared/utils/toast";
 import ChatWindow from "@/features/chat/components/ChatWindow";
 import ConversationList from "@/features/chat/components/ConversationList";
-import NotificationBell from "@/features/notification/components/NotificationBell";
 
 export default function ConversationPage() {
   const router = useRouter();
@@ -30,13 +31,21 @@ export default function ConversationPage() {
     (c) => String(c.id) === conversationIdStr
   );
 
-  const other = conversation?.participants?.find((p) => p.id !== user?.id);
-  // profile_id is returned by the backend but not on the base type — read it safely.
-  const otherProfileId = (other as { profile_id?: number } | undefined)?.profile_id;
+  // Use Number() on both sides — the backend may return IDs as strings at runtime
+  const other = conversation?.participants?.find(
+    (p) => Number(p.id) !== Number(user?.id)
+  );
+  // profile_id is preferred; fall back to id so the buttons are never stuck disabled
+  const otherProfileId =
+    (other as { profile_id?: number } | undefined)?.profile_id ?? other?.id;
 
   const blockMutation = useMutation({
     mutationFn: blockProfile,
-    onSuccess: () => router.push("/chat"),
+    onSuccess: () => {
+      showSuccess("User blocked successfully.");
+      router.push("/home");
+    },
+    onError: (err) => showError(err, "Failed to block user. Please try again."),
   });
 
   const reportMutation = useMutation({
@@ -45,18 +54,34 @@ export default function ConversationPage() {
         reason: "other",
         description: "Reported from chat safety controls.",
       }),
-    onSuccess: () => setShowReport(false),
+    onSuccess: () => {
+      setShowReport(false);
+      showSuccess("Report submitted. Thank you.");
+      router.push("/home");
+    },
+    onError: (err) => {
+      setShowReport(false);
+      showError(err, "Failed to submit report. Please try again.");
+    },
   });
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-gray-50 dark:bg-gray-950">
+    <div
+      className="flex h-[100dvh] overflow-hidden"
+      style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
+    >
       {/* ── Desktop-only sidebar (WhatsApp-style persistent list) ── */}
-      <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {user?.username}
-          </span>
-          <NotificationBell />
+      <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-white/40 bg-white/60 backdrop-blur-md">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/40">
+          <button
+            type="button"
+            onClick={() => router.push("/home")}
+            aria-label="Go back"
+            className="glass-btn grid h-9 w-9 shrink-0 place-items-center rounded-full"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <h2 className="text-base font-semibold text-[#2D2424]">Messages</h2>
         </div>
         <ConversationList
           activeId={conversationIdStr}
@@ -70,15 +95,25 @@ export default function ConversationPage() {
         <div className="flex items-center gap-2 border-b border-[#EADDD2] bg-white px-3 py-2">
           {/* Back button only makes sense on mobile — desktop keeps the list visible */}
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/home")}
             aria-label="Go back"
             className="grid h-9 w-9 place-items-center rounded-full text-[#2D2424] lg:hidden"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <span className="flex-1 text-xs font-medium text-[#746767]">
-            Mutual match · keep it respectful
-          </span>
+          <div className="flex flex-1 items-center gap-2 min-w-0">
+            {other && (
+              <ProfileImage
+                src={other.profile_picture ?? other.profile_image}
+                name={other.display_name ?? other.username}
+                className="h-7 w-7 rounded-full flex-shrink-0"
+                textClassName="text-xs"
+              />
+            )}
+            <span className="truncate text-sm font-semibold text-[#2D2424]">
+              {other?.display_name ?? other?.username ?? "Chat"}
+            </span>
+          </div>
           <button
             onClick={() => setShowReport(true)}
             disabled={!otherProfileId}

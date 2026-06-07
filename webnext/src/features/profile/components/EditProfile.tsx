@@ -3,11 +3,11 @@
         import { useEffect, useState } from "react";
         import { useRouter } from "next/navigation";
         import { AnimatePresence, motion } from "framer-motion";
-        import { ArrowLeft, ArrowRight, Lock, Upload } from "lucide-react";
+        import { ArrowLeft, ArrowRight, Upload } from "lucide-react";
         import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
         import api from "@/shared/api/client";
 
-        const steps = ["Identity", "Lifestyle", "Culture", "Privacy"];
+        const steps = ["Identity", "Lifestyle", "Culture"];
 
         export default function EditProfile() {
           const router = useRouter();
@@ -134,16 +134,6 @@
                         </>
                       )}
 
-                      {step === 3 && (
-                        <>
-                          <div className="rounded-md p-4">
-                            <Lock className="mb-3 h-5 w-5 text-[#7A2432]" />
-                            <h2 className="font-semibold">Choose profile visibility</h2>
-                            <p className="mt-1 text-sm leading-6 text-[#746767]">Messages are limited to mutual matches. You can browse with more comfort and adjust privacy anytime.</p>
-                          </div>
-                          <Select label="Profile mode" value={form.is_profile_public} onChange={(v) => update("is_profile_public", v)} options={["true", "false"]} labels={{ true: "Public", false: "Private" }} />
-                        </>
-                      )}
                     </motion.div>
                   </AnimatePresence>
 

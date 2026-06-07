@@ -63,9 +63,7 @@ export const getMyProfile = async (): Promise<Profile> => {
 };
 
 export const updateProfile = (formData: FormData) => {
-  return api.patch("/profile/me/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  return api.patch("/profile/me/", formData);
 };
 
 // ──────────────────────────────────────────────
