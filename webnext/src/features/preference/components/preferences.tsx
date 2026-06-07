@@ -2,25 +2,50 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronDown, Sparkles, X } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
-import { useReligions, useCastes, useGotras } from "@/features/preference/hooks/usePreference";
+import {
+  useReligions,
+  useCommunities,
+  useCasteCategories,
+  useCastesV2,
+  useSubCastes,
+  useClans,
+  useGotrasV2,
+} from "@/features/preference/hooks/usePreference";
 import { updatePreferences } from "@/shared/api/preference.api";
 import type { PreferencesPayload } from "@/shared/types/preference.types";
+import {
+  DIET_OPTIONS,
+  FREQUENCY_OPTIONS,
+  GOTRA_RULE_OPTIONS,
+} from "@/shared/constants/profileOptions";
 import { showError, showSuccess } from "@/shared/utils/toast";
 
 type PreferenceScope = "your_hobbies" | "partners_type";
 
-// Religion / caste / gotra are foreign keys on the backend, so we keep both the
-// id (sent to the API) and the name (shown in the chip + stored in the JSON blob
-// that repopulates this form on the next visit).
+// The seven cultural levels are foreign keys; we keep both the id (sent to the
+// API) and the name (shown in the chip + stored in the JSON blob that
+// repopulates this form on the next visit).
+const LEVELS = [
+  "religion",
+  "community",
+  "caste_category",
+  "caste_v2",
+  "sub_caste",
+  "clan",
+  "gotra_v2",
+] as const;
+type Level = (typeof LEVELS)[number];
+
 type ChoiceForm = {
-  religion: string;
-  religion_id: number | null;
-  caste: string;
-  caste_id: number | null;
-  gotra: string;
-  gotra_id: number | null;
+  religion: string; religion_id: number | null;
+  community: string; community_id: number | null;
+  caste_category: string; caste_category_id: number | null;
+  caste_v2: string; caste_v2_id: number | null;
+  sub_caste: string; sub_caste_id: number | null;
+  clan: string; clan_id: number | null;
+  gotra_v2: string; gotra_v2_id: number | null;
   horoscope: string;
   gans: string;
   preferences: string;
@@ -34,6 +59,17 @@ type Filters = {
   min_age: number;
   max_age: number;
   preferred_education: string;
+  preferred_min_height_cm: number | null;
+  preferred_max_height_cm: number | null;
+  preferred_diet: string[];
+  preferred_alcohol: string;
+  preferred_smoking: string;
+  gotra_rule: string;
+  accept_different_religion: boolean;
+  accept_different_community: boolean;
+  accept_different_caste: boolean;
+  accept_different_gotra: boolean;
+  deal_breakers: { must_have: string[]; nice_to_have: string[]; avoid: string[] };
 };
 
 type PreferencePayload = {
@@ -43,12 +79,13 @@ type PreferencePayload = {
 };
 
 const emptyForm = (): ChoiceForm => ({
-  religion: "",
-  religion_id: null,
-  caste: "",
-  caste_id: null,
-  gotra: "",
-  gotra_id: null,
+  religion: "", religion_id: null,
+  community: "", community_id: null,
+  caste_category: "", caste_category_id: null,
+  caste_v2: "", caste_v2_id: null,
+  sub_caste: "", sub_caste_id: null,
+  clan: "", clan_id: null,
+  gotra_v2: "", gotra_v2_id: null,
   horoscope: "",
   gans: "",
   preferences: "",
@@ -62,6 +99,17 @@ const emptyFilters = (): Filters => ({
   min_age: 18,
   max_age: 60,
   preferred_education: "",
+  preferred_min_height_cm: null,
+  preferred_max_height_cm: null,
+  preferred_diet: [],
+  preferred_alcohol: "",
+  preferred_smoking: "",
+  gotra_rule: "",
+  accept_different_religion: true,
+  accept_different_community: true,
+  accept_different_caste: true,
+  accept_different_gotra: true,
+  deal_breakers: { must_have: [], nice_to_have: [], avoid: [] },
 });
 
 const GENDER_OPTIONS = [
@@ -87,21 +135,14 @@ const EDUCATION_OPTIONS = [
 ];
 
 const HOROSCOPE_OPTIONS = [
-  "Aries",
-  "Taurus",
-  "Gemini",
-  "Cancer",
-  "Leo",
-  "Virgo",
-  "Libra",
-  "Scorpio",
-  "Sagittarius",
-  "Capricorn",
-  "Aquarius",
-  "Pisces",
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ];
 
 const GANS_OPTIONS = ["Dev", "Manushya", "Rakhshas", "Not sure"];
+
+const ANY_FREQUENCY = [{ value: "", label: "Any" }, ...FREQUENCY_OPTIONS];
+const ANY_GOTRA_RULE = [{ value: "", label: "No preference" }, ...GOTRA_RULE_OPTIONS];
 
 function toPayload(input?: string): PreferencePayload {
   if (!input || !input.trim()) {
@@ -113,7 +154,11 @@ function toPayload(input?: string): PreferencePayload {
     return {
       your_hobbies: { ...emptyForm(), ...(parsed.your_hobbies ?? {}) },
       partners_type: { ...emptyForm(), ...(parsed.partners_type ?? {}) },
-      filters: { ...emptyFilters(), ...(parsed.filters ?? {}) },
+      filters: {
+        ...emptyFilters(),
+        ...(parsed.filters ?? {}),
+        deal_breakers: { ...emptyFilters().deal_breakers, ...(parsed.filters?.deal_breakers ?? {}) },
+      },
     };
   } catch {
     return { your_hobbies: emptyForm(), partners_type: emptyForm(), filters: emptyFilters() };
@@ -134,7 +179,6 @@ export default function PreferencesPage() {
     filters: emptyFilters(),
   });
 
-  // Preferences were saved on a previous visit → show the "shortly" banner.
   const hasSavedPrefs = Boolean(data?.preferences && data.preferences.trim());
 
   useEffect(() => {
@@ -145,18 +189,18 @@ export default function PreferencesPage() {
   const current = formState[activeScope];
   const filters = formState.filters;
 
-  // Cultural dropdowns cascade off the *active* tab's selections:
-  // religion → its castes → that caste's gotras. Selecting "Hindu" therefore
-  // only ever offers Hindu castes, never castes from other religions.
-  const { religions, loading: religionsLoading } = useReligions();
-  const { castes, loading: castesLoading } = useCastes(current.religion_id);
-  const { gotras, loading: gotrasLoading } = useGotras(current.caste_id);
+  // The cultural cascade depends on the *active* tab's selections, one level at
+  // a time: religion → community → … → gotra.
+  const { religions } = useReligions();
+  const { communities } = useCommunities(current.religion_id);
+  const { casteCategories } = useCasteCategories(current.community_id);
+  const { castesV2 } = useCastesV2(current.caste_category_id);
+  const { subCastes } = useSubCastes(current.caste_v2_id);
+  const { clans } = useClans(current.sub_caste_id);
+  const { gotras } = useGotrasV2(current.clan_id);
 
   const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFormState((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [key]: value },
-    }));
+    setFormState((prev) => ({ ...prev, filters: { ...prev.filters, [key]: value } }));
   };
 
   // String chips (horoscope, gans) — toggle on/off.
@@ -170,81 +214,54 @@ export default function PreferencesPage() {
     }));
   };
 
-  // Religion chip — toggles, and clears the dependent caste + gotra when it changes.
-  const selectReligion = (id: number, name: string) => {
+  // Selecting any cultural level toggles it and clears every descendant level so
+  // the cascade can never hold a child that doesn't belong to its parent.
+  const selectCultural = (level: Level, id: number, name: string) => {
     setFormState((prev) => {
-      const scope = prev[activeScope];
-      const same = scope.religion_id === id;
-      return {
-        ...prev,
-        [activeScope]: {
-          ...scope,
-          religion: same ? "" : name,
-          religion_id: same ? null : id,
-          caste: "",
-          caste_id: null,
-          gotra: "",
-          gotra_id: null,
-        },
-      };
-    });
-  };
-
-  // Caste chip — toggles, and clears the dependent gotra when it changes.
-  const selectCaste = (id: number, name: string) => {
-    setFormState((prev) => {
-      const scope = prev[activeScope];
-      const same = scope.caste_id === id;
-      return {
-        ...prev,
-        [activeScope]: {
-          ...scope,
-          caste: same ? "" : name,
-          caste_id: same ? null : id,
-          gotra: "",
-          gotra_id: null,
-        },
-      };
-    });
-  };
-
-  const selectGotra = (id: number, name: string) => {
-    setFormState((prev) => {
-      const scope = prev[activeScope];
-      const same = scope.gotra_id === id;
-      return {
-        ...prev,
-        [activeScope]: {
-          ...scope,
-          gotra: same ? "" : name,
-          gotra_id: same ? null : id,
-        },
-      };
+      const scope = { ...prev[activeScope] };
+      const idField = `${level}_id` as `${Level}_id`;
+      const same = scope[idField] === id;
+      scope[level] = same ? "" : name;
+      scope[idField] = same ? null : id;
+      LEVELS.slice(LEVELS.indexOf(level) + 1).forEach((descendant) => {
+        scope[descendant] = "";
+        scope[`${descendant}_id` as `${Level}_id`] = null;
+      });
+      return { ...prev, [activeScope]: scope };
     });
   };
 
   const setText = (key: "preferences" | "hobbies", value: string) => {
     setFormState((prev) => ({
       ...prev,
-      [activeScope]: {
-        ...prev[activeScope],
-        [key]: value,
-      },
+      [activeScope]: { ...prev[activeScope], [key]: value },
     }));
   };
+
+  const toggleDiet = (value: string) =>
+    setFilter(
+      "preferred_diet",
+      filters.preferred_diet.includes(value)
+        ? filters.preferred_diet.filter((v) => v !== value)
+        : [...filters.preferred_diet, value],
+    );
+
+  const setDealBreaker = (bucket: keyof Filters["deal_breakers"], values: string[]) =>
+    setFilter("deal_breakers", { ...filters.deal_breakers, [bucket]: values });
 
   const save = async () => {
     setSubmitting(true);
 
-    // 1. "Your hobbies" describes YOU → write to your own profile so other
-    //    people's filters can match you. The full form is also stored as the
-    //    `preferences` JSON blob so this screen repopulates on the next visit.
+    // 1. "Your hobbies" describes YOU → write to your own profile (incl. the deep
+    //    cultural taxonomy). The full form is also stored as the `preferences`
+    //    JSON blob so this screen repopulates on the next visit.
     const yh = formState.your_hobbies;
     const formData = new FormData();
     formData.append("preferences", JSON.stringify(formState));
-    if (yh.religion_id != null) formData.append("religion", String(yh.religion_id));
-    if (yh.caste_id != null) formData.append("caste", String(yh.caste_id));
-    if (yh.gotra_id != null) formData.append("gotra", String(yh.gotra_id));
+    LEVELS.forEach((level) => {
+      const id = yh[`${level}_id` as `${Level}_id`];
+      if (id != null) formData.append(level, String(id));
+    });
     if (yh.horoscope) formData.append("horoscope", yh.horoscope);
     if (yh.gans) formData.append("gan", yh.gans);
     if (yh.hobbies) formData.append("hobbies", yh.hobbies);
@@ -260,9 +277,24 @@ export default function PreferencesPage() {
       preferred_city: f.preferred_city,
       max_distance_km: f.max_distance_km,
       preferred_education: f.preferred_education,
+      preferred_min_height_cm: f.preferred_min_height_cm,
+      preferred_max_height_cm: f.preferred_max_height_cm,
+      preferred_diet: f.preferred_diet,
+      preferred_alcohol: f.preferred_alcohol,
+      preferred_smoking: f.preferred_smoking,
+      gotra_rule: f.gotra_rule,
+      accept_different_religion: f.accept_different_religion,
+      accept_different_community: f.accept_different_community,
+      accept_different_caste: f.accept_different_caste,
+      accept_different_gotra: f.accept_different_gotra,
+      deal_breakers: f.deal_breakers,
       preferred_religion: pt.religion_id,
-      preferred_caste: pt.caste_id,
-      preferred_gotra: pt.gotra_id,
+      preferred_community: pt.community_id,
+      preferred_caste_category: pt.caste_category_id,
+      preferred_caste_v2: pt.caste_v2_id,
+      preferred_sub_caste: pt.sub_caste_id,
+      preferred_clan: pt.clan_id,
+      preferred_gotra_v2: pt.gotra_v2_id,
       preferred_horoscope: pt.horoscope,
       preferred_gan: pt.gans,
       preferred_hobbies: pt.hobbies,
@@ -275,10 +307,8 @@ export default function PreferencesPage() {
         updatePreferences(prefsPayload),
       ]);
       showSuccess("Preferences saved.");
-      // Persist a flag so "My Type" permanently shows the saved state.
       if (typeof window !== "undefined") localStorage.setItem("loviq_prefs_saved", "1");
       setSaved(true);
-      // Show the success screen briefly, then head home.
       setTimeout(() => router.push("/home"), 1500);
     } catch (error) {
       showError(error, "Could not save preferences.");
@@ -357,107 +387,52 @@ export default function PreferencesPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <SelectField
-              label="Gender"
-              value={filters.preferred_gender}
-              onChange={(value) => setFilter("preferred_gender", value)}
-              options={GENDER_OPTIONS}
-            />
-
-            <TextField
-              label="City"
-              value={filters.preferred_city}
-              onChange={(value) => setFilter("preferred_city", value)}
-              placeholder="e.g. Kathmandu"
-            />
-
-            <SelectField
-              label="Max distance"
-              value={String(filters.max_distance_km)}
-              onChange={(value) => setFilter("max_distance_km", Number(value))}
-              options={DISTANCE_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))}
-            />
-
-            <SelectField
-              label="Education"
-              value={filters.preferred_education}
-              onChange={(value) => setFilter("preferred_education", value)}
-              options={EDUCATION_OPTIONS}
-            />
+            <SelectField label="Gender" value={filters.preferred_gender} onChange={(v) => setFilter("preferred_gender", v)} options={GENDER_OPTIONS} />
+            <TextField label="City" value={filters.preferred_city} onChange={(v) => setFilter("preferred_city", v)} placeholder="e.g. Kathmandu" />
+            <SelectField label="Max distance" value={String(filters.max_distance_km)} onChange={(v) => setFilter("max_distance_km", Number(v))} options={DISTANCE_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))} />
+            <SelectField label="Education" value={filters.preferred_education} onChange={(v) => setFilter("preferred_education", v)} options={EDUCATION_OPTIONS} />
+            <NumberField label="Min height (cm)" value={filters.preferred_min_height_cm} onChange={(v) => setFilter("preferred_min_height_cm", v)} />
+            <NumberField label="Max height (cm)" value={filters.preferred_max_height_cm} onChange={(v) => setFilter("preferred_max_height_cm", v)} />
+            <SelectField label="Alcohol" value={filters.preferred_alcohol} onChange={(v) => setFilter("preferred_alcohol", v)} options={ANY_FREQUENCY} />
+            <SelectField label="Smoking" value={filters.preferred_smoking} onChange={(v) => setFilter("preferred_smoking", v)} options={ANY_FREQUENCY} />
+            <SelectField label="Gotra rule" value={filters.gotra_rule} onChange={(v) => setFilter("gotra_rule", v)} options={ANY_GOTRA_RULE} />
           </div>
 
-          <RangeField
-            label="Min age"
-            value={filters.min_age}
-            min={18}
-            max={60}
-            onChange={(value) => setFilter("min_age", Math.min(value, filters.max_age))}
-          />
+          <RangeField label="Min age" value={filters.min_age} min={18} max={60} onChange={(v) => setFilter("min_age", Math.min(v, filters.max_age))} />
+          <RangeField label="Max age" value={filters.max_age} min={18} max={60} onChange={(v) => setFilter("max_age", Math.max(v, filters.min_age))} />
 
-          <RangeField
-            label="Max age"
-            value={filters.max_age}
-            min={18}
-            max={60}
-            onChange={(value) => setFilter("max_age", Math.max(value, filters.min_age))}
-          />
+          <MultiChips title="Diet preference" options={DIET_OPTIONS} selected={filters.preferred_diet} onToggle={toggleDiet} />
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Religious compatibility</h3>
+            <ToggleRow label="Accept different religion" checked={filters.accept_different_religion} onChange={(v) => setFilter("accept_different_religion", v)} />
+            <ToggleRow label="Accept different community" checked={filters.accept_different_community} onChange={(v) => setFilter("accept_different_community", v)} />
+            <ToggleRow label="Accept different caste" checked={filters.accept_different_caste} onChange={(v) => setFilter("accept_different_caste", v)} />
+            <ToggleRow label="Accept different gotra" checked={filters.accept_different_gotra} onChange={(v) => setFilter("accept_different_gotra", v)} />
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">Deal breakers</h3>
+            <TagListField label="Must have" values={filters.deal_breakers.must_have} onChange={(v) => setDealBreaker("must_have", v)} />
+            <TagListField label="Nice to have" values={filters.deal_breakers.nice_to_have} onChange={(v) => setDealBreaker("nice_to_have", v)} />
+            <TagListField label="Avoid" values={filters.deal_breakers.avoid} onChange={(v) => setDealBreaker("avoid", v)} />
+          </div>
         </section>
 
         <section className="space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <CulturalChips
-            title="Religion"
-            options={religions}
-            selectedId={current.religion_id}
-            onSelect={selectReligion}
-            loading={religionsLoading}
-            emptyHint="No religions available."
-          />
+          <CulturalChips title="Religion" options={religions} selectedId={current.religion_id} onSelect={(id, n) => selectCultural("religion", id, n)} emptyHint="No religions available." />
+          <CulturalChips title="Community / Ethnicity" options={communities} selectedId={current.community_id} onSelect={(id, n) => selectCultural("community", id, n)} emptyHint={current.religion_id ? "No communities found." : "Select a religion first."} />
+          <CulturalChips title="Caste category" options={casteCategories} selectedId={current.caste_category_id} onSelect={(id, n) => selectCultural("caste_category", id, n)} emptyHint={current.community_id ? "No categories found." : "Select a community first."} />
+          <CulturalChips title="Caste" options={castesV2} selectedId={current.caste_v2_id} onSelect={(id, n) => selectCultural("caste_v2", id, n)} emptyHint={current.caste_category_id ? "No castes found." : "Select a category first."} />
+          <CulturalChips title="Sub-caste" options={subCastes} selectedId={current.sub_caste_id} onSelect={(id, n) => selectCultural("sub_caste", id, n)} emptyHint={current.caste_v2_id ? "No sub-castes found." : "Select a caste first."} />
+          <CulturalChips title="Clan" options={clans} selectedId={current.clan_id} onSelect={(id, n) => selectCultural("clan", id, n)} emptyHint={current.sub_caste_id ? "No clans found." : "Select a sub-caste first."} />
+          <CulturalChips title="Gotra" options={gotras} selectedId={current.gotra_v2_id} onSelect={(id, n) => selectCultural("gotra_v2", id, n)} emptyHint={current.clan_id ? "No gotras for this clan." : "Select a clan first."} />
 
-          <CulturalChips
-            title="Caste"
-            options={castes}
-            selectedId={current.caste_id}
-            onSelect={selectCaste}
-            loading={castesLoading}
-            emptyHint={current.religion_id ? "No castes found." : "Select a religion first."}
-          />
+          <ChipSection title="Horoscope" options={HOROSCOPE_OPTIONS} selected={current.horoscope} onSelect={(v) => setChoice("horoscope", v)} />
+          <ChipSection title="Gans" options={GANS_OPTIONS} selected={current.gans} onSelect={(v) => setChoice("gans", v)} />
 
-          <CulturalChips
-            title="Gotra"
-            options={gotras}
-            selectedId={current.gotra_id}
-            onSelect={selectGotra}
-            loading={gotrasLoading}
-            emptyHint={current.caste_id ? "No gotras for this caste." : "Select a caste first."}
-          />
-
-          <ChipSection
-            title="Horoscope"
-            options={HOROSCOPE_OPTIONS}
-            selected={current.horoscope}
-            onSelect={(value) => setChoice("horoscope", value)}
-          />
-
-          <ChipSection
-            title="Gans"
-            options={GANS_OPTIONS}
-            selected={current.gans}
-            onSelect={(value) => setChoice("gans", value)}
-          />
-
-          <OpenQuestion
-            label="Preferences"
-            value={current.preferences}
-            onChange={(value) => setText("preferences", value)}
-            placeholder="Type your preference here"
-          />
-
-          <OpenQuestion
-            label="Hobbies"
-            value={current.hobbies}
-            onChange={(value) => setText("hobbies", value)}
-            placeholder="Type your hobbies"
-          />
+          <OpenQuestion label="Preferences" value={current.preferences} onChange={(v) => setText("preferences", v)} placeholder="Type your preference here" />
+          <OpenQuestion label="Hobbies" value={current.hobbies} onChange={(v) => setText("hobbies", v)} placeholder="Type your hobbies" />
 
           <button
             onClick={save}
@@ -473,28 +448,25 @@ export default function PreferencesPage() {
   );
 }
 
-// Same look as ChipSection, but options are id+name records from the API and
-// selection is tracked by id (these map to backend foreign keys).
+// Options are id+name records from the API; selection is tracked by id.
 function CulturalChips({
   title,
   options,
   selectedId,
   onSelect,
-  loading,
   emptyHint,
 }: {
   title: string;
   options: { id: number; name: string }[];
   selectedId: number | null;
   onSelect: (id: number, name: string) => void;
-  loading: boolean;
   emptyHint: string;
 }) {
   return (
     <div>
       <h2 className="mb-2 text-[22px] font-semibold leading-none">{title}</h2>
       {options.length === 0 ? (
-        <p className="text-sm text-[#746767]">{loading ? "Loading…" : emptyHint}</p>
+        <p className="text-sm text-[#746767]">{emptyHint}</p>
       ) : (
         <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-2">
           {options.map((option) => {
@@ -503,11 +475,7 @@ function CulturalChips({
               <button
                 key={option.id}
                 onClick={() => onSelect(option.id, option.name)}
-                style={
-                  active
-                    ? { backgroundColor: "#5FD08A", color: "#14532D" }
-                    : { color: "#2D2424" }
-                }
+                style={active ? { backgroundColor: "#5FD08A", color: "#14532D" } : { color: "#2D2424" }}
                 className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
               >
                 {option.name}
@@ -541,14 +509,45 @@ function ChipSection({
             <button
               key={option}
               onClick={() => onSelect(option)}
-              style={
-                active
-                  ? { backgroundColor: "#5FD08A", color: "#14532D" }
-                  : { color: "#2D2424" }
-              }
+              style={active ? { backgroundColor: "#5FD08A", color: "#14532D" } : { color: "#2D2424" }}
               className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
             >
               {option}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Multi-select chips backed by {value,label} options (e.g. diet preference).
+function MultiChips({
+  title,
+  options,
+  selected,
+  onToggle,
+}: {
+  title: string;
+  options: { value: string; label: string }[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold">{title}</h3>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const active = selected.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onToggle(option.value)}
+              style={active ? { backgroundColor: "#5FD08A", color: "#14532D" } : { color: "#2D2424" }}
+              className="glass-btn rounded-full px-4 py-2 text-sm font-medium transition"
+            >
+              {option.label}
             </button>
           );
         })}
@@ -638,6 +637,28 @@ function TextField({
   );
 }
 
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-[#2D2424]">{label}</span>
+      <input
+        type="number"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        className="glass-btn h-11 w-full rounded-2xl px-4 text-sm outline-none placeholder:text-[#9f9797]"
+      />
+    </label>
+  );
+}
+
 function RangeField({
   label,
   value,
@@ -668,6 +689,93 @@ function RangeField({
         onChange={(event) => onChange(Number(event.target.value))}
         className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/55 accent-[#7A2432] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
       />
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-sm text-[#2D2424]">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        style={{ backgroundColor: checked ? "#5FD08A" : "#D9CFC6" }}
+        className="relative h-6 w-11 shrink-0 rounded-full transition"
+      >
+        <span
+          className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
+          style={{ left: checked ? "1.5rem" : "0.125rem" }}
+        />
+      </button>
+    </label>
+  );
+}
+
+// Free-text tag list (deal-breaker buckets). Enter or the Add button appends.
+function TagListField({
+  label,
+  values,
+  onChange,
+}: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const add = () => {
+    const trimmed = draft.trim();
+    if (!trimmed || values.includes(trimmed)) {
+      setDraft("");
+      return;
+    }
+    onChange([...values, trimmed]);
+    setDraft("");
+  };
+
+  return (
+    <div>
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#746767]">{label}</span>
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Add and press Enter"
+          className="glass-btn h-10 flex-1 rounded-2xl px-4 text-sm outline-none placeholder:text-[#9f9797]"
+        />
+        <button type="button" onClick={add} className="glass-btn h-10 shrink-0 rounded-2xl px-4 text-sm font-semibold">
+          Add
+        </button>
+      </div>
+      {values.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {values.map((value) => (
+            <span key={value} className="glass-btn flex items-center gap-1 rounded-full px-3 py-1 text-sm">
+              {value}
+              <button type="button" onClick={() => onChange(values.filter((v) => v !== value))} aria-label={`Remove ${value}`}>
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

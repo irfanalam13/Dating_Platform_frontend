@@ -7,6 +7,12 @@ import {
   getReligions,
   getCastes,
   getGotras,
+  getCommunities,
+  getCasteCategories,
+  getCastesV2,
+  getSubCastes,
+  getClans,
+  getGotrasV2,
 } from "../../../shared/api/preference.api";
 import type {
   Preferences,
@@ -14,6 +20,12 @@ import type {
   Religion,
   Caste,
   Gotra,
+  Community,
+  CasteCategory,
+  CasteV2,
+  SubCaste,
+  Clan,
+  GotraV2,
 } from "../../../shared/types/preference.types";
 
 
@@ -159,4 +171,75 @@ export const useGotras = (casteId: number | null) => {
   }, [casteId]);
 
   return { gotras, loading, error };
+};
+
+
+// ─────────────────────────────────────────
+// Deep-taxonomy cascade hooks. Each fetches its level filtered by the parent id,
+// and clears when the parent is unset — identical behaviour to useCastes above.
+// ─────────────────────────────────────────
+
+const useCascadeLevel = <T,>(
+  parentId: number | null,
+  fetcher: (id: number) => Promise<T[]>,
+  errorLabel: string,
+) => {
+  const [items, setItems] = useState<T[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!parentId) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await fetcher(parentId);
+        if (!cancelled) setItems(data);
+      } catch {
+        if (!cancelled) setError(`Failed to load ${errorLabel}.`);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [parentId, fetcher, errorLabel]);
+
+  return { items, loading, error };
+};
+
+export const useCommunities = (religionId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<Community>(religionId, getCommunities, "communities");
+  return { communities: items, loading, error };
+};
+
+export const useCasteCategories = (communityId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<CasteCategory>(communityId, getCasteCategories, "caste categories");
+  return { casteCategories: items, loading, error };
+};
+
+export const useCastesV2 = (categoryId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<CasteV2>(categoryId, getCastesV2, "castes");
+  return { castesV2: items, loading, error };
+};
+
+export const useSubCastes = (casteId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<SubCaste>(casteId, getSubCastes, "sub-castes");
+  return { subCastes: items, loading, error };
+};
+
+export const useClans = (subCasteId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<Clan>(subCasteId, getClans, "clans");
+  return { clans: items, loading, error };
+};
+
+export const useGotrasV2 = (clanId: number | null) => {
+  const { items, loading, error } = useCascadeLevel<GotraV2>(clanId, getGotrasV2, "gotras");
+  return { gotras: items, loading, error };
 };

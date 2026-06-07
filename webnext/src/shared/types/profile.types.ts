@@ -31,9 +31,53 @@ export interface Profile {
   gotra?: number | null;
   gotra_name?: string;
 
+  // Deep cultural taxonomy (FK id + resolved name)
+  community?: number | null;
+  community_name?: string;
+  caste_category?: number | null;
+  caste_category_name?: string;
+  caste_v2?: number | null;
+  caste_v2_name?: string;
+  sub_caste?: number | null;
+  sub_caste_name?: string;
+  clan?: number | null;
+  clan_name?: string;
+  gotra_v2?: number | null;
+  gotra_v2_name?: string;
+
   ethnicity: string;
   gan: string;
   horoscope: string;
+
+  // Basic information
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  nationality?: string;
+  citizenship?: string;
+  languages_spoken?: string[];
+
+  // Religious & cultural practice
+  family_religious_practice?: string;
+  personal_religious_practice?: string;
+  temple_attendance?: string;
+  marriage_tradition_pref?: string;
+
+  // Lifestyle
+  diet?: string;
+  alcohol?: string;
+  smoking?: string;
+
+  // Education & career
+  education_level?: string;
+  industry?: string;
+  income_range?: string;
+
+  // Family & relationship
+  family_type?: string;
+  family_values?: string;
+  parents_religion_importance?: string;
+  relationship_intent?: string;
+  wants_children?: string;
 
   // Legacy field (local file upload)
   profile_image: string | null;
