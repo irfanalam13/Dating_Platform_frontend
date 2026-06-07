@@ -109,14 +109,6 @@ export default function RegisterForm() {
         </div>
         <br />
 
-        <GoogleAuthButton text="signup_with" />
-
-        <div className="flex items-center gap-3 text-xs text-black/45">
-          <span className="h-px flex-1 bg-black/15" />
-          <span>or</span>
-          <span className="h-px flex-1 bg-black/15" />
-        </div>
-
         <input
           name="full_name"
           placeholder="Full name"
@@ -128,6 +120,7 @@ export default function RegisterForm() {
         <input
           name="username"
           placeholder="Username"
+          
           value={form.username}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"

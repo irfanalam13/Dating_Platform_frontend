@@ -1,6 +1,6 @@
 import { Conversation } from '@/shared/types/chat.types'
 import { useAuth } from '@/features/auth'
-import Avatar from '@/features/profile/components/Avatar'
+import ProfileImage from '@/shared/components/ProfileImage'
 import { formatTime } from '@/shared/lib/utils'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
 
@@ -22,25 +22,31 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left
-        ${isActive
-          ? 'bg-indigo-50 dark:bg-indigo-950/40'
-          : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+        ${isActive ? 'bg-white/50' : 'hover:bg-white/40'}`}
     >
-      <Avatar name={other?.username ?? '?'} size="md" isOnline={isOnline} />
+      <div className="relative flex-shrink-0">
+        <ProfileImage
+          src={other?.profile_picture ?? other?.profile_image}
+          name={other?.display_name ?? other?.username ?? '?'}
+          className="w-10 h-10 rounded-full"
+          textClassName="text-sm"
+        />
+        <span className={`absolute bottom-0 right-0 block w-2.5 h-2.5 rounded-full border-2 border-white ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+      </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <span className={`text-sm truncate ${unread > 0 ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-800 dark:text-gray-200'}`}>
+          <span className={`text-sm truncate ${unread > 0 ? 'font-bold text-[#1a1a2e]' : 'font-semibold text-[#2D2424]'}`}>
             {other?.username ?? 'Unknown'}
           </span>
           {conversation.last_message && (
-            <span className="text-[10px] text-gray-400 flex-shrink-0 ml-1">
+            <span className="text-[10px] text-[#746767] flex-shrink-0 ml-1">
               {formatTime(conversation.last_message.created_at)}
             </span>
           )}
         </div>
         <div className="flex items-center justify-between mt-0.5">
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          <p className={`text-xs truncate ${unread > 0 ? 'font-medium text-[#2D2424]' : 'text-[#746767]'}`}>
             {conversation.last_message?.content ?? 'No messages yet'}
           </p>
           {unread > 0 && (

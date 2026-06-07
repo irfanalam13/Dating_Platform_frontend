@@ -174,14 +174,14 @@ function showToast(
 	toast.custom(
 		(t) => (
 			<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-				<div className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/50 bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
+				<div className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
 					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.28)_40%,rgba(248,113,113,0.16)_100%)]" />
-					<div className="relative flex items-start gap-4">
+					<div className="relative flex items-start gap-4 pr-10">
 						<div
 							className={
 								variant === "success"
-									? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/20"
-									: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700 ring-1 ring-rose-500/20"
+									? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700"
+									: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700"
 							}
 						>
 							{variant === "success" ? (
@@ -191,7 +191,7 @@ function showToast(
 							)}
 						</div>
 
-						<div className="min-w-0 flex-1 pr-10">
+						<div className="min-w-0 flex-1">
 							<p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
 								{variant === "success" ? "Success" : "Error"}
 							</p>
@@ -199,16 +199,17 @@ function showToast(
 								{message}
 							</p>
 						</div>
-
-						<button
-							type="button"
-							onClick={() => toast.dismiss(t.id)}
-							className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-white/70 text-red-600 transition hover:bg-red-50 hover:text-red-700"
-							aria-label="Dismiss toast"
-						>
-							<X className="h-4 w-4" />
-						</button>
 					</div>
+
+					<button
+						type="button"
+						onClick={(e) => { e.stopPropagation(); toast.remove(t.id); }}
+						style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-slate-900"
+						aria-label="Dismiss toast"
+					>
+						<X className="h-4 w-4" />
+					</button>
 				</div>
 			</div>
 		),

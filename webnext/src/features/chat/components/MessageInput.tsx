@@ -44,7 +44,7 @@ export default function MessageInput({ onSend, onTyping, disabled }: Props) {
   }, [handleSend])
 
   return (
-    <div className="flex items-end gap-2 p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+    <div className="flex items-end gap-2 p-3 border-t border-white/40 backdrop-blur-md">
       <textarea
         rows={1}
         value={text}
@@ -52,9 +52,9 @@ export default function MessageInput({ onSend, onTyping, disabled }: Props) {
         onKeyDown={handleKeyDown}
         placeholder="Message…"
         disabled={disabled}
-        className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-gray-700
-                   bg-gray-50 dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100
-                   placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500
+        className="flex-1 resize-none rounded-2xl border border-white/50
+                   bg-white/30 backdrop-blur-sm px-4 py-2.5 text-sm text-[#2D2424]
+                   placeholder:text-[#746767] focus:outline-none focus:ring-2 focus:ring-white/50
                    disabled:opacity-50 max-h-32 overflow-y-auto"
         style={{ lineHeight: '1.5' }}
       />

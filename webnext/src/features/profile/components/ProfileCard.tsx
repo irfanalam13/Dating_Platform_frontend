@@ -159,6 +159,17 @@ export default function ProfileCard() {
     : [];
   const compatibilityTags = (data as any).compatibility_tags ?? [];
 
+  // Parse preferences → your_hobbies section
+  let yourHobbies: { gotra?: string; religion?: string; caste?: string; horoscope?: string; gans?: string; preferences?: string; hobbies?: string } = {};
+  if (data.preferences) {
+    try {
+      const parsed = JSON.parse(data.preferences as string);
+      yourHobbies = parsed.your_hobbies ?? {};
+    } catch {}
+  }
+  const hobbyChips = [yourHobbies.gotra, yourHobbies.religion, yourHobbies.caste, yourHobbies.horoscope, yourHobbies.gans].filter(Boolean) as string[];
+  const hasHobbySection = hobbyChips.length > 0 || yourHobbies.preferences || yourHobbies.hobbies;
+
   return (
     <main className="min-h-[100dvh] pb-10 text-[#2D2424]">
       <div className="mx-auto max-w-md space-y-4 px-4 py-5">
@@ -271,6 +282,33 @@ export default function ProfileCard() {
                   <div className="flex flex-wrap gap-2">
                     {hobbies.map((h) => <TagPill key={h} label={h} />)}
                   </div>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* ── Your Hobbies (from preferences) ── */}
+        {hasHobbySection && (
+          <Section title="My Interests">
+            <div className="rounded-xl border border-[#EADDD2] p-4 space-y-3">
+              {hobbyChips.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {hobbyChips.map((chip) => (
+                    <TagPill key={chip} label={chip} />
+                  ))}
+                </div>
+              )}
+              {yourHobbies.hobbies && (
+                <div>
+                  <p className="mb-1.5 text-xs text-[#746767]">Hobbies</p>
+                  <p className="text-sm text-[#2D2424]">{yourHobbies.hobbies}</p>
+                </div>
+              )}
+              {yourHobbies.preferences && (
+                <div>
+                  <p className="mb-1.5 text-xs text-[#746767]">Preferences</p>
+                  <p className="text-sm text-[#2D2424]">{yourHobbies.preferences}</p>
                 </div>
               )}
             </div>

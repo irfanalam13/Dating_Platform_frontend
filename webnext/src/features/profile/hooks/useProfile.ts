@@ -22,11 +22,8 @@ export const useMyProfile = () => {
   return useQuery({
     queryKey: ["myProfile"],
     queryFn: getMyProfile,
+    staleTime: 0,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-    retry: false,
-    staleTime: 1000 * 60 * 5,
   });
 };
 

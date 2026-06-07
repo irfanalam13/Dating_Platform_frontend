@@ -1,13 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/features/auth'
+import { ArrowLeft } from 'lucide-react'
 import { MessageInbox } from '@/features/chat/components/MessageInbox'
 import ConversationList from '@/features/chat/components/ConversationList'
-import NotificationBell from '@/features/notification/components/NotificationBell'
 
 export default function ChatPage() {
-  const { user } = useAuth()
   const router = useRouter()
 
   return (
@@ -18,13 +16,21 @@ export default function ChatPage() {
       </div>
 
       {/* ── Desktop: persistent two-panel (list + empty state) ── */}
-      <div className="hidden lg:flex h-[100dvh] overflow-hidden bg-gray-50 dark:bg-gray-950">
-        <aside className="w-80 flex-shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {user?.username}
-            </span>
-            <NotificationBell />
+      <div
+        className="hidden lg:flex h-[100dvh] overflow-hidden"
+        style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
+      >
+        <aside className="w-80 flex-shrink-0 flex flex-col border-r border-white/40 bg-white/60 backdrop-blur-md">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/40">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="glass-btn grid h-9 w-9 shrink-0 place-items-center rounded-full"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <h2 className="text-base font-semibold text-[#2D2424]">Messages</h2>
           </div>
 
           {/* Clicking a conversation drives the URL → the right panel updates */}

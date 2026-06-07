@@ -18,11 +18,7 @@ export default function ConversationList({ activeId, onSelect }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Messages</h2>
-      </div>
-
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+      <div className="flex-1 overflow-y-auto divide-y divide-white/40">
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />

@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="your@mail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
             className="w-full flex items-center justify-center gap-2 text-sm text-[#746767] hover:text-[#2D2424] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to login
+            Back to login page
           </button>
         </div>
       </motion.div>

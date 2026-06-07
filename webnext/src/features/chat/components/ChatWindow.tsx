@@ -49,10 +49,13 @@ export default function ChatWindow({ conversationId }: Props) {
   const isTyping = typingUsers.size > 0
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-950">
+    <div
+      className="flex flex-col h-full"
+      style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
+    >
 
       {/* ── Header ─────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/50 bg-white/60 backdrop-blur-md">
         {other && (
           <>
             <Avatar
@@ -61,7 +64,7 @@ export default function ChatWindow({ conversationId }: Props) {
               isOnline={isOtherOnline}
             />
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <p className="text-sm font-semibold text-[#1a1a2e]">
                 {other.display_name ?? other.username}
               </p>
               <OnlineIndicator
@@ -72,11 +75,6 @@ export default function ChatWindow({ conversationId }: Props) {
           </>
         )}
 
-        {/* <div className="ml-auto">
-          {wsStatus !== 'connected' && (
-            <span className="text-xs text-amber-500">Reconnecting…</span>
-          )}
-        </div> */}
         {/* Better status indicator */}
         <div className="ml-auto flex items-center gap-2">
           {wsStatus === "connected" && (
@@ -107,7 +105,6 @@ export default function ChatWindow({ conversationId }: Props) {
             <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
           </div>
         )}
-        {/*Message Bubble key*/}
 
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
@@ -121,8 +118,7 @@ export default function ChatWindow({ conversationId }: Props) {
       {/* ── Input ──────────────────────────────────────── */}
       <MessageInput
         onSend={send}
-        onTyping={sendTyping}              
-        // disabled={wsStatus !== 'connected'}
+        onTyping={sendTyping}
         disabled={false}
       />
 

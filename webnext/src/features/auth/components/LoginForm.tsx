@@ -35,14 +35,6 @@ export default function LoginForm() {
         </div>
         <br /><br />
 
-        <GoogleAuthButton text="signin_with" />
-
-        <div className="flex items-center gap-3 text-xs text-black/45">
-          <span className="h-px flex-1 bg-black/15" />
-          <span>or</span>
-          <span className="h-px flex-1 bg-black/15" />
-        </div>
-
         <input
           name="email"
           type="email"
