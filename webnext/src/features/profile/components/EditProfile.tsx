@@ -3,8 +3,9 @@
         import { useEffect, useState } from "react";
         import { useRouter } from "next/navigation";
         import { AnimatePresence, motion } from "framer-motion";
-        import { ArrowLeft, ArrowRight, Upload } from "lucide-react";
+        import { ArrowLeft, ArrowRight, ChevronDown, Upload } from "lucide-react";
         import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
+        import { useReligions, useCastes, useGotras } from "@/features/preference/hooks/usePreference";
         import api from "@/shared/api/client";
 
         const steps = ["Identity", "Lifestyle", "Culture"];
@@ -32,6 +33,19 @@
           const [photo, setPhoto] = useState<File | null>(null);
           const [showDiscard, setShowDiscard] = useState(false);
 
+          // Religion → caste → gotra are foreign keys; the caste list depends on
+          // the chosen religion and the gotra list on the chosen caste (same
+          // cascade as the preferences page). Tracked by id, separate from the
+          // string form because empty FK ids must NOT be sent to the backend.
+          const [culture, setCulture] = useState<{ religion: number | null; caste: number | null; gotra: number | null }>({
+            religion: null,
+            caste: null,
+            gotra: null,
+          });
+          const { religions } = useReligions();
+          const { castes } = useCastes(culture.religion);
+          const { gotras } = useGotras(culture.caste);
+
           useEffect(() => {
             if (!data) return;
             setForm((current) => ({
@@ -50,9 +64,19 @@
               horoscope: data.horoscope || "",
               is_profile_public: String(data.is_profile_public ?? true),
             }));
+            setCulture({
+              religion: data.religion ?? null,
+              caste: data.caste ?? null,
+              gotra: data.gotra ?? null,
+            });
           }, [data]);
 
           const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+
+          // Picking a religion clears the dependent caste + gotra; picking a caste clears gotra.
+          const selectReligion = (id: number | null) => setCulture({ religion: id, caste: null, gotra: null });
+          const selectCaste = (id: number | null) => setCulture((c) => ({ ...c, caste: id, gotra: null }));
+          const selectGotra = (id: number | null) => setCulture((c) => ({ ...c, gotra: id }));
 
           const submit = async () => {
             if (photo) {
@@ -68,6 +92,11 @@
 
             const formData = new FormData();
             Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+
+            // FK fields: only send when chosen — an empty value is invalid for a FK.
+            if (culture.religion != null) formData.append("religion", String(culture.religion));
+            if (culture.caste != null) formData.append("caste", String(culture.caste));
+            if (culture.gotra != null) formData.append("gotra", String(culture.gotra));
 
             mutation.mutate(formData, {
               onSuccess: () => router.push("/home"),
@@ -128,7 +157,30 @@
                       {step === 2 && (
                         <>
                           <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
-                          <Field label="Gotra / Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
+                          <CultureSelect
+                            label="Religion"
+                            value={culture.religion}
+                            onChange={selectReligion}
+                            options={religions}
+                            placeholder="Select religion"
+                          />
+                          <CultureSelect
+                            label="Caste"
+                            value={culture.caste}
+                            onChange={selectCaste}
+                            options={castes}
+                            placeholder={culture.religion ? "Select caste" : "Select a religion first"}
+                            disabled={!culture.religion}
+                          />
+                          <CultureSelect
+                            label="Gotra"
+                            value={culture.gotra}
+                            onChange={selectGotra}
+                            options={gotras}
+                            placeholder={culture.caste ? "Select gotra" : "Select a caste first"}
+                            disabled={!culture.caste}
+                          />
+                          <Field label="Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
                           <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
                           <Field label="Interests" value={form.hobbies} onChange={(v) => update("hobbies", v)} placeholder="Music, hiking, reading" />
                         </>
@@ -210,6 +262,44 @@
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium">{label}</span>
               <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-md border border-[#EADDD2] p-3 text-sm outline-none focus:border-[#7A2432]" />
+            </label>
+          );
+        }
+
+        // Cascading dropdown for religion / caste / gotra — options are id+name
+        // records from the API and the value is the selected id (a profile FK).
+        function CultureSelect({
+          label,
+          value,
+          onChange,
+          options,
+          placeholder,
+          disabled,
+        }: {
+          label: string;
+          value: number | null;
+          onChange: (value: number | null) => void;
+          options: { id: number; name: string }[];
+          placeholder: string;
+          disabled?: boolean;
+        }) {
+          return (
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium">{label} <span className="text-[#746767]">(optional)</span></span>
+              <div className="relative">
+                <select
+                  value={value ?? ""}
+                  disabled={disabled}
+                  onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)}
+                  className="h-12 w-full appearance-none rounded-md border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#7A2432] disabled:opacity-50"
+                >
+                  <option value="">{placeholder}</option>
+                  {options.map((option) => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+              </div>
             </label>
           );
         }
