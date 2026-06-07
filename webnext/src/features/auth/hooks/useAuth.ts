@@ -12,6 +12,7 @@ import {
   resendVerification,
 } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
+import type { LoginPayload } from "@/shared/types/auth.types";
 import { showSuccess, showError } from "@/shared/utils/toast";
 import { logger } from "@/shared/utils/logger";
 import Cookies from "js-cookie";
@@ -89,7 +90,7 @@ export const useLogin = () => {
       router.push("/dashboard");
     },
 
-    onError: (err: unknown, variables: { email: string }) => {
+    onError: (err: unknown, variables: LoginPayload) => {
       logger.error("LOGIN ERROR", err);
       // Handle unverified email specifically
       const resData = (
