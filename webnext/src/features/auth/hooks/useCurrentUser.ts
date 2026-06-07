@@ -7,7 +7,7 @@ import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { refreshOnce } from "@/shared/api/client";
 
-// ✅ Helper to check hint cookie.
+//   Helper to check hint cookie.
 // The backend (set_auth_cookies) and the login flow (setLoggedInCookie) both
 // set a JS-readable `logged_in=true` cookie. `rt_exists` is never set anywhere,
 // so checking it always failed → on a cold reload we short-circuited to null and
@@ -25,7 +25,7 @@ export function useCurrentUser() {
 
     queryFn: async () => {
       try {
-        // ✅ Skip refresh entirely if no hint cookie
+        //   Skip refresh entirely if no hint cookie
         if (!hasRefreshTokenHint()) {
           return null;
         }

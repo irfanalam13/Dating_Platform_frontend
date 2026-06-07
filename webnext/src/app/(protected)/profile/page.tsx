@@ -10,7 +10,7 @@ import { useMyProfile } from "@/features/profile/hooks/useProfile";
 import ProfileClient from "@/features/profile/components/ProfileClient";
 
 export default function MyProfilePage() {
-  const { data, isLoading } = useMyProfile(); // ✅ no args needed
+  const { data, isLoading } = useMyProfile(); //   no args needed
 
   return (
     <ProfileClient

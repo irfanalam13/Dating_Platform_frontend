@@ -22,7 +22,7 @@
 //   });
 // };
 
-// // 🔥 Discover (MUST match backend matcher app)
+// //  Discover (MUST match backend matcher app)
 // export const getDiscoverProfiles = async (): Promise<DiscoverResponse> => {
 //   const res = await api.get("/matcher/recommendations/");
 //   return res.data;
@@ -89,11 +89,21 @@ export const getPublicProfile = async (userId: number): Promise<PublicProfile> =
 // };
 
 // ──────────────────────────────────────────────
-// 🔥 Discovery
+//  Discovery
 // ──────────────────────────────────────────────
 
 export const getDiscoverProfiles = async (): Promise<DiscoverResponse> => {
   const res = await api.get("/matcher/recommendations/");
+  return res.data;
+};
+
+/**
+ * My-Type deck — accounts that match the preferences the user saved
+ * (gender, age, religion/caste/gotra, city, etc.). Same shape as Discover.
+ * GET /matcher/my-type/
+ */
+export const getMyTypeProfiles = async (): Promise<DiscoverResponse> => {
+  const res = await api.get("/matcher/my-type/");
   return res.data;
 };
 

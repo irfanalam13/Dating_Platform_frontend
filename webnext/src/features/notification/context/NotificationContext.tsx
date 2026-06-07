@@ -215,12 +215,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!user) return;
 
-    let cancelled = false                  // ✅ prevent race condition
+    let cancelled = false                  //   prevent race condition
 
     const connectWS = async () => {
-      const token = await getFreshToken()  // ✅ always fresh token
+      const token = await getFreshToken()  //   always fresh token
       if (!token) return;
-      if (cancelled) return;              // ✅ unmounted before token arrived
+      if (cancelled) return;              //   unmounted before token arrived
 
       const ws = new NotificationWebSocket({
         onOpen:  () => setWsStatus("connected"),
@@ -230,7 +230,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       wsRef.current = ws;
       const unsub = ws.subscribe(handleEvent);
-      ws.connect(token);                  // ✅ fresh token
+      ws.connect(token);                  //   fresh token
 
       return unsub
     }
@@ -242,7 +242,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     })
 
     return () => {
-      cancelled = true                    // ✅ cancel if unmounted
+      cancelled = true                    //   cancel if unmounted
       unsubFn?.()
       wsRef.current?.disconnect();
       wsRef.current = null;

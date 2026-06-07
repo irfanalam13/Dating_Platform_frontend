@@ -22,7 +22,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const { onlineUsers } = useNotificationContext()
   const bottomRef       = useRef<HTMLDivElement>(null)
 
-  // ✅ Plain string — useChat reads currentUser internally from Zustand
+  //   Plain string — useChat reads currentUser internally from Zustand
   const { messages, isLoading, typingUsers, send, sendTyping, wsStatus } =
     useChat(conversationId)
 

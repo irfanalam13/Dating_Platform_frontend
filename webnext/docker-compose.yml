@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"   # ✅ optional (for pgAdmin)
+      - "5432:5432"   #   optional (for pgAdmin)
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -37,7 +37,7 @@ services:
     build:
       context: ./dating_frontend/webnext
     container_name: next_frontend
-    command: npm run dev   # ✅ removed npm install
+    command: npm run dev   #   removed npm install
     ports:
       - "3000:3000"
     volumes:

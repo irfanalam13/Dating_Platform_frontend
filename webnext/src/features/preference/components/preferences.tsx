@@ -4,14 +4,23 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronDown, Sparkles } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
+import { useReligions, useCastes, useGotras } from "@/features/preference/hooks/usePreference";
+import { updatePreferences } from "@/shared/api/preference.api";
+import type { PreferencesPayload } from "@/shared/types/preference.types";
 import { showError, showSuccess } from "@/shared/utils/toast";
 
 type PreferenceScope = "your_hobbies" | "partners_type";
 
+// Religion / caste / gotra are foreign keys on the backend, so we keep both the
+// id (sent to the API) and the name (shown in the chip + stored in the JSON blob
+// that repopulates this form on the next visit).
 type ChoiceForm = {
-  gotra: string;
   religion: string;
+  religion_id: number | null;
   caste: string;
+  caste_id: number | null;
+  gotra: string;
+  gotra_id: number | null;
   horoscope: string;
   gans: string;
   preferences: string;
@@ -34,9 +43,12 @@ type PreferencePayload = {
 };
 
 const emptyForm = (): ChoiceForm => ({
-  gotra: "",
   religion: "",
+  religion_id: null,
   caste: "",
+  caste_id: null,
+  gotra: "",
+  gotra_id: null,
   horoscope: "",
   gans: "",
   preferences: "",
@@ -72,41 +84,6 @@ const EDUCATION_OPTIONS = [
   { value: "bachelor", label: "Bachelor's" },
   { value: "master", label: "Master's" },
   { value: "phd", label: "PhD" },
-];
-
-const GOTRA_OPTIONS = [
-  "Not Sure",
-  "Atri",
-  "Bharadwaj",
-  "Gautama",
-  "Jamadagni",
-  "Kashyap",
-  "Vashistha",
-  "Vishwamitra",
-];
-
-const RELIGION_OPTIONS = [
-  "Hindu",
-  "Islam",
-  "Christian",
-  "Buddhism",
-  "Sikh",
-  "Jain",
-  "Others",
-];
-
-const CASTE_OPTIONS = [
-  "Bahun",
-  "Chhetri",
-  "Newar",
-  "Shah",
-  "Yadav",
-  "Muslim",
-  "Rai",
-  "Adivasi",
-  "Janjati",
-  "Dalit",
-  "Others",
 ];
 
 const HOROSCOPE_OPTIONS = [
@@ -147,6 +124,7 @@ export default function PreferencesPage() {
   const router = useRouter();
   const { data } = useMyProfile();
   const updateMutation = useUpdateProfile();
+  const [submitting, setSubmitting] = useState(false);
 
   const [activeScope, setActiveScope] = useState<PreferenceScope>("your_hobbies");
   const [saved, setSaved] = useState(false);
@@ -167,6 +145,13 @@ export default function PreferencesPage() {
   const current = formState[activeScope];
   const filters = formState.filters;
 
+  // Cultural dropdowns cascade off the *active* tab's selections:
+  // religion → its castes → that caste's gotras. Selecting "Hindu" therefore
+  // only ever offers Hindu castes, never castes from other religions.
+  const { religions, loading: religionsLoading } = useReligions();
+  const { castes, loading: castesLoading } = useCastes(current.religion_id);
+  const { gotras, loading: gotrasLoading } = useGotras(current.caste_id);
+
   const setFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFormState((prev) => ({
       ...prev,
@@ -174,7 +159,8 @@ export default function PreferencesPage() {
     }));
   };
 
-  const setChoice = (key: keyof ChoiceForm, value: string) => {
+  // String chips (horoscope, gans) — toggle on/off.
+  const setChoice = (key: "horoscope" | "gans", value: string) => {
     setFormState((prev) => ({
       ...prev,
       [activeScope]: {
@@ -182,6 +168,59 @@ export default function PreferencesPage() {
         [key]: prev[activeScope][key] === value ? "" : value,
       },
     }));
+  };
+
+  // Religion chip — toggles, and clears the dependent caste + gotra when it changes.
+  const selectReligion = (id: number, name: string) => {
+    setFormState((prev) => {
+      const scope = prev[activeScope];
+      const same = scope.religion_id === id;
+      return {
+        ...prev,
+        [activeScope]: {
+          ...scope,
+          religion: same ? "" : name,
+          religion_id: same ? null : id,
+          caste: "",
+          caste_id: null,
+          gotra: "",
+          gotra_id: null,
+        },
+      };
+    });
+  };
+
+  // Caste chip — toggles, and clears the dependent gotra when it changes.
+  const selectCaste = (id: number, name: string) => {
+    setFormState((prev) => {
+      const scope = prev[activeScope];
+      const same = scope.caste_id === id;
+      return {
+        ...prev,
+        [activeScope]: {
+          ...scope,
+          caste: same ? "" : name,
+          caste_id: same ? null : id,
+          gotra: "",
+          gotra_id: null,
+        },
+      };
+    });
+  };
+
+  const selectGotra = (id: number, name: string) => {
+    setFormState((prev) => {
+      const scope = prev[activeScope];
+      const same = scope.gotra_id === id;
+      return {
+        ...prev,
+        [activeScope]: {
+          ...scope,
+          gotra: same ? "" : name,
+          gotra_id: same ? null : id,
+        },
+      };
+    });
   };
 
   const setText = (key: "preferences" | "hobbies", value: string) => {
@@ -194,21 +233,58 @@ export default function PreferencesPage() {
     }));
   };
 
-  const save = () => {
+  const save = async () => {
+    setSubmitting(true);
+
+    // 1. "Your hobbies" describes YOU → write to your own profile so other
+    //    people's filters can match you. The full form is also stored as the
+    //    `preferences` JSON blob so this screen repopulates on the next visit.
+    const yh = formState.your_hobbies;
     const formData = new FormData();
     formData.append("preferences", JSON.stringify(formState));
+    if (yh.religion_id != null) formData.append("religion", String(yh.religion_id));
+    if (yh.caste_id != null) formData.append("caste", String(yh.caste_id));
+    if (yh.gotra_id != null) formData.append("gotra", String(yh.gotra_id));
+    if (yh.horoscope) formData.append("horoscope", yh.horoscope);
+    if (yh.gans) formData.append("gan", yh.gans);
+    if (yh.hobbies) formData.append("hobbies", yh.hobbies);
 
-    updateMutation.mutate(formData, {
-      onSuccess: () => {
-        showSuccess("Preferences saved.");
-        // Persist a flag so "My Type" permanently shows the saved state.
-        if (typeof window !== "undefined") localStorage.setItem("loviq_prefs_saved", "1");
-        setSaved(true);
-        // Show the success screen briefly, then head home.
-        setTimeout(() => router.push("/home"), 1500);
-      },
-      onError: (error) => showError(error, "Could not save preferences."),
-    });
+    // 2. "Partner's type" + match filters describe what you WANT → write to the
+    //    preferences the matcher's My-Type deck filters on.
+    const pt = formState.partners_type;
+    const f = formState.filters;
+    const prefsPayload: PreferencesPayload = {
+      min_age: f.min_age,
+      max_age: f.max_age,
+      preferred_gender: f.preferred_gender as PreferencesPayload["preferred_gender"],
+      preferred_city: f.preferred_city,
+      max_distance_km: f.max_distance_km,
+      preferred_education: f.preferred_education,
+      preferred_religion: pt.religion_id,
+      preferred_caste: pt.caste_id,
+      preferred_gotra: pt.gotra_id,
+      preferred_horoscope: pt.horoscope,
+      preferred_gan: pt.gans,
+      preferred_hobbies: pt.hobbies,
+      preferred_preferences: pt.preferences,
+    };
+
+    try {
+      await Promise.all([
+        updateMutation.mutateAsync(formData),
+        updatePreferences(prefsPayload),
+      ]);
+      showSuccess("Preferences saved.");
+      // Persist a flag so "My Type" permanently shows the saved state.
+      if (typeof window !== "undefined") localStorage.setItem("loviq_prefs_saved", "1");
+      setSaved(true);
+      // Show the success screen briefly, then head home.
+      setTimeout(() => router.push("/home"), 1500);
+    } catch (error) {
+      showError(error, "Could not save preferences.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // ── Success screen shown right after saving ──
@@ -328,25 +404,31 @@ export default function PreferencesPage() {
         </section>
 
         <section className="space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <ChipSection
-            title="Gotra"
-            options={GOTRA_OPTIONS}
-            selected={current.gotra}
-            onSelect={(value) => setChoice("gotra", value)}
-          />
-
-          <ChipSection
+          <CulturalChips
             title="Religion"
-            options={RELIGION_OPTIONS}
-            selected={current.religion}
-            onSelect={(value) => setChoice("religion", value)}
+            options={religions}
+            selectedId={current.religion_id}
+            onSelect={selectReligion}
+            loading={religionsLoading}
+            emptyHint="No religions available."
           />
 
-          <ChipSection
+          <CulturalChips
             title="Caste"
-            options={CASTE_OPTIONS}
-            selected={current.caste}
-            onSelect={(value) => setChoice("caste", value)}
+            options={castes}
+            selectedId={current.caste_id}
+            onSelect={selectCaste}
+            loading={castesLoading}
+            emptyHint={current.religion_id ? "No castes found." : "Select a religion first."}
+          />
+
+          <CulturalChips
+            title="Gotra"
+            options={gotras}
+            selectedId={current.gotra_id}
+            onSelect={selectGotra}
+            loading={gotrasLoading}
+            emptyHint={current.caste_id ? "No gotras for this caste." : "Select a caste first."}
           />
 
           <ChipSection
@@ -379,15 +461,62 @@ export default function PreferencesPage() {
 
           <button
             onClick={save}
-            disabled={updateMutation.isPending}
-            style={{ backgroundColor: updateMutation.isPending ? "#A8D63A" : "#C5F04E", color: "#2D2424" }}
+            disabled={submitting}
+            style={{ backgroundColor: submitting ? "#A8D63A" : "#C5F04E", color: "#2D2424" }}
             className="mt-2 h-12 w-full rounded-full text-sm font-semibold shadow-[0_8px_24px_rgba(16,24,40,0.12)] transition hover:brightness-105 disabled:opacity-60"
           >
-            {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            {submitting ? "Saving..." : "Save Changes"}
           </button>
         </section>
       </div>
     </main>
+  );
+}
+
+// Same look as ChipSection, but options are id+name records from the API and
+// selection is tracked by id (these map to backend foreign keys).
+function CulturalChips({
+  title,
+  options,
+  selectedId,
+  onSelect,
+  loading,
+  emptyHint,
+}: {
+  title: string;
+  options: { id: number; name: string }[];
+  selectedId: number | null;
+  onSelect: (id: number, name: string) => void;
+  loading: boolean;
+  emptyHint: string;
+}) {
+  return (
+    <div>
+      <h2 className="mb-2 text-[22px] font-semibold leading-none">{title}</h2>
+      {options.length === 0 ? (
+        <p className="text-sm text-[#746767]">{loading ? "Loading…" : emptyHint}</p>
+      ) : (
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-2">
+          {options.map((option) => {
+            const active = selectedId === option.id;
+            return (
+              <button
+                key={option.id}
+                onClick={() => onSelect(option.id, option.name)}
+                style={
+                  active
+                    ? { backgroundColor: "#5FD08A", color: "#14532D" }
+                    : { color: "#2D2424" }
+                }
+                className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
+              >
+                {option.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

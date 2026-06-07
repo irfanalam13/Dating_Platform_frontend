@@ -1,7 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "@/shared/types/auth.types"; // ✅ import from single source
+import type { User } from "@/shared/types/auth.types"; //   import from single source
 
 // ❌ Remove the local User type — use the shared one above
 

@@ -169,7 +169,7 @@ parentheses organize files *without* appearing in the URL:
 | `/delete` | `AccountDeletionPage` | server | permanent deletion (30-day grace) |
 | `/help` | `HelpSectionPage` | server | help center |
 | `/imageupload` | `UploadImage` (UploadSelfie) | server | selfie/post upload |
-| `/test` | "Test Page Working ✅" | server | scratch page — safe to ignore |
+| `/test` | "Test Page Working  " | server | scratch page — safe to ignore |
 
 ---
 
@@ -275,7 +275,7 @@ REST fallbacks exist in `shared/api/chat.api.ts` (`sendMessage`, `markMessagesRe
 
 | File | Role |
 |---|---|
-| `context/NotificationContext.tsx` ✅ | **The ACTIVE context.** Opens a `NotificationWebSocket` and tracks `notifications[]` (max 50), `unreadCounts` per conversation, `totalUnread`, `onlineUsers` (presence), and `wsStatus`. Powers the red/amber badges on the bottom nav. Used in `providers.tsx`. |
+| `context/NotificationContext.tsx`   | **The ACTIVE context.** Opens a `NotificationWebSocket` and tracks `notifications[]` (max 50), `unreadCounts` per conversation, `totalUnread`, `onlineUsers` (presence), and `wsStatus`. Powers the red/amber badges on the bottom nav. Used in `providers.tsx`. |
 | `hooks/useNotifications.ts` | REST hooks for the full notification page: `useNotificationList`, `useMarkNotificationsRead` (optimistic), `useMarkAllNotificationsRead`. |
 | `components/NotificationBell.tsx` | Bell icon + dropdown of the 5 most recent. |
 | `components/NotificationHome.tsx` | Full notification list page (`/notification`), with per-type icons and click-through navigation. |
@@ -414,7 +414,7 @@ These are real observations — not urgent bugs, but good to know so you don't g
      `shared/ui/sidebar.tsx`, `shared/utils/profileAdapter.ts` are empty or commented out.
 2. **Mock account actions.** `Delete.tsx`, `deactive.tsx`, and `UploadSelfie.tsx`
    simulate with timers instead of calling the backend.
-3. **Debug `console.log`s** remain in the auth/API code (`✅ Token stored`, etc.).
+3. **Debug `console.log`s** remain in the auth/API code (`  Token stored`, etc.).
 4. **Two `formatTime` functions** exist (`lib/helpers.ts` vs `utils/time.ts`) with
    slightly different output — make sure you import the one you mean.
 5. **Two QueryClient instances** are created (in `QueryProvider.tsx` and `providers.tsx`).

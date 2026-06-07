@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { useUserProfile } from "@/features/profile/hooks/useProfile"; // ✅ not usePublicProfile
+import { useUserProfile } from "@/features/profile/hooks/useProfile"; //   not usePublicProfile
 import { sendInterest } from "@/shared/api/profile.api";
 import ProfileClient from "@/features/profile/components/ProfileClient";
 
@@ -16,7 +16,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const numericId = parseInt(id, 10);
   const router = useRouter();
 
-  const { data, isLoading } = useUserProfile(numericId); // ✅ correct hook
+  const { data, isLoading } = useUserProfile(numericId); //   correct hook
 
   const interestMutation = useMutation({
     mutationFn: (action: "like" | "pass") => sendInterest(numericId, action),
@@ -26,7 +26,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   return (
     <ProfileClient
       mode="public"
-      publicData={data}         // ✅ useUserProfile returns PublicProfile
+      publicData={data}         //   useUserProfile returns PublicProfile
       isLoading={isLoading}
       onLike={() => interestMutation.mutate("like")}
       onPass={() => interestMutation.mutate("pass")}

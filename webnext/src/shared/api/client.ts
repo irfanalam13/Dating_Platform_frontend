@@ -142,7 +142,7 @@ export const refreshOnce = async (): Promise<string | null> => {
       return null
     })
     .finally(() => {
-      refreshPromise = null    // ✅ reset immediately, not after 5s
+      refreshPromise = null    //   reset immediately, not after 5s
     })
 
   return refreshPromise

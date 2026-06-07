@@ -44,10 +44,10 @@ export function useChat(conversationId: string | null): UseChatReturn {
   const queryClient                   = useQueryClient();
   const { markConversationRead }      = useNotificationContext();
 
-  // ✅ wsRef holds the WS instance
+  //   wsRef holds the WS instance
   const wsRef                         = useRef<ChatWebSocket | null>(null);
 
-  // ✅ wsStatusRef mirrors wsStatus so send() always reads current value
+  //   wsStatusRef mirrors wsStatus so send() always reads current value
   // without needing wsStatus in its dependency array (which causes stale closure)
   const wsStatusRef                   = useRef<UseChatReturn["wsStatus"]>("disconnected");
 
@@ -201,15 +201,15 @@ export function useChat(conversationId: string | null): UseChatReturn {
     if (!conversationId) return;
     if (!currentUser)    return;
 
-    let cancelled = false                  // ✅ prevent race condition
+    let cancelled = false                  //   prevent race condition
 
     const connectWS = async () => {
-      const token = await getFreshToken()  // ✅ always fresh token
+      const token = await getFreshToken()  //   always fresh token
       if (!token) {
         logger.warn("useChat: no token — WS not started");
         return;
       }
-      if (cancelled) return;              // ✅ component unmounted before token arrived
+      if (cancelled) return;              //   component unmounted before token arrived
 
       // Tear down any existing connection first
       if (wsRef.current) {
@@ -222,7 +222,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
 
       const ws = new ChatWebSocket(conversationId, {
         onOpen:  () => {
-          logger.log("useChat: WS connected ✅");
+          logger.log("useChat: WS connected  ");
           updateStatus("connected");
         },
         onClose: () => {
@@ -237,24 +237,24 @@ export function useChat(conversationId: string | null): UseChatReturn {
 
       wsRef.current = ws;
       const unsub = ws.subscribe(handleWSEvent);
-      ws.connect(token);                  // ✅ fresh token
+      ws.connect(token);                  //   fresh token
 
       ws.sendRead();
       markConversationRead(conversationId);
 
-      return unsub                        // ✅ return unsub for cleanup
+      return unsub                        //   return unsub for cleanup
     }
 
-    let unsubFn: (() => void) | undefined  // ✅ store unsub
+    let unsubFn: (() => void) | undefined  //   store unsub
 
     connectWS().then(unsub => {
       unsubFn = unsub
     })
 
     return () => {
-      cancelled = true                    // ✅ cancel if unmounted
+      cancelled = true                    //   cancel if unmounted
       logger.log("useChat: cleanup WS");
-      unsubFn?.()                         // ✅ unsubscribe handlers
+      unsubFn?.()                         //   unsubscribe handlers
       wsRef.current?.disconnect();
       wsRef.current = null;
       updateStatus("disconnected");
@@ -263,7 +263,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
   }, [conversationId, currentUser, handleWSEvent, markConversationRead, updateStatus]);
   // ── Public actions ───────────────────────────────────
 
-  // ✅ Uses wsRef directly — no stale closure on wsStatus
+  //   Uses wsRef directly — no stale closure on wsStatus
   const send = useCallback(
     (text: string) => {
       const trimmed = text.trim();
@@ -279,7 +279,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
         return;
       }
 
-      // ✅ Optimistic update — show the sender's own message immediately.
+      //   Optimistic update — show the sender's own message immediately.
       // Reconciled/deduped when the server echoes it back (see "message" handler).
       if (currentUser) {
         const optimistic: Message = {

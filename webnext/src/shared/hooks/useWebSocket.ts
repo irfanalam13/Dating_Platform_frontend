@@ -13,7 +13,7 @@ export function useChatWebSocket(conversationId: string | null) {
     if (!conversationId) return
 
     const connectWS = async () => {
-      // ✅ Refresh token first
+      //   Refresh token first
       let token = getAccessToken()
 
       try {

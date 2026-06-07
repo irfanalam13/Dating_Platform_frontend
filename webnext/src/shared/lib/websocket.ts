@@ -40,7 +40,7 @@ class WebSocketManager {
     this.ws = new WebSocket(wsUrl)
 
     this.ws.onopen = () => {
-      console.log('WebSocket onopen fired ✅')
+      console.log('WebSocket onopen fired  ')
       this.status = 'connected'
       this.reconnectDelay = 2000
       this._startPing()

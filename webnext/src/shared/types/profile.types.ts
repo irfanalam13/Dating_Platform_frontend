@@ -43,6 +43,8 @@ export interface Profile {
 
   is_complete: boolean;
   is_profile_public: boolean;
+  // True when the account is private — shown in the deck but with a blurred photo.
+  is_private?: boolean;
   verified: boolean;
 
   compatibility_tags?: string[]; // Add this line

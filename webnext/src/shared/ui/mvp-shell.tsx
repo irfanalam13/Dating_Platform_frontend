@@ -78,7 +78,7 @@ export function MvpShell({ children }: { children: React.ReactNode }) {
     pathname === "/profile/edit";
 
   return (
-    <>                                         {/* ✅ fragment fixes the two-sibling error */}
+    <>                                         {/*   fragment fixes the two-sibling error */}
       <main className={!hideNav ? "pb-16" : ""}>
         {children}
       </main>

@@ -7,9 +7,9 @@
 //   try {
 //     const refreshRes = await api.post('/auth/refresh/')
 
-//     // ✅ Fix — your API returns { success, code, data: { access } }
-//     const newToken = refreshRes?.data?.data?.access    // ✅ already correct
-//                   ?? refreshRes?.data?.access          // ✅ fallback
+//     //   Fix — your API returns { success, code, data: { access } }
+//     const newToken = refreshRes?.data?.data?.access    //   already correct
+//                   ?? refreshRes?.data?.access          //   fallback
 //                   ?? null
 
 //     if (newToken) {
@@ -34,7 +34,7 @@ export const getFreshToken = async (): Promise<string | null> => {
   const token = await refreshOnce()
   if (!token) {
     console.warn('getFreshToken: refresh failed — no token available')
-    return null              // ✅ return null, not the expired token
+    return null              //   return null, not the expired token
   }
   return token
 }

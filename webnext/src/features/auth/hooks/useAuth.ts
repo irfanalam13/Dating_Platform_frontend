@@ -89,14 +89,20 @@ export const useLogin = () => {
       router.push("/dashboard");
     },
 
-    onError: (err: unknown) => {
+    onError: (err: unknown, variables: { email: string }) => {
       logger.error("LOGIN ERROR", err);
       // Handle unverified email specifically
-      const code = (err as { response?: { data?: { code?: string } } })
-        ?.response?.data?.code;
-      if (code === "EMAIL_NOT_VERIFIED") {
-        showError("Please verify your email before logging in.");
-        router.push("/verify-email");
+      const resData = (
+        err as { response?: { data?: { code?: string; data?: { email?: string } } } }
+      )?.response?.data;
+      if (resData?.code === "EMAIL_NOT_VERIFIED") {
+        showError("Please verify your email. We've sent you a new code.");
+        // Carry the email so the verify page is pre-filled and resend works,
+        // letting the user finish verification instead of looping. Prefer the
+        // address the server echoed back, falling back to what was typed.
+        const email = resData?.data?.email || variables?.email;
+        const params = email ? `?email=${encodeURIComponent(email)}` : "";
+        router.push(`/verify-email${params}`);
         return;
       }
       showError("Invalid email or password");

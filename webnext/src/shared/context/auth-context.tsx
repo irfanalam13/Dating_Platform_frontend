@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 🔐 Login trigger (after login API call)
+  //  Login trigger (after login API call)
   const login = async () => {
     await fetchUser();
   };
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  // 🧠 Initial load
+  //  Initial load
   useEffect(() => {
     fetchUser();
   }, []);

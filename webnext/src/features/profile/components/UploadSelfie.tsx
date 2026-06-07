@@ -19,7 +19,7 @@ export default function UploadSelfie() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   
-  // ✅ Fixed declaration to match inputRef used elsewhere
+  //   Fixed declaration to match inputRef used elsewhere
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Example mutation: replace with your actual API hook/function

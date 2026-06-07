@@ -48,7 +48,7 @@ export function MessageInbox() {
     enabled: !!user,
   });
 
-  // ✅ Fix — data is PaginatedResponse<Conversation>, unwrap .results
+  //   Fix — data is PaginatedResponse<Conversation>, unwrap .results
   const conversations: Conversation[] = data?.results ?? [];
 
   // Sort by most recently updated

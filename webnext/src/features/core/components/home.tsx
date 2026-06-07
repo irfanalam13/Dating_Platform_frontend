@@ -22,7 +22,7 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
-import { getDiscoverProfiles, sendInterest } from "@/shared/api/profile.api";
+import { getDiscoverProfiles, getMyTypeProfiles, sendInterest } from "@/shared/api/profile.api";
 import { getConversation } from "@/shared/api/chat.api";
 import type { Profile } from "@/shared/types/profile.types";
 import { useRouter } from "next/navigation";
@@ -176,13 +176,13 @@ function ViewProfileModal({
         transition={{ type: "spring", stiffness: 280, damping: 26 }}
         className="mb-4 max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-2xl shadow-xl"
       >
-        {/* Image header */}
+        {/* Image header — blurred for private accounts */}
         <div className="relative h-56 w-full shrink-0">
           <ProfileImage
             src={displayImage(profile)}
             name={profile.full_name}
             alt={profile.full_name || "Profile"}
-            className="h-full w-full"
+            className={`h-full w-full${profile.is_private ? " scale-110 blur-2xl" : ""}`}
             textClassName="text-6xl"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#2D2424]/80 to-transparent" />
@@ -318,7 +318,7 @@ export default function HomePage() {
   const [viewProfile, setViewProfile] = useState<Profile | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<"up" | "down" | null>(null);
 
-  // ✅ Drag is tracked with a framer motion value, NOT React state — so the
+  //   Drag is tracked with a framer motion value, NOT React state — so the
   // page does not re-render on every drag frame (that was the source of the
   // mobile jank/glitches). Hint opacities are derived purely on the GPU.
   const dragY = useMotionValue(0);
@@ -337,10 +337,13 @@ export default function HomePage() {
   likedRef.current = liked;
 
   // ─── Query ────────────────────────────────────────────────────────────────────
+  // The deck is driven by the active tab. DISCOVER shows everyone; MY TYPE shows
+  // only accounts that fit the saved preferences — and only once a type is chosen
+  // (you must set your preference first, then matching accounts appear here).
   const { isLoading, refetch, isRefetching, data, isError } = useQuery({
-    queryKey: ["discoverProfiles"],
-    queryFn: getDiscoverProfiles,
-    enabled: !!user,
+    queryKey: ["deck", activeSection],
+    queryFn: activeSection === "myType" ? getMyTypeProfiles : getDiscoverProfiles,
+    enabled: !!user && (activeSection === "discover" || hasChosenType),
     retry: 1, // retry once on failure
   });
 
@@ -350,7 +353,7 @@ export default function HomePage() {
   // ─── Derived ──────────────────────────────────────────────────────────────────
   const current = queue[index];
 
-  // ✅ FIX 2: Keep a stable ref to `current` so event handlers don't need it as dep
+  //   FIX 2: Keep a stable ref to `current` so event handlers don't need it as dep
   const currentRef = useRef<Profile | undefined>(undefined);
   useEffect(() => {
     currentRef.current = current;
@@ -400,7 +403,7 @@ export default function HomePage() {
     },
   });
 
-  // ✅ FIX 4: isPending ref so handleAction stays stable
+  //   FIX 4: isPending ref so handleAction stays stable
   const isPendingRef = useRef(false);
   isPendingRef.current = interestMutation.isPending;
 
@@ -453,7 +456,7 @@ export default function HomePage() {
     if (data?.results) {
       setQueue(data.results);
       setIndex(0); // start from the first profile on every (re)load
-      setQueueReady(true); // ✅ always set ready, even if empty
+      setQueueReady(true); //   always set ready, even if empty
     }
   }, [data]);
 
@@ -519,39 +522,25 @@ export default function HomePage() {
           </div>
         </header>
 
-        {activeSection === "myType" && (
+        {/* MY TYPE — must choose a type first; then the matching deck appears below. */}
+        {activeSection === "myType" && !hasChosenType && (
           <section className="grid flex-1 place-items-center rounded-2xl border border-white/55 bg-white/35 p-8 text-center shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
-            {!hasChosenType ? (
-              <div>
-                <h2 className="text-xl font-semibold">You haven&apos;t chosen your type yet</h2>
-                <p className="mt-2 text-sm text-[#746767]">
-                  Set your vibe so we can tune better matches.
-                </p>
-                <button
-                  onClick={() => router.push("/preferences")}
-                  className="glass-btn mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold"
-                >
-                  Choose
-                </button>
-              </div>
-            ) : (
-              <div className="w-full max-w-sm">
-                <Sparkles className="mx-auto mb-4 h-9 w-9 text-[#B78A3B]" />
-                <h2 className="text-lg font-semibold tracking-[0.04em]">
-                  YOUR PREFERRED PARTNER WILL BE HERE SHORTLY
-                </h2>
-                <button
-                  onClick={() => router.push("/preferences")}
-                  className="mt-5 text-sm font-medium text-[#746767] underline-offset-4 hover:underline"
-                >
-                  Edit preferences
-                </button>
-              </div>
-            )}
+            <div>
+              <h2 className="text-xl font-semibold">You haven&apos;t chosen your type yet</h2>
+              <p className="mt-2 text-sm text-[#746767]">
+                Set your vibe so we can tune better matches.
+              </p>
+              <button
+                onClick={() => router.push("/preferences")}
+                className="glass-btn mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold"
+              >
+                Choose
+              </button>
+            </div>
           </section>
         )}
 
-        {activeSection === "discover" && (
+        {(activeSection === "discover" || (activeSection === "myType" && hasChosenType)) && (
           <>
 
         {/* ── Loading ── */}
@@ -560,20 +549,36 @@ export default function HomePage() {
         {/* ── Empty state ── */}
         {!isLoading && !isRefetching && queueReady && !current && (
           <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] p-8 text-center">
-            <div>
-              <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
-              <h2 className="text-lg font-semibold">You've seen everyone</h2>
-              <p className="mt-2 text-sm text-[#746767]">
-                Check back later or refresh for new profiles.
-              </p>
-              <button
-                onClick={handleRefresh}
-                className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </button>
-            </div>
+            {activeSection === "myType" ? (
+              <div>
+                <Sparkles className="mx-auto mb-4 h-10 w-10 text-[#B78A3B]" />
+                <h2 className="text-lg font-semibold">No one matches your type yet</h2>
+                <p className="mt-2 text-sm text-[#746767]">
+                  Try widening your preferences — we&apos;ll show matching accounts here as they join.
+                </p>
+                <button
+                  onClick={() => router.push("/preferences")}
+                  className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
+                >
+                  Edit preferences
+                </button>
+              </div>
+            ) : (
+              <div>
+                <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+                <h2 className="text-lg font-semibold">You've seen everyone</h2>
+                <p className="mt-2 text-sm text-[#746767]">
+                  Check back later or refresh for new profiles.
+                </p>
+                <button
+                  onClick={handleRefresh}
+                  className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -621,15 +626,21 @@ export default function HomePage() {
               style={{ touchAction: "none" }}
               className="relative flex flex-1 min-h-[520px] touch-none overflow-hidden rounded-[26px] border border-white/40 shadow-[0_12px_40px_rgba(16,24,40,0.18)] cursor-grab active:cursor-grabbing select-none"
             >
-              {/* Full-bleed photo (initials when no picture set) */}
+              {/* Full-bleed photo (initials when no picture set). Private
+                  accounts still appear, but their photo is blurred. */}
               <ProfileImage
                 src={displayImage(current)}
                 name={current.full_name}
                 alt={current.full_name || "Profile"}
-                className="absolute inset-0 h-full w-full"
+                className={`absolute inset-0 h-full w-full${current.is_private ? " scale-110 blur-2xl" : ""}`}
                 textClassName="text-8xl"
                 draggable={false}
               />
+              {current.is_private && (
+                <span className="absolute left-4 top-4 z-10 rounded-full bg-black/45 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                  Private
+                </span>
+              )}
 
               {/* Double-tap target over the photo (buttons sit above this, z-10).
                   touch-none lets the parent own the vertical drag gesture. */}

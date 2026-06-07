@@ -240,6 +240,8 @@ export default function ProfileClient({
     const gan          = isOwn ? data!.gan                 : publicData!.gan;
     const horoscope    = isOwn ? data!.horoscope           : publicData!.horoscope;
     const isProfilePublic = isOwn ? data!.is_profile_public : publicData!.is_profile_public;
+    // Someone else viewing a private account → blur the photo (privacy = blur).
+    const blurPhoto    = !isOwn && !isProfilePublic;
     const isOnline     = false;
     const distanceKm   = null;
     const languages: string[] = [];
@@ -250,7 +252,7 @@ export default function ProfileClient({
     return raw ? raw.split(",").map((h) => h.trim()).filter(Boolean) : [];
     })();
 
-    // ✅ Fixed — no stray ternary
+    //   Fixed — no stray ternary
     const compatibilityTags: string[] = isOwn
     ? ((data as any).compatibility_tags ?? [])
     : [];
@@ -302,7 +304,7 @@ export default function ProfileClient({
           <div className="flex-shrink-0 flex flex-col items-center gap-2">
             <button
               type="button"
-              onClick={() => setZoomImage(true)}
+              onClick={() => { if (!blurPhoto) setZoomImage(true); }}
               aria-label="View profile picture"
               className="rounded-full"
             >
@@ -310,17 +312,20 @@ export default function ProfileClient({
                 src={image}
                 name={name}
                 alt={name || "Profile"}
-                className="h-32 w-32 cursor-pointer rounded-full shadow-sm transition hover:opacity-90"
+                className={`h-32 w-32 rounded-full shadow-sm transition${blurPhoto ? " scale-105 blur-xl" : " cursor-pointer hover:opacity-90"}`}
                 textClassName="text-4xl"
               />
             </button>
 
-            <ImageLightbox
-              src={image}
-              alt={name || "Profile"}
-              open={zoomImage}
-              onClose={() => setZoomImage(false)}
-            />
+            {/* Lightbox is disabled for blurred (private) photos so it can't reveal them. */}
+            {!blurPhoto && (
+              <ImageLightbox
+                src={image}
+                alt={name || "Profile"}
+                open={zoomImage}
+                onClose={() => setZoomImage(false)}
+              />
+            )}
             
             {/* Own: public/private badge */}
             {isOwn && (

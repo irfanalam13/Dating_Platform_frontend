@@ -60,19 +60,19 @@ const securityHeaders = [
 const nextConfig = {
   images: {
     remotePatterns: [
-      // ✅ Unsplash
+      //   Unsplash
       {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
 
-      // ✅ Cloudinary (IMPORTANT)
+      //   Cloudinary (IMPORTANT)
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
 
-      // ✅ Local Development
+      //   Local Development
       {
         protocol: "http",
         hostname: "localhost",
@@ -80,7 +80,7 @@ const nextConfig = {
         pathname: "/media/**",
       },
 
-      // ✅ Production Backend (Render)
+      //   Production Backend (Render)
       {
         protocol: "https",
         hostname: "dating-platform-backend.onrender.com",

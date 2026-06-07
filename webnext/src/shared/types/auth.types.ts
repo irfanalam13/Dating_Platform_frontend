@@ -1,7 +1,7 @@
 // export interface User {
 //   id: number;
 //   email: string;
-//   username: string; // ✅ add this
+//   username: string; //   add this
 //   full_name?: string;
 // }
 
@@ -26,7 +26,7 @@
 
 // export interface RegisterPayload {
 //   full_name: string;
-//   username: string;   // ✅ add this
+//   username: string;   //   add this
 //   email: string;
 //   password: string;
 //   confirm_password: string;
