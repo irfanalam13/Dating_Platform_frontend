@@ -200,10 +200,18 @@ export default function EditProfile() {
     }
 
     const formData = new FormData();
-    // Numeric fields must be omitted when blank ("" is invalid for IntegerField).
+    // Integer fields must be sent as a clean integer, or omitted entirely.
+    // "" / decimals / stray text all fail DRF's IntegerField, so coerce here.
     const numericKeys = new Set(["height_cm", "weight_kg"]);
     Object.entries(form).forEach(([key, value]) => {
-      if (numericKeys.has(key) && value === "") return;
+      if (numericKeys.has(key)) {
+        const raw = String(value ?? "").trim();
+        if (raw === "") return;                 // blank → omit (field is optional)
+        const n = parseInt(raw, 10);
+        if (Number.isNaN(n)) return;            // not a number → omit, don't 400
+        formData.append(key, String(n));        // send a clean integer
+        return;
+      }
       formData.append(key, value);
     });
 
@@ -293,7 +301,7 @@ export default function EditProfile() {
                   <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
                   <CultureSelect label="Religion" value={culture.religion} onChange={selectReligion} options={religions} placeholder="Select religion" />
                   <CultureSelect
-                    label="Community / Ethnicity"
+                    label="Community"
                     value={culture.community}
                     onChange={selectCommunity}
                     options={communities}

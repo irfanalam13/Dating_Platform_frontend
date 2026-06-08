@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { ImageLightbox } from "@/shared/ui/image-lightbox";
 import {
   BadgeCheck,
@@ -21,10 +22,27 @@ import {
   Music,
   ExternalLink,
   HeartHandshake,
+  MoreVertical,
+  Ban,
+  Flag,
+  MessageCircle,
+  Check,
+  ArrowLeft,
   X,
 } from "lucide-react";
 import type { Profile, PublicProfile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
+import { showSuccess, showError } from "@/shared/utils/toast";
+import FollowButton from "@/features/follow/components/FollowButton";
+
+const PROFILE_REPORT_REASONS: { value: "spam" | "fake" | "abuse" | "nudity" | "other"; label: string }[] = [
+  { value: "abuse", label: "Harassment / Abuse" },
+  { value: "fake", label: "Fake profile" },
+  { value: "nudity", label: "Sexual content" },
+  { value: "spam", label: "Spam" },
+  { value: "other", label: "Other" },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +61,10 @@ interface ProfileClientProps {
   onLike?: () => void;
   onPass?: () => void;
   isPending?: boolean;
+  // Relationship with the viewed user — drives which actions are shown.
+  relationship?: "matched" | "requested" | "none";
+  onMessage?: () => void;
+  isMessaging?: boolean;
 }
 
 // ─── Social link meta ─────────────────────────────────────────────────────────
@@ -176,9 +198,30 @@ export default function ProfileClient({
   onLike,
   onPass,
   isPending,
+  relationship = "none",
+  onMessage,
+  isMessaging,
 }: ProfileClientProps) {
   const router = useRouter();
   const [zoomImage, setZoomImage] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
+  // Profile id of the viewed user (public mode) — used by block/report.
+  const targetProfileId = publicData?.id;
+
+  const blockMutation = useMutation({
+    mutationFn: (pid: number) => blockProfile(pid),
+    onSuccess: () => { showSuccess("User blocked."); router.push("/home"); },
+    onError: (err) => showError(err, "Failed to block user."),
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: (vars: { pid: number; reason: "spam" | "fake" | "abuse" | "nudity" | "other" }) =>
+      reportProfile(vars.pid, { reason: vars.reason, description: "Reported from profile." }),
+    onSuccess: () => { setShowReport(false); showSuccess("Report submitted. Thank you."); },
+    onError: (err) => { setShowReport(false); showError(err, "Failed to submit report."); },
+  });
 
   if (isLoading) return <ProfileSkeleton />;
 
@@ -235,17 +278,61 @@ export default function ProfileClient({
     const ethnicity    = isOwn ? data!.ethnicity           : publicData!.ethnicity;
     const values       = isOwn ? data!.values              : publicData!.values;
     const religion     = isOwn ? data!.religion_name       : publicData!.religion_name;
-    const caste        = isOwn ? data!.caste_name          : publicData!.caste_name;
-    const gotra        = isOwn ? data!.gotra_name          : publicData!.gotra_name;
+    const community    = isOwn ? data!.community_name       : publicData!.community_name;
+    // Prefer the deep-taxonomy name (set by the edit cascade), fall back to the legacy FK name.
+    const caste        = (isOwn ? (data!.caste_v2_name ?? data!.caste_name)
+                                : (publicData!.caste_v2_name ?? publicData!.caste_name));
+    const subCaste     = isOwn ? data!.sub_caste_name       : publicData!.sub_caste_name;
+    const clan         = isOwn ? data!.clan_name            : publicData!.clan_name;
+    const gotra        = (isOwn ? (data!.gotra_v2_name ?? data!.gotra_name)
+                                : (publicData!.gotra_v2_name ?? publicData!.gotra_name));
     const gan          = isOwn ? data!.gan                 : publicData!.gan;
     const horoscope    = isOwn ? data!.horoscope           : publicData!.horoscope;
+
+    // Basic details + lifestyle (any may be null when the owner hid it publicly).
+    const dob          = isOwn ? data!.date_of_birth        : (publicData!.date_of_birth ?? null);
+    const gender       = isOwn ? data!.gender               : publicData!.gender;
+    const height       = isOwn ? data!.height_cm            : publicData!.height_cm;
+    const weight       = isOwn ? data!.weight_kg            : publicData!.weight_kg;
+    const nationality  = isOwn ? data!.nationality          : publicData!.nationality;
+    const citizenship  = isOwn ? data!.citizenship          : publicData!.citizenship;
+    const relIntent    = isOwn ? data!.relationship_intent  : publicData!.relationship_intent;
+    const wantsChildren= isOwn ? data!.wants_children       : publicData!.wants_children;
+    const diet         = isOwn ? data!.diet                 : publicData!.diet;
+    const alcohol      = isOwn ? data!.alcohol              : publicData!.alcohol;
+    const smoking      = isOwn ? data!.smoking              : publicData!.smoking;
+    const educationLevel = isOwn ? data!.education_level    : publicData!.education_level;
+    const industry     = isOwn ? data!.industry             : publicData!.industry;
+    const incomeRange  = isOwn ? data!.income_range         : publicData!.income_range;
+    const familyType   = isOwn ? data!.family_type          : publicData!.family_type;
     const isProfilePublic = isOwn ? data!.is_profile_public : publicData!.is_profile_public;
     // Someone else viewing a private account → blur the photo (privacy = blur).
     const blurPhoto    = !isOwn && !isProfilePublic;
     const isOnline     = false;
     const distanceKm   = null;
-    const languages: string[] = [];
+    const languages: string[] = (isOwn ? data!.languages_spoken : publicData!.languages_spoken) ?? [];
     const socialLinks: { platform: string; url: string }[] = [];
+
+    // Build a label/value list of details, dropping anything empty/hidden.
+    const dobLabel = dob ? new Date(dob).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+    const detailItems: { label: string; value: string }[] = [
+      { label: "Date of birth", value: dobLabel },
+      { label: "Gender", value: gender ? String(gender) : "" },
+      { label: "Height", value: height ? `${height} cm` : "" },
+      { label: "Weight", value: weight ? `${weight} kg` : "" },
+      { label: "Languages", value: languages.join(", ") },
+      { label: "Nationality", value: nationality || "" },
+      { label: "Citizenship", value: citizenship || "" },
+      { label: "Looking for", value: relIntent || "" },
+      { label: "Wants children", value: wantsChildren || "" },
+      { label: "Diet", value: diet || "" },
+      { label: "Alcohol", value: alcohol || "" },
+      { label: "Smoking", value: smoking || "" },
+      { label: "Education level", value: educationLevel || "" },
+      { label: "Industry", value: industry || "" },
+      { label: "Income", value: incomeRange || "" },
+      { label: "Family type", value: familyType || "" },
+    ].filter((d) => d.value && d.value.trim() !== "");
 
     const hobbies: string[] = (() => {
     const raw = isOwn ? data!.hobbies : publicData!.hobbies;
@@ -265,6 +352,13 @@ export default function ProfileClient({
 
         {/* ── Header ── */}
         <header className="relative">
+          <button
+            onClick={() => router.back()}
+            aria-label="Go back"
+            className="glass-btn mb-3 grid h-10 w-10 place-items-center rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
           <div>
             {isOwn ? (
               <>
@@ -291,7 +385,36 @@ export default function ProfileClient({
                 <Settings className="h-5 w-5" />
               </button>
             ) : (
-              <div className="h-10 w-10" />
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="glass-btn grid h-10 w-10 place-items-center rounded-full"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                {menuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                    <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm">
+                      <button
+                        onClick={() => { setMenuOpen(false); setShowReport(true); }}
+                        disabled={!targetProfileId}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[#2D2424] hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        <Flag className="h-4 w-4" /> Report user
+                      </button>
+                      <button
+                        onClick={() => { setMenuOpen(false); if (targetProfileId) blockMutation.mutate(targetProfileId); }}
+                        disabled={!targetProfileId || blockMutation.isPending}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[#7A2432] hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        <Ban className="h-4 w-4" /> Block user
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </header>
@@ -365,7 +488,10 @@ export default function ProfileClient({
             <div className="flex flex-col gap-0.5 mt-3 text-xs text-[#746767]">
               <p><span className="font-semibold text-[#2D2424]">Ethnicity:</span> {ethnicity || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
               <p><span className="font-semibold text-[#2D2424]">Religion:</span> {religion || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+              {community && <p><span className="font-semibold text-[#2D2424]">Community:</span> {community}</p>}
               <p><span className="font-semibold text-[#2D2424]">Caste:</span> {caste || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+              {subCaste && <p><span className="font-semibold text-[#2D2424]">Sub-caste:</span> {subCaste}</p>}
+              {clan && <p><span className="font-semibold text-[#2D2424]">Clan:</span> {clan}</p>}
               <p><span className="font-semibold text-[#2D2424]">Gotra:</span> {gotra || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
               <p><span className="font-semibold text-[#2D2424]">Gan:</span> {gan || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
               <p><span className="font-semibold text-[#2D2424]">Horoscope:</span> {horoscope || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
@@ -383,41 +509,99 @@ export default function ProfileClient({
             </div>
         </Section>
 
+        {/* ── Details (DOB, height, languages, lifestyle…) ── */}
+        {detailItems.length > 0 && (
+          <Section title="Details">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-3xl p-4">
+              {detailItems.map((d) => (
+                <div key={d.label} className="min-w-0">
+                  <p className="text-xs text-[#746767]">{d.label}</p>
+                  <p className="truncate text-sm font-medium text-[#2D2424] capitalize">{d.value}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {/* CTA row */}
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           {isOwn ? (
-            <button
-              onClick={() => router.push("/profile/edit")}
-              className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
-            >
-              <PenLine className="h-4 w-4" />
-              Edit profile
-            </button>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <>
               <button
-                onClick={onPass}
-                disabled={isPending}
-                className="glass-btn flex h-12 items-center justify-center gap-2 rounded-3xl text-sm font-semibold disabled:opacity-50"
+                onClick={() => router.push("/profile/edit")}
+                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
               >
-                <X className="h-4 w-4" />
-                Pass
+                <PenLine className="h-4 w-4" />
+                Edit profile
               </button>
               <button
-                onClick={onLike}
-                disabled={isPending}
-                className="glass-btn flex h-12 items-center justify-center gap-2 rounded-3xl text-sm font-semibold disabled:opacity-50"
+                onClick={() => router.push("/connections")}
+                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
               >
-                {isPending ? (
+                <HeartHandshake className="h-4 w-4" />
+                Followers &amp; Following
+              </button>
+            </>
+          ) : relationship === "matched" ? (
+            // Already friends/matched → message + follow state, no Interest/Pass.
+            <>
+              <div className="flex items-center justify-center gap-1.5 rounded-3xl py-1 text-sm font-semibold text-[#3F7D63]">
+                <Check className="h-4 w-4" /> You’re matched
+              </div>
+              <button
+                onClick={onMessage}
+                disabled={isMessaging}
+                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl text-sm font-semibold disabled:opacity-50"
+              >
+                {isMessaging ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                 ) : (
-                  <>
-                    <HeartHandshake className="h-4 w-4" />
-                    Interested
-                  </>
+                  <><MessageCircle className="h-4 w-4" /> Message</>
                 )}
               </button>
-            </div>
+              {publicData?.user && <FollowButton userId={publicData.user} className="w-full" />}
+            </>
+          ) : relationship === "requested" ? (
+            // Interest already sent and still pending.
+            <>
+              <button
+                disabled
+                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl text-sm font-semibold opacity-70"
+              >
+                <Check className="h-4 w-4" /> Request sent
+              </button>
+              {publicData?.user && <FollowButton userId={publicData.user} className="w-full" />}
+            </>
+          ) : (
+            <>
+              {publicData?.user && (
+                <FollowButton userId={publicData.user} className="w-full" />
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={onPass}
+                  disabled={isPending}
+                  className="glass-btn flex h-12 items-center justify-center gap-2 rounded-3xl text-sm font-semibold disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                  Pass
+                </button>
+                <button
+                  onClick={onLike}
+                  disabled={isPending}
+                  className="glass-btn flex h-12 items-center justify-center gap-2 rounded-3xl text-sm font-semibold disabled:opacity-50"
+                >
+                  {isPending ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
+                  ) : (
+                    <>
+                      <HeartHandshake className="h-4 w-4" />
+                      Interested
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
           )}
         </div>
 
@@ -492,6 +676,34 @@ export default function ProfileClient({
             </Section>
           )}
         </div>
+
+        {/* ── Report user modal ── */}
+        {showReport && targetProfileId && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4" onClick={() => setShowReport(false)}>
+            <div className="w-full max-w-sm rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+              <Flag className="mx-auto mb-2 h-7 w-7 text-[#7A2432]" />
+              <h2 className="text-center text-base font-semibold text-[#2D2424]">Report this user</h2>
+              <p className="mb-3 mt-1 text-center text-xs text-[#746767]">
+                Your report goes to the safety team. They won’t be notified.
+              </p>
+              <div className="space-y-1">
+                {PROFILE_REPORT_REASONS.map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => reportMutation.mutate({ pid: targetProfileId, reason: r.value })}
+                    disabled={reportMutation.isPending}
+                    className="w-full rounded-lg border border-white/60 bg-white/60 px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setShowReport(false)} className="mt-3 w-full text-sm font-semibold text-[#746767]">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Incomplete nudge (own only) ── */}
         {isOwn && score < 80 && (

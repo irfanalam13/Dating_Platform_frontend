@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HeartHandshake, MessageCircle, UserCheck, X } from "lucide-react";
+import { HeartHandshake, MessageCircle, UserCheck, X, Send } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
   useReceivedMatches,
+  useSentMatches,
   useAcceptMatch,
   useRejectMatch,
+  useCancelMatch,
   useStartConversation,
 } from "@/features/matcher/hooks/useMatches";
 
@@ -16,8 +18,10 @@ export default function MatchesPage() {
 
   const { data: matches = [], isLoading: matchesLoading } = useAcceptedMatches();
   const { data: received = [], isLoading: receivedLoading } = useReceivedMatches();
+  const { data: sent = [] } = useSentMatches();
   const acceptMutation = useAcceptMatch();
   const rejectMutation = useRejectMatch();
+  const cancelMutation = useCancelMatch();
   const conversationMutation = useStartConversation();
 
   const isLoading = matchesLoading || receivedLoading;
@@ -36,6 +40,10 @@ export default function MatchesPage() {
     if (item.sender == null) return true;
     return !acceptedKeys.has(String(item.sender).toLowerCase());
   });
+
+  // "Sent requests" must only show requests still awaiting a response — not
+  // accepted (now mutual friends), rejected, cancelled or expired ones.
+  const pendingSent = sent.filter((item) => item.status === "pending");
 
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
@@ -172,6 +180,41 @@ export default function MatchesPage() {
                       <HeartHandshake className="h-4 w-4" />
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Sent requests (cancellable) ── */}
+        {!isLoading && pendingSent.length > 0 && (
+          <section className="mt-6 rounded-lg border border-[#EADDD2] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Send className="h-5 w-5 text-[#7A2432]" />
+              <h2 className="font-semibold">Sent requests</h2>
+            </div>
+            <div className="space-y-3">
+              {pendingSent.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-md p-3">
+                  <div className="flex items-center gap-3">
+                    <ProfileImage
+                      src={item.user?.profile_image}
+                      name={item.user?.name || "?"}
+                      className="h-10 w-10 rounded-full"
+                      textClassName="text-sm"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">{item.user?.name || "Someone"}</p>
+                      <p className="text-xs text-[#746767]">Waiting for a response</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => cancelMutation.mutate(item.id)}
+                    disabled={cancelMutation.isPending}
+                    className="glass-btn rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
                 </div>
               ))}
             </div>

@@ -4,14 +4,16 @@ import {
   acceptMatch,
   getAcceptedMatches,
   getReceivedMatches,
+  getSentMatches,
   rejectMatch,
+  cancelMatch,
 } from "@/shared/api/matcher.api";
 import { getConversation } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
 import { showError, showSuccess } from "@/shared/utils/toast"
 import { createOrGetConversation } from "@/shared/api/chat.api"
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import type { PendingMatch } from "@/shared/types/matcher.types";
+import type { PendingMatch, MatchRequestItem } from "@/shared/types/matcher.types";
 
 export function useAcceptedMatches() {
   // const { user } = useAuth();
@@ -31,6 +33,37 @@ export function useReceivedMatches() {
     queryFn: getReceivedMatches,
     enabled: !!user,
     retry: false,
+  });
+}
+
+export function useSentMatches() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["sentMatches"],
+    queryFn: getSentMatches,
+    enabled: !!user,
+    retry: false,
+  });
+}
+
+export function useCancelMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: cancelMatch,
+    onMutate: async (matchId: number) => {
+      await queryClient.cancelQueries({ queryKey: ["sentMatches"] });
+      const prev = queryClient.getQueryData<MatchRequestItem[]>(["sentMatches"]);
+      queryClient.setQueryData<MatchRequestItem[]>(["sentMatches"], (old = []) =>
+        old.filter((m) => m.id !== matchId)
+      );
+      return { prev };
+    },
+    onError: (_err, _matchId, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["sentMatches"], ctx.prev);
+      showError(_err, "Could not cancel request.");
+    },
+    onSuccess: () => showSuccess("Request withdrawn."),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["sentMatches"] }),
   });
 }
 

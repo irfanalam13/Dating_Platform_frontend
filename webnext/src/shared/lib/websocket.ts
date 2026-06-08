@@ -140,8 +140,17 @@ export class ChatWebSocket extends WebSocketManager {
     return () => this.handlers.delete(handler)
   }
 
-  sendMessage(text: string) {
-    this.send({ type: 'message', message: text })
+  sendMessage(
+    text: string,
+    opts?: { replyTo?: string; clientNonce?: string; msgType?: string },
+  ) {
+    this.send({
+      type: 'message',
+      message: text,
+      ...(opts?.replyTo ? { reply_to: opts.replyTo } : {}),
+      ...(opts?.clientNonce ? { client_nonce: opts.clientNonce } : {}),
+      ...(opts?.msgType ? { msg_type: opts.msgType } : {}),
+    })
   }
 
   sendTyping(isTyping: boolean) {

@@ -23,7 +23,7 @@ export default function ConversationPage() {
   // (needed for block/report — must NOT target yourself).
   const { data: conversationsData } = useQuery({
     queryKey: ["conversations"],
-    queryFn: getConversations,
+    queryFn: () => getConversations(),
     retry: false,
   });
 

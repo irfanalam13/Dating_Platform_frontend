@@ -43,7 +43,7 @@ export function MessageInbox() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
-    queryFn: getConversations,
+    queryFn: () => getConversations(),
     retry: false,
     enabled: !!user,
   });

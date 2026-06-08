@@ -7,6 +7,14 @@ export interface PrivacySettings {
   show_profile_image: boolean;
   allow_messages_from: "everyone" | "matches" | "none";
   is_profile_public: boolean;
+  // Per-field "hide from others" toggles (apply to the public profile view).
+  show_dob?: boolean;
+  show_height?: boolean;
+  show_weight?: boolean;
+  show_languages?: boolean;
+  show_education?: boolean;
+  show_career?: boolean;
+  show_religion?: boolean;
 }
 
 export interface ProfileSettings {

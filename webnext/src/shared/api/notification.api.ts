@@ -55,3 +55,25 @@ export function markAllNotificationsRead(): Promise<{ marked_read: number }> {
 export function getUnreadCount(): Promise<{ unread_count: number }> {
   return data({ method: "GET", url: "/notification/unread-count/" });
 }
+
+// ─────────────────────────────────────────────────────────
+// Preferences (per category × channel)
+// ─────────────────────────────────────────────────────────
+
+export interface NotificationPreferences {
+  match_inapp: boolean; message_inapp: boolean; follow_inapp: boolean;
+  match_push: boolean; message_push: boolean; follow_push: boolean; marketing_push: boolean;
+  email_enabled: boolean;
+  match_email: boolean; message_email: boolean; follow_email: boolean; marketing_email: boolean;
+  updated_at?: string;
+}
+
+export function getNotificationPreferences(): Promise<NotificationPreferences> {
+  return data({ method: "GET", url: "/notification/preferences/" });
+}
+
+export function updateNotificationPreferences(
+  patch: Partial<NotificationPreferences>
+): Promise<NotificationPreferences> {
+  return data({ method: "PATCH", url: "/notification/preferences/", data: patch });
+}

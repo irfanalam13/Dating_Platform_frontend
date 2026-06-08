@@ -168,6 +168,30 @@ export interface PublicProfile {
   religion_name?: string;
   caste_name?: string;
   gotra_name?: string;
+  // Deep cultural taxonomy names (may be hidden → null)
+  community_name?: string;
+  caste_category_name?: string;
+  caste_v2_name?: string;
+  sub_caste_name?: string;
+  clan_name?: string;
+  gotra_v2_name?: string;
+  // Basic details (may be hidden by the owner → null/absent)
+  date_of_birth?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  nationality?: string | null;
+  citizenship?: string | null;
+  languages_spoken?: string[];
+  relationship_intent?: string;
+  wants_children?: string;
+  diet?: string;
+  alcohol?: string;
+  smoking?: string;
+  education_level?: string;
+  industry?: string;
+  income_range?: string;
+  family_type?: string;
+  family_values?: string;
   is_profile_public: boolean;
   verified: boolean;
   is_online?: boolean;
