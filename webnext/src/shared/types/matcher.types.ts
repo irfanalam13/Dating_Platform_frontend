@@ -9,17 +9,6 @@ export interface AcceptedMatch {
   profile_image: string | null;
 }
 
-export interface PendingMatch {
-  id: number;
-  sender?: string;   // ⚠️ likely a user id or email — add console.log to confirm
-  receiver?: string;
-  status: string;
-  // Backend should set one of these when the interest was a "superstar"
-  // (double-tap) rather than a normal like. Until then it reads as a like.
-  type?: "like" | "superstar" | string;
-  is_super?: boolean;
-}
-
 /** Shape returned by /matcher/sent/ and /matcher/received/ (nested user card). */
 export interface MatchRequestItem {
   id: number;
@@ -35,4 +24,8 @@ export interface MatchRequestItem {
     profile_image: string | null;
   };
 }
+
+// /matcher/received/ returns the same rich card as /matcher/sent/ — the sender's
+// full profile (name + photo + match %), not a bare id. They share one shape.
+export type PendingMatch = MatchRequestItem;
 
