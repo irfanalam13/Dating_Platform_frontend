@@ -125,12 +125,12 @@ export default function ChatWindow({ conversationId }: Props) {
             type="button"
             onClick={() => router.push(`/profile/${other.id}`)}
             className="flex items-center gap-3 text-left"
-            aria-label={`View ${other.display_name ?? other.username}'s profile`}
+            aria-label={`View ${other.display_name ?? other.full_name ?? "member"}'s profile`}
           >
-            <Avatar name={other.display_name ?? other.username} size="md" isOnline={isOtherOnline} />
+            <Avatar name={other.display_name ?? other.full_name ?? "Member"} size="md" isOnline={isOtherOnline} />
             <div>
               <p className="text-sm font-semibold text-[#1a1a2e]">
-                {other.display_name ?? other.username}
+                {other.display_name ?? other.full_name ?? "Member"}
               </p>
               <OnlineIndicator isOnline={isOtherOnline} lastSeen={other.last_seen} />
             </div>
@@ -208,8 +208,8 @@ export default function ChatWindow({ conversationId }: Props) {
                       onClick={() => doForward([c.uuid!])}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
                     >
-                      <Avatar name={p?.display_name ?? p?.username ?? '?'} size="sm" />
-                      <span className="truncate">{p?.display_name ?? p?.username ?? 'Chat'}</span>
+                      <Avatar name={p?.display_name ?? p?.full_name ?? '?'} size="sm" />
+                      <span className="truncate">{p?.display_name ?? p?.full_name ?? 'Chat'}</span>
                     </button>
                   )
                 })}

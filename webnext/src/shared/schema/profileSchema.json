@@ -5,7 +5,7 @@
     "sections": {
       "basic_information": [
         { "key": "full_name", "label": "Full Name", "type": "text", "required": true, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": [] },
-        { "key": "gender", "label": "Gender", "type": "select", "required": true, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": ["male", "female", "other"] },
+        { "key": "gender", "label": "Gender", "type": "select", "required": true, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": ["Male", "Female", "Other"] },
         { "key": "date_of_birth", "label": "Date of Birth", "type": "date", "required": true, "visible": true, "visibility": "matches", "exists": true, "dependency": {}, "options": [] },
         { "key": "age", "label": "Age", "type": "number", "required": false, "visible": true, "visibility": "public", "exists": true, "computed": "from date_of_birth", "dependency": {}, "options": [] },
         { "key": "height_cm", "label": "Height", "type": "number", "unit": "cm", "display": "ft/in", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": [] },

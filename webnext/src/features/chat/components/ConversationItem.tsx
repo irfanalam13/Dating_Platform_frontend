@@ -57,7 +57,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
         >
           <ProfileImage
             src={other?.profile_picture ?? other?.profile_image}
-            name={other?.display_name ?? other?.username ?? '?'}
+            name={other?.display_name ?? other?.full_name ?? '?'}
             className="w-10 h-10 rounded-full"
             textClassName="text-sm"
           />
@@ -69,7 +69,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
             <span className={`flex items-center gap-1 text-sm truncate ${unread > 0 ? 'font-bold text-[#1a1a2e]' : 'font-semibold text-[#2D2424]'}`}>
               {m?.is_pinned && <Pin className="h-3 w-3 text-indigo-500 shrink-0" />}
               {m?.is_muted && <BellOff className="h-3 w-3 text-[#746767] shrink-0" />}
-              {other?.username ?? 'Unknown'}
+              {other?.display_name ?? other?.full_name ?? 'Unknown'}
             </span>
             {conversation.last_message && (
               <span className="text-[10px] text-[#746767] flex-shrink-0 ml-1">

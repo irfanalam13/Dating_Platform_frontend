@@ -20,8 +20,9 @@ export interface AuthTokens {
 
 export interface ChatUser {
   id: number;
-  username: string;
-  email: string;
+  // Display name only — email/phone/slug are private and never sent to peers.
+  full_name: string | null;
+  display_name: string | null;
   is_online: boolean;
   last_seen: string | null;
 }

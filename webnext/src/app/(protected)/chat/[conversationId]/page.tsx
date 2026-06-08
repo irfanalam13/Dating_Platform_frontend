@@ -105,13 +105,13 @@ export default function ConversationPage() {
             {other && (
               <ProfileImage
                 src={other.profile_picture ?? other.profile_image}
-                name={other.display_name ?? other.username}
+                name={other.display_name ?? other.full_name ?? "Member"}
                 className="h-7 w-7 rounded-full flex-shrink-0"
                 textClassName="text-xs"
               />
             )}
             <span className="truncate text-sm font-semibold text-[#2D2424]">
-              {other?.display_name ?? other?.username ?? "Chat"}
+              {other?.display_name ?? other?.full_name ?? "Chat"}
             </span>
           </div>
           <button

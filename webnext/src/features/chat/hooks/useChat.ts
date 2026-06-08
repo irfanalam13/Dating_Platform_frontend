@@ -121,7 +121,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
               uuid: e.uuid,
               conversation: conversationId!,
               sender: {
-                id: senderId, username: e.sender_name, email: "",
+                id: senderId, full_name: e.sender_name, display_name: e.sender_name,
                 is_online: true, last_seen: null,
               },
               type: e.msg_type ?? "text",
@@ -383,8 +383,8 @@ export function useChat(conversationId: string | null): UseChatReturn {
           conversation: conversationId,
           sender: {
             id:        currentUser.id,
-            username:  currentUser.username ?? "",
-            email:     currentUser.email ?? "",
+            full_name:    currentUser.full_name ?? null,
+            display_name: currentUser.full_name ?? null,
             is_online: true,
             last_seen: null,
           },
