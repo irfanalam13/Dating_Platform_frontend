@@ -23,6 +23,9 @@ export function useAcceptedMatches() {
     queryFn: getAcceptedMatches,
     enabled: !!user,
     retry: false,
+    // Poll so a request the other person just accepted shows up here live.
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -33,6 +36,9 @@ export function useReceivedMatches() {
     queryFn: getReceivedMatches,
     enabled: !!user,
     retry: false,
+    // Poll so newly-received interests appear without a manual refresh.
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -43,6 +49,10 @@ export function useSentMatches() {
     queryFn: getSentMatches,
     enabled: !!user,
     retry: false,
+    // Poll so a sent request the other person rejected/accepted/cancelled drops
+    // out of "Sent requests" on its own (status flips off "pending").
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 }
 
