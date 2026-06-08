@@ -6,13 +6,13 @@
 
 export type Option = { value: string; label: string };
 
-export const RELIGIOUS_PRACTICE_OPTIONS: Option[] = [
-  { value: "very_religious", label: "Very Religious" },
-  { value: "religious", label: "Religious" },
-  { value: "moderate", label: "Moderate" },
-  { value: "spiritual", label: "Spiritual" },
-  { value: "not_practicing", label: "Not Practicing" },
-];
+// export const RELIGIOUS_PRACTICE_OPTIONS: Option[] = [
+//   { value: "very_religious", label: "Very Religious" },
+//   { value: "religious", label: "Religious" },
+//   { value: "moderate", label: "Moderate" },
+//   { value: "spiritual", label: "Spiritual" },
+//   { value: "not_practicing", label: "Not Practicing" },
+// ];
 
 export const TEMPLE_ATTENDANCE_OPTIONS: Option[] = [
   { value: "daily", label: "Daily" },
@@ -77,16 +77,16 @@ export const INCOME_RANGE_OPTIONS: Option[] = [
   { value: "prefer_not", label: "Prefer not to say" },
 ];
 
-export const FAMILY_TYPE_OPTIONS: Option[] = [
-  { value: "joint", label: "Joint" },
-  { value: "nuclear", label: "Nuclear" },
-];
+// export const FAMILY_TYPE_OPTIONS: Option[] = [
+//   { value: "joint", label: "Joint" },
+//   { value: "nuclear", label: "Nuclear" },
+// ];
 
-export const FAMILY_VALUES_OPTIONS: Option[] = [
-  { value: "traditional", label: "Traditional" },
-  { value: "moderate", label: "Moderate" },
-  { value: "liberal", label: "Liberal" },
-];
+// export const FAMILY_VALUES_OPTIONS: Option[] = [
+//   { value: "traditional", label: "Traditional" },
+//   { value: "moderate", label: "Moderate" },
+//   { value: "liberal", label: "Liberal" },
+// ];
 
 export const IMPORTANCE_OPTIONS: Option[] = [
   { value: "very_important", label: "Very Important" },
@@ -103,24 +103,24 @@ export const RELATIONSHIP_GOAL_OPTIONS: Option[] = [
   { value: "friendship", label: "Friendship" },
 ];
 
-export const WANTS_CHILDREN_OPTIONS: Option[] = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-  { value: "undecided", label: "Undecided" },
-];
+// export const WANTS_CHILDREN_OPTIONS: Option[] = [
+//   { value: "yes", label: "Yes" },
+//   { value: "no", label: "No" },
+//   { value: "undecided", label: "Undecided" },
+// ];
 
-export const NATIONALITY_OPTIONS: Option[] = [
-  { value: "nepali", label: "Nepali" },
-  { value: "indian", label: "Indian" },
-  { value: "other", label: "Other" },
-];
+// export const NATIONALITY_OPTIONS: Option[] = [
+//   { value: "nepali", label: "Nepali" },
+//   { value: "indian", label: "Indian" },
+//   { value: "other", label: "Other" },
+// ];
 
-export const CITIZENSHIP_OPTIONS: Option[] = [
-  { value: "nepali", label: "Nepali" },
-  { value: "indian", label: "Indian" },
-  { value: "dual", label: "Dual" },
-  { value: "other", label: "Other" },
-];
+// export const CITIZENSHIP_OPTIONS: Option[] = [
+//   { value: "nepali", label: "Nepali" },
+//   { value: "indian", label: "Indian" },
+//   { value: "dual", label: "Dual" },
+//   { value: "other", label: "Other" },
+// ];
 
 export const GOTRA_RULE_OPTIONS: Option[] = [
   { value: "must_differ", label: "Must Differ (no same gotra)" },
@@ -130,6 +130,6 @@ export const GOTRA_RULE_OPTIONS: Option[] = [
 
 export const LANGUAGE_OPTIONS: string[] = [
   "Nepali", "Hindi", "Maithili", "Bhojpuri", "Tharu", "Newari", "Tamang",
-  "Gurung", "Magar", "Limbu", "English", "Bengali", "Tamil", "Telugu",
-  "Kannada", "Malayalam", "Marathi", "Gujarati", "Punjabi", "Urdu", "Other",
+  // "Gurung", "Magar", "Limbu", "English", "Bengali", "Tamil", "Telugu",
+  // "Kannada", "Malayalam", "Marathi", "Gujarati", "Punjabi", "Urdu", "Other",
 ];

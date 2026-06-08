@@ -15,9 +15,9 @@ import {
   useGotrasV2,
 } from "@/features/preference/hooks/usePreference";
 import {
-  NATIONALITY_OPTIONS,
-  CITIZENSHIP_OPTIONS,
-  RELIGIOUS_PRACTICE_OPTIONS,
+  // NATIONALITY_OPTIONS,
+  // CITIZENSHIP_OPTIONS,
+  // RELIGIOUS_PRACTICE_OPTIONS,
   TEMPLE_ATTENDANCE_OPTIONS,
   MARRIAGE_TRADITION_OPTIONS,
   DIET_OPTIONS,
@@ -25,15 +25,16 @@ import {
   EDUCATION_LEVEL_OPTIONS,
   INDUSTRY_OPTIONS,
   INCOME_RANGE_OPTIONS,
-  FAMILY_TYPE_OPTIONS,
-  FAMILY_VALUES_OPTIONS,
+  // FAMILY_TYPE_OPTIONS,
+  // FAMILY_VALUES_OPTIONS,
   IMPORTANCE_OPTIONS,
   RELATIONSHIP_GOAL_OPTIONS,
-  WANTS_CHILDREN_OPTIONS,
+  // WANTS_CHILDREN_OPTIONS,
   LANGUAGE_OPTIONS,
   type Option,
 } from "@/shared/constants/profileOptions";
 import api from "@/shared/api/client";
+import { getReligionRules } from "@/shared/constants/religionRules";
 
 const steps = ["Identity", "Lifestyle", "Culture", "Family"];
 
@@ -113,6 +114,13 @@ export default function EditProfile() {
   const { subCastes } = useSubCastes(culture.caste_v2);
   const { clans } = useClans(culture.sub_caste);
   const { gotras } = useGotrasV2(culture.clan);
+
+  // Religion-conditional cultural fields. Resolve the selected religion's NAME
+  // (the cascade stores ids), then let the shared rules decide what to render —
+  // e.g. caste/gotra/horoscope only for Hindu; "community" relabeled "Sect"/
+  // "Denomination" for Islam/Christian; nothing extra for other religions.
+  const religionName = religions?.find((r) => r.id === culture.religion)?.name ?? null;
+  const rules = getReligionRules(religionName);
 
   // Hydrate the local form once the profile loads. This is the standard
   // "initialize editable state from fetched data" pattern; the multiple setState
@@ -203,7 +211,13 @@ export default function EditProfile() {
     // Integer fields must be sent as a clean integer, or omitted entirely.
     // "" / decimals / stray text all fail DRF's IntegerField, so coerce here.
     const numericKeys = new Set(["height_cm", "weight_kg"]);
+    // Don't send cultural text fields hidden for the chosen religion (the
+    // backend clears them anyway, but keep the request clean and consistent).
+    const skipKeys = new Set<string>();
+    if (!rules.showHoroscope) { skipKeys.add("gan"); skipKeys.add("horoscope"); }
+    if (!rules.showTemple) skipKeys.add("temple_attendance");
     Object.entries(form).forEach(([key, value]) => {
+      if (skipKeys.has(key)) return;
       if (numericKeys.has(key)) {
         const raw = String(value ?? "").trim();
         if (raw === "") return;                 // blank → omit (field is optional)
@@ -220,9 +234,13 @@ export default function EditProfile() {
     formData.append("languages_spoken", JSON.stringify(languages));
 
     // FK fields: only send when chosen — an empty value is invalid for a FK.
+    // Skip cascade levels not allowed for the chosen religion (religion itself
+    // always sends; the rest only when the religion permits that level).
     (Object.keys(culture) as (keyof Culture)[]).forEach((key) => {
       const id = culture[key];
-      if (id != null) formData.append(key, String(id));
+      if (id == null) return;
+      if (key !== "religion" && !rules.levels.includes(key as never)) return;
+      formData.append(key, String(id));
     });
 
     mutation.mutate(formData, {
@@ -300,56 +318,72 @@ export default function EditProfile() {
                 <>
                   <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
                   <CultureSelect label="Religion" value={culture.religion} onChange={selectReligion} options={religions} placeholder="Select religion" />
-                  <CultureSelect
-                    label="Community"
-                    value={culture.community}
-                    onChange={selectCommunity}
-                    options={communities}
-                    placeholder={culture.religion ? "Select community" : "Select a religion first"}
-                    disabled={!culture.religion}
-                  />
-                  <CultureSelect
-                    label="Caste category"
-                    value={culture.caste_category}
-                    onChange={selectCasteCategory}
-                    options={casteCategories}
-                    placeholder={culture.community ? "Select category" : "Select a community first"}
-                    disabled={!culture.community}
-                  />
-                  <CultureSelect
-                    label="Caste"
-                    value={culture.caste_v2}
-                    onChange={selectCasteV2}
-                    options={castesV2}
-                    placeholder={culture.caste_category ? "Select caste" : "Select a category first"}
-                    disabled={!culture.caste_category}
-                  />
-                  <CultureSelect
-                    label="Sub-caste"
-                    value={culture.sub_caste}
-                    onChange={selectSubCaste}
-                    options={subCastes}
-                    placeholder={culture.caste_v2 ? "Select sub-caste" : "Select a caste first"}
-                    disabled={!culture.caste_v2}
-                  />
-                  <CultureSelect
-                    label="Clan"
-                    value={culture.clan}
-                    onChange={selectClan}
-                    options={clans}
-                    placeholder={culture.sub_caste ? "Select clan" : "Select a sub-caste first"}
-                    disabled={!culture.sub_caste}
-                  />
-                  <CultureSelect
-                    label="Gotra"
-                    value={culture.gotra_v2}
-                    onChange={selectGotra}
-                    options={gotras}
-                    placeholder={culture.clan ? "Select gotra" : "Select a clan first"}
-                    disabled={!culture.clan}
-                  />
-                  <Field label="Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
-                  <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
+                  {rules.levels.includes("community") && (
+                    <CultureSelect
+                      label={rules.communityLabel}
+                      value={culture.community}
+                      onChange={selectCommunity}
+                      options={communities}
+                      placeholder={culture.religion ? `Select ${rules.communityLabel.toLowerCase()}` : "Select a religion first"}
+                      disabled={!culture.religion}
+                    />
+                  )}
+                  {rules.levels.includes("caste_category") && (
+                    <CultureSelect
+                      label="Caste category"
+                      value={culture.caste_category}
+                      onChange={selectCasteCategory}
+                      options={casteCategories}
+                      placeholder={culture.community ? "Select category" : "Select a community first"}
+                      disabled={!culture.community}
+                    />
+                  )}
+                  {rules.levels.includes("caste_v2") && (
+                    <CultureSelect
+                      label="Caste"
+                      value={culture.caste_v2}
+                      onChange={selectCasteV2}
+                      options={castesV2}
+                      placeholder={culture.caste_category ? "Select caste" : "Select a category first"}
+                      disabled={!culture.caste_category}
+                    />
+                  )}
+                  {rules.levels.includes("sub_caste") && (
+                    <CultureSelect
+                      label="Sub-caste"
+                      value={culture.sub_caste}
+                      onChange={selectSubCaste}
+                      options={subCastes}
+                      placeholder={culture.caste_v2 ? "Select sub-caste" : "Select a caste first"}
+                      disabled={!culture.caste_v2}
+                    />
+                  )}
+                  {rules.levels.includes("clan") && (
+                    <CultureSelect
+                      label="Clan"
+                      value={culture.clan}
+                      onChange={selectClan}
+                      options={clans}
+                      placeholder={culture.sub_caste ? "Select clan" : "Select a sub-caste first"}
+                      disabled={!culture.sub_caste}
+                    />
+                  )}
+                  {rules.levels.includes("gotra_v2") && (
+                    <CultureSelect
+                      label="Gotra"
+                      value={culture.gotra_v2}
+                      onChange={selectGotra}
+                      options={gotras}
+                      placeholder={culture.clan ? "Select gotra" : "Select a clan first"}
+                      disabled={!culture.clan}
+                    />
+                  )}
+                  {rules.showHoroscope && (
+                    <>
+                      <Field label="Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
+                      <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
+                    </>
+                  )}
                   <Field label="Interests" value={form.hobbies} onChange={(v) => update("hobbies", v)} placeholder="Music, hiking, reading" />
                 </>
               )}
@@ -358,7 +392,9 @@ export default function EditProfile() {
                 <>
                   <ChoiceSelect label="Family religious practice" value={form.family_religious_practice} onChange={(v) => update("family_religious_practice", v)} options={RELIGIOUS_PRACTICE_OPTIONS} optional />
                   <ChoiceSelect label="Personal religious practice" value={form.personal_religious_practice} onChange={(v) => update("personal_religious_practice", v)} options={RELIGIOUS_PRACTICE_OPTIONS} optional />
-                  <ChoiceSelect label="Temple attendance" value={form.temple_attendance} onChange={(v) => update("temple_attendance", v)} options={TEMPLE_ATTENDANCE_OPTIONS} optional />
+                  {rules.showTemple && (
+                    <ChoiceSelect label="Temple attendance" value={form.temple_attendance} onChange={(v) => update("temple_attendance", v)} options={TEMPLE_ATTENDANCE_OPTIONS} optional />
+                  )}
                   <ChoiceSelect label="Marriage tradition preference" value={form.marriage_tradition_pref} onChange={(v) => update("marriage_tradition_pref", v)} options={MARRIAGE_TRADITION_OPTIONS} optional />
                   <ChoiceSelect label="Family type" value={form.family_type} onChange={(v) => update("family_type", v)} options={FAMILY_TYPE_OPTIONS} optional />
                   <ChoiceSelect label="Family values" value={form.family_values} onChange={(v) => update("family_values", v)} options={FAMILY_VALUES_OPTIONS} optional />

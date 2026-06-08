@@ -21,6 +21,7 @@ import {
   GOTRA_RULE_OPTIONS,
 } from "@/shared/constants/profileOptions";
 import { showError, showSuccess } from "@/shared/utils/toast";
+import { getReligionRules } from "@/shared/constants/religionRules";
 
 type PreferenceScope = "your_hobbies" | "partners_type";
 
@@ -188,6 +189,12 @@ export default function PreferencesPage() {
 
   const current = formState[activeScope];
   const filters = formState.filters;
+
+  // Religion-conditional cultural fields for the ACTIVE tab. The cascade stores
+  // the religion name in `current.religion`, so the shared rules decide which
+  // levels / horoscope to show (caste & gotra & horoscope are Hindu-only;
+  // Islam/Christian show only the relabeled level-1 "Sect"/"Denomination").
+  const culturalRules = getReligionRules(current.religion);
 
   // The cultural cascade depends on the *active* tab's selections, one level at
   // a time: religion → community → … → gotra.
@@ -421,15 +428,31 @@ export default function PreferencesPage() {
 
         <section className="space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <CulturalChips title="Religion" options={religions} selectedId={current.religion_id} onSelect={(id, n) => selectCultural("religion", id, n)} emptyHint="No religions available." />
-          <CulturalChips title="Community / Ethnicity" options={communities} selectedId={current.community_id} onSelect={(id, n) => selectCultural("community", id, n)} emptyHint={current.religion_id ? "No communities found." : "Select a religion first."} />
-          <CulturalChips title="Caste category" options={casteCategories} selectedId={current.caste_category_id} onSelect={(id, n) => selectCultural("caste_category", id, n)} emptyHint={current.community_id ? "No categories found." : "Select a community first."} />
-          <CulturalChips title="Caste" options={castesV2} selectedId={current.caste_v2_id} onSelect={(id, n) => selectCultural("caste_v2", id, n)} emptyHint={current.caste_category_id ? "No castes found." : "Select a category first."} />
-          <CulturalChips title="Sub-caste" options={subCastes} selectedId={current.sub_caste_id} onSelect={(id, n) => selectCultural("sub_caste", id, n)} emptyHint={current.caste_v2_id ? "No sub-castes found." : "Select a caste first."} />
-          <CulturalChips title="Clan" options={clans} selectedId={current.clan_id} onSelect={(id, n) => selectCultural("clan", id, n)} emptyHint={current.sub_caste_id ? "No clans found." : "Select a sub-caste first."} />
-          <CulturalChips title="Gotra" options={gotras} selectedId={current.gotra_v2_id} onSelect={(id, n) => selectCultural("gotra_v2", id, n)} emptyHint={current.clan_id ? "No gotras for this clan." : "Select a clan first."} />
+          {culturalRules.levels.includes("community") && (
+            <CulturalChips title={culturalRules.communityLabel} options={communities} selectedId={current.community_id} onSelect={(id, n) => selectCultural("community", id, n)} emptyHint={current.religion_id ? `No ${culturalRules.communityLabel.toLowerCase()} found.` : "Select a religion first."} />
+          )}
+          {culturalRules.levels.includes("caste_category") && (
+            <CulturalChips title="Caste category" options={casteCategories} selectedId={current.caste_category_id} onSelect={(id, n) => selectCultural("caste_category", id, n)} emptyHint={current.community_id ? "No categories found." : "Select a community first."} />
+          )}
+          {culturalRules.levels.includes("caste_v2") && (
+            <CulturalChips title="Caste" options={castesV2} selectedId={current.caste_v2_id} onSelect={(id, n) => selectCultural("caste_v2", id, n)} emptyHint={current.caste_category_id ? "No castes found." : "Select a category first."} />
+          )}
+          {culturalRules.levels.includes("sub_caste") && (
+            <CulturalChips title="Sub-caste" options={subCastes} selectedId={current.sub_caste_id} onSelect={(id, n) => selectCultural("sub_caste", id, n)} emptyHint={current.caste_v2_id ? "No sub-castes found." : "Select a caste first."} />
+          )}
+          {culturalRules.levels.includes("clan") && (
+            <CulturalChips title="Clan" options={clans} selectedId={current.clan_id} onSelect={(id, n) => selectCultural("clan", id, n)} emptyHint={current.sub_caste_id ? "No clans found." : "Select a sub-caste first."} />
+          )}
+          {culturalRules.levels.includes("gotra_v2") && (
+            <CulturalChips title="Gotra" options={gotras} selectedId={current.gotra_v2_id} onSelect={(id, n) => selectCultural("gotra_v2", id, n)} emptyHint={current.clan_id ? "No gotras for this clan." : "Select a clan first."} />
+          )}
 
-          <ChipSection title="Horoscope" options={HOROSCOPE_OPTIONS} selected={current.horoscope} onSelect={(v) => setChoice("horoscope", v)} />
-          <ChipSection title="Gans" options={GANS_OPTIONS} selected={current.gans} onSelect={(v) => setChoice("gans", v)} />
+          {culturalRules.showHoroscope && (
+            <>
+              <ChipSection title="Horoscope" options={HOROSCOPE_OPTIONS} selected={current.horoscope} onSelect={(v) => setChoice("horoscope", v)} />
+              <ChipSection title="Gans" options={GANS_OPTIONS} selected={current.gans} onSelect={(v) => setChoice("gans", v)} />
+            </>
+          )}
 
           <OpenQuestion label="Preferences" value={current.preferences} onChange={(v) => setText("preferences", v)} placeholder="Type your preference here" />
           <OpenQuestion label="Hobbies" value={current.hobbies} onChange={(v) => setText("hobbies", v)} placeholder="Type your hobbies" />
