@@ -39,6 +39,8 @@ export interface ConversationParticipant extends ChatUser {
   profile_image: string | null;   // ← ADD — backend may return either name
   name: string | null;            // ← ADD — backend may return either name
   age: number | null;
+  // Profile PK — required for profile-level block/report (keyed off Profile.id).
+  profile_id?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────

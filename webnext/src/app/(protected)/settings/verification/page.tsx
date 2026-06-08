@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BadgeCheck, Mail, Phone, CreditCard, ScanFace, Crown } from "lucide-react";
@@ -25,7 +25,6 @@ export default function VerificationPage() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const idRef = useRef<HTMLInputElement>(null);
-  const selfieRef = useRef<HTMLInputElement>(null);
 
   const { data: status, isLoading } = useQuery({
     queryKey: ["verify-status"], queryFn: getVerificationStatus, retry: false,
@@ -130,14 +129,15 @@ export default function VerificationPage() {
                   onFile={(f) => submit.mutate({ vtype: "id", file: f })}
                   icon={<CreditCard className="h-5 w-5" />}
                 />
-                <UploadTile
-                  label="Upload selfie" disabled={status.badges.selfie}
-                  inputRef={selfieRef}
-                  onFile={(f) => submit.mutate({ vtype: "selfie", file: f })}
-                  icon={<ScanFace className="h-5 w-5" />}
+                <SelfieCamera
+                  disabled={status.badges.selfie}
+                  onCapture={(f) => submit.mutate({ vtype: "selfie", file: f })}
                 />
               </div>
-              <p className="mt-3 text-xs text-[#746767]">Documents are reviewed by the safety team.</p>
+              <p className="mt-3 text-xs text-[#746767]">
+                The selfie must be taken with your live camera (no gallery uploads).
+                Documents are reviewed by the safety team.
+              </p>
             </section>
           </>
         )}
@@ -164,6 +164,126 @@ function UploadTile({ label, disabled, inputRef, onFile, icon }: {
         {icon}
         {disabled ? "Verified" : label}
       </button>
+    </>
+  );
+}
+
+/**
+ * Live-camera-only selfie capture. Uses getUserMedia (front camera) and grabs a
+ * frame from the video stream — there is intentionally NO file input, so a user
+ * can never upload a saved/gallery image for the selfie verification.
+ * Requires a secure context (HTTPS or localhost).
+ */
+function SelfieCamera({ disabled, onCapture }: {
+  disabled: boolean;
+  onCapture: (f: File) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stop = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }, []);
+
+  // Always release the camera if the component unmounts while open.
+  useEffect(() => () => stop(), [stop]);
+
+  const start = async () => {
+    setError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Live camera isn't available on this device/browser.");
+      return;
+    }
+    setStarting(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setOpen(true);
+      // Attach after the <video> mounts on the next frame.
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+    } catch {
+      setError("Camera permission denied. Allow camera access to verify.");
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const close = useCallback(() => {
+    stop();
+    setOpen(false);
+  }, [stop]);
+
+  const capture = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        onCapture(new File([blob], `selfie-${Date.now()}.jpg`, { type: "image/jpeg" }));
+        close();
+      },
+      "image/jpeg",
+      0.9
+    );
+  };
+
+  return (
+    <>
+      <button
+        onClick={start}
+        disabled={disabled || starting}
+        className="glass-btn flex flex-col items-center gap-1.5 rounded-2xl p-4 text-sm font-semibold disabled:opacity-50"
+      >
+        <ScanFace className="h-5 w-5" />
+        {disabled ? "Verified" : starting ? "Opening…" : "Take selfie"}
+      </button>
+
+      {error && <p className="col-span-2 -mt-1 text-xs text-red-600">{error}</p>}
+
+      {open && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-4">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className="aspect-[3/4] w-full rounded-xl bg-black object-cover"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={close}
+                className="flex-1 rounded-xl border border-[#EADDD2] py-2 text-sm font-semibold text-[#2D2424]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={capture}
+                className="flex-1 rounded-xl bg-[#7A2432] py-2 text-sm font-semibold text-white"
+              >
+                Capture
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

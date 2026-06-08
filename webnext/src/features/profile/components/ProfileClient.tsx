@@ -32,14 +32,17 @@ import {
 } from "lucide-react";
 import type { Profile, PublicProfile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
-import { blockProfile, reportProfile } from "@/shared/api/mvp.api";
+import { blockProfile, reportProfile, type ReportReasonValue } from "@/shared/api/mvp.api";
 import { showSuccess, showError } from "@/shared/utils/toast";
 import FollowButton from "@/features/follow/components/FollowButton";
 
-const PROFILE_REPORT_REASONS: { value: "spam" | "fake" | "abuse" | "nudity" | "other"; label: string }[] = [
-  { value: "abuse", label: "Harassment / Abuse" },
-  { value: "fake", label: "Fake profile" },
-  { value: "nudity", label: "Sexual content" },
+// Values MUST match the backend ReportReason choices
+// (dating_backend/django/apps/report/models.py). Mismatched values 400.
+const PROFILE_REPORT_REASONS: { value: ReportReasonValue; label: string }[] = [
+  { value: "harassment", label: "Harassment / Abuse" },
+  { value: "fake_identity", label: "Fake profile" },
+  { value: "sexual_content", label: "Sexual content" },
+  { value: "scam", label: "Scam" },
   { value: "spam", label: "Spam" },
   { value: "other", label: "Other" },
 ];
@@ -217,7 +220,7 @@ export default function ProfileClient({
   });
 
   const reportMutation = useMutation({
-    mutationFn: (vars: { pid: number; reason: "spam" | "fake" | "abuse" | "nudity" | "other" }) =>
+    mutationFn: (vars: { pid: number; reason: ReportReasonValue }) =>
       reportProfile(vars.pid, { reason: vars.reason, description: "Reported from profile." }),
     onSuccess: () => { setShowReport(false); showSuccess("Report submitted. Thank you."); },
     onError: (err) => { setShowReport(false); showError(err, "Failed to submit report."); },
@@ -395,8 +398,8 @@ export default function ProfileClient({
                 </button>
                 {menuOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm">
+                    <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                    <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm">
                       <button
                         onClick={() => { setMenuOpen(false); setShowReport(true); }}
                         disabled={!targetProfileId}

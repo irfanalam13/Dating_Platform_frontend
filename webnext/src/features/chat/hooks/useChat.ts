@@ -77,7 +77,17 @@ export function useChat(conversationId: string | null): UseChatReturn {
     staleTime: Infinity,
   });
 
-  const messages = useMemo(() => data?.results ?? [], [data]);
+  // Always render in chronological order (oldest → newest, newest at the
+  // bottom) regardless of how items were inserted — initial page, optimistic
+  // send, or a live WS message from the other person. Sorting by created_at is
+  // the deterministic fix: an incoming message can never jump to the top.
+  const messages = useMemo(() => {
+    const list = data?.results ?? [];
+    return [...list].sort(
+      (a, b) =>
+        new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
+    );
+  }, [data]);
 
   // Helper: patch the cached message list.
   const patchMessages = useCallback(

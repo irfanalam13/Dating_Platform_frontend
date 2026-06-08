@@ -110,7 +110,16 @@ export default function MessageBubble({
           </div>
         )}
 
-        <div className={`relative px-3.5 py-2 rounded-2xl text-sm leading-relaxed
+        <div
+          onContextMenu={(e) => {
+            // Right-click (and long-press on touch) opens the actions menu on
+            // the bubble itself — no more floating "opposite side" trigger.
+            if (!canAct || deleted) return
+            e.preventDefault()
+            setPickerOpen(false)
+            setMenuOpen(true)
+          }}
+          className={`relative cursor-context-menu px-3.5 py-2 rounded-2xl text-sm leading-relaxed
           ${isMine
             ? 'bg-indigo-600 text-white rounded-br-sm'
             : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}`}>
@@ -163,13 +172,14 @@ export default function MessageBubble({
         )}
       </div>
 
-      {/* Action trigger (hover) */}
+      {/* Secondary trigger sitting on the bubble's top corner (touch / mouse
+          discoverability). Right-clicking the bubble does the same thing. */}
       {canAct && !deleted && (
-        <div className={`absolute top-0 ${isMine ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} px-1`}>
+        <div className={`absolute -top-3 ${isMine ? 'right-1' : 'left-1'} z-10`}>
           <button
             onClick={() => { setMenuOpen((v) => !v); setPickerOpen(false) }}
-            className="glass-btn grid h-7 w-7 place-items-center rounded-full opacity-0 group-hover:opacity-100 transition"
-            aria-label="Message actions"
+            className="glass-btn grid h-7 w-7 place-items-center rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+            aria-label="Message actions (or right-click the message)"
           >
             <MoreVertical className="h-4 w-4" />
           </button>

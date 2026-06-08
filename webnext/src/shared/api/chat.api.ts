@@ -63,15 +63,19 @@ export function getConversation(conversationId: string): Promise<Conversation> {
  * Cursor-paginated history, oldest → newest.
  * Pass cursor from response.next for infinite scroll.
  */
-export function getMessages(
+export async function getMessages(
   conversationId: string,
   cursor?: string
 ): Promise<PaginatedResponse<Message>> {
-  return data({
+  const res = await data<PaginatedResponse<Message>>({
     method: "GET",
     url: `/chat/conversations/${conversationId}/messages/`,
     params: cursor ? { cursor } : undefined,
   });
+  // The API paginates newest-first (cursor ordering '-created_at'). Reverse each
+  // page to oldest→newest so the UI renders top→bottom and live messages — which
+  // are appended to the end of the cache — consistently land at the bottom.
+  return { ...res, results: [...(res.results ?? [])].reverse() };
 }
 
 /**

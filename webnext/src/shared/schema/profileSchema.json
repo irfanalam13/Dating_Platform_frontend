@@ -25,8 +25,8 @@
         { "key": "clan", "label": "Clan", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/clans/?sub_caste={sub_caste_id}", "dependency": { "field": "sub_caste", "op": "isSet" }, "options": "dynamic" },
         { "key": "gotra_v2", "label": "Gotra", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/gotras-v2/?clan={clan_id}", "dependency": { "field": "clan", "op": "isSet" }, "options": "dynamic" },
         { "key": "family_religious_practice", "label": "Family Religious Practice", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["very_religious", "religious", "moderate", "spiritual", "not_practicing"] },
-        //
-        //  { "key": "personal_religious_practice", "label": "Personal Religious Practice", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["very_religious", "religious", "moderate", "spiritual", "not_practicing"] },
+        
+        { "_key": "personal_religious_practice", "label": "Personal Religious Practice", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["very_religious", "religious", "moderate", "spiritual", "not_practicing"] },
         { "key": "temple_attendance", "label": "Temple Attendance", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "equals", "value": "Hindu" }, "options": ["daily", "weekly", "monthly", "festivals_only", "rarely"] },
         { "key": "marriage_tradition_pref", "label": "Marriage Tradition Preference", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["traditional", "love", "love_cum_arranged", "court", "no_preference"] }
       ],

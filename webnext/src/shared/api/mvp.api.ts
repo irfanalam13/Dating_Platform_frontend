@@ -75,9 +75,22 @@ export const blockProfile = async (profileId: number): Promise<{ message: string
   return res.data;
 };
 
+// Must match backend ReportReason choices (apps/report/models.py).
+export type ReportReasonValue =
+  | "fake_identity"
+  | "scam"
+  | "harassment"
+  | "sexual_content"
+  | "violence"
+  | "hate_speech"
+  | "underage"
+  | "impersonation"
+  | "spam"
+  | "other";
+
 export const reportProfile = async (
   profileId: number,
-  data: { reason: "spam" | "fake" | "abuse" | "nudity" | "other"; description?: string }
+  data: { reason: ReportReasonValue; description?: string }
 ): Promise<{ message: string }> => {
   const res = await api.post(`/reports/report/${profileId}/`, data);
   return res.data;
