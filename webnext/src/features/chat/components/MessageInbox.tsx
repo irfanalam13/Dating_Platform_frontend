@@ -19,7 +19,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] }
 // ─────────────────────────────────────────────────────────
 
 function getDisplayName(person: ConversationParticipant): string {
-  return person.name ?? person.display_name ?? person.username ?? "Matched user";
+  return person.name ?? person.display_name ?? person.full_name ?? "Matched user";
 }
 
 function getProfileImage(person: ConversationParticipant): string {
@@ -43,7 +43,7 @@ export function MessageInbox() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
-    queryFn: getConversations,
+    queryFn: () => getConversations(),
     retry: false,
     enabled: !!user,
   });

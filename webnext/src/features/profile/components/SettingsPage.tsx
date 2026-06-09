@@ -2,13 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Bell, GraduationCap, Lock, LogOut, SlidersHorizontal, UserRound, type LucideIcon } from "lucide-react";
+import { Bell, GraduationCap, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, Users, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
   unblockProfile,
   updatePrivacySettings,
 } from "@/shared/api/mvp.api";
+import { getChatPrivacy, updateChatPrivacy, type ChatPrivacy } from "@/shared/api/chat.api";
 import { useLogout } from "@/features/auth/hooks/useAuth";
 
 export default function SettingsPage() {
@@ -21,12 +22,24 @@ export default function SettingsPage() {
 
   const privacyMutation = useMutation({
     mutationFn: updatePrivacySettings,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["privacy"] }),
+    onSuccess: () => {
+      // Also refresh the profile so its public/private badge + hidden fields
+      // reflect the change immediately (not just the Settings toggles).
+      queryClient.invalidateQueries({ queryKey: ["privacy"] });
+      queryClient.invalidateQueries({ queryKey: ["myProfile"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
   });
 
   const unblockMutation = useMutation({
     mutationFn: unblockProfile,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blockedUsers"] }),
+  });
+
+  const { data: chatPrivacy } = useQuery({ queryKey: ["chatPrivacy"], queryFn: getChatPrivacy, retry: false });
+  const chatPrivacyMutation = useMutation({
+    mutationFn: (patch: Partial<ChatPrivacy>) => updateChatPrivacy(patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatPrivacy"] }),
   });
 
   return (
@@ -56,7 +69,7 @@ export default function SettingsPage() {
               <Toggle
                 label="Private account"
                 checked={!(privacy?.is_profile_public ?? true)}
-                onChange={(value) => privacyMutation.mutate({ is_profile_public: !value, allow_messages_from: "matches" })}
+                onChange={(value) => privacyMutation.mutate({ is_profile_public: !value })}
               />
               <Toggle
                 label="Show profile image"
@@ -105,6 +118,79 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Profile field visibility (Facebook-style hide) */}
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <SectionTitle icon={Lock} title="Profile visibility" detail="Choose which personal details others can see on your profile." />
+          <div className="divide-y divide-[#EADDD2]/70">
+            <Toggle label="Show date of birth" checked={privacy?.show_dob ?? false}
+              onChange={(v) => privacyMutation.mutate({ show_dob: v })} />
+            <Toggle label="Show age" checked={privacy?.show_age ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_age: v })} />
+            <Toggle label="Show location" checked={privacy?.show_location ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_location: v })} />
+            <Toggle label="Show height" checked={privacy?.show_height ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_height: v })} />
+            <Toggle label="Show weight" checked={privacy?.show_weight ?? false}
+              onChange={(v) => privacyMutation.mutate({ show_weight: v })} />
+            <Toggle label="Show languages" checked={privacy?.show_languages ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_languages: v })} />
+            <Toggle label="Show education" checked={privacy?.show_education ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_education: v })} />
+            <Toggle label="Show career" checked={privacy?.show_career ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_career: v })} />
+            <Toggle label="Show religion & caste" checked={privacy?.show_religion ?? true}
+              onChange={(v) => privacyMutation.mutate({ show_religion: v })} />
+          </div>
+          <p className="mt-2 text-xs text-[#746767]">You always see your own details — these only affect what others see.</p>
+        </section>
+
+        {/* Chat privacy */}
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <SectionTitle icon={MessageCircle} title="Chat privacy" detail="Who can reach you and what they can see." />
+          <div className="space-y-3">
+            <Select
+              label="Who can message me"
+              value={chatPrivacy?.allow_messages_from ?? "everyone"}
+              options={[["everyone", "Everyone"], ["matches", "Matches only"], ["none", "Nobody"]]}
+              onChange={(v) => chatPrivacyMutation.mutate({ allow_messages_from: v })}
+            />
+            <Select
+              label="Who can send me images"
+              value={chatPrivacy?.who_can_send_images ?? "everyone"}
+              options={[["everyone", "Everyone"], ["matches", "Matches only"], ["none", "Nobody"]]}
+              onChange={(v) => chatPrivacyMutation.mutate({ who_can_send_images: v })}
+            />
+            <Select
+              label="Who can see my last seen"
+              value={chatPrivacy?.last_seen_visibility ?? "everyone"}
+              options={[["everyone", "Everyone"], ["matches", "Matches only"], ["nobody", "Nobody"]]}
+              onChange={(v) => chatPrivacyMutation.mutate({ last_seen_visibility: v })}
+            />
+            <Select
+              label="Who can see my online status"
+              value={chatPrivacy?.online_status_visibility ?? "everyone"}
+              options={[["everyone", "Everyone"], ["matches", "Matches only"], ["nobody", "Nobody"]]}
+              onChange={(v) => chatPrivacyMutation.mutate({ online_status_visibility: v })}
+            />
+          </div>
+          <div className="mt-1 divide-y divide-[#EADDD2]/70">
+            <Toggle
+              label="Read receipts"
+              checked={chatPrivacy?.read_receipts_enabled ?? true}
+              onChange={(value) => chatPrivacyMutation.mutate({ read_receipts_enabled: value })}
+            />
+          </div>
+        </section>
+
+        {/* Account quick links */}
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-2 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <div className="divide-y divide-[#EADDD2]/70">
+            <LinkRow icon={Bell} label="Notification preferences" onClick={() => router.push("/settings/notifications")} />
+            <LinkRow icon={ShieldCheck} label="Verification" onClick={() => router.push("/settings/verification")} />
+            <LinkRow icon={Users} label="Followers & Following" onClick={() => router.push("/connections")} />
+          </div>
+        </section>
+
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-2 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div className="grid grid-cols-2 divide-x divide-[#EADDD2]/70">
             <button onClick={() => router.push("/college")} className="rounded-2xl p-4 text-left transition hover:bg-white/30">
@@ -146,6 +232,33 @@ function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: 
         <p className="text-sm leading-6 text-[#746767]">{detail}</p>
       </div>
     </div>
+  );
+}
+
+function Select({ label, value, options, onChange }: {
+  label: string; value: string; options: [string, string][]; onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm font-medium">
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-lg border border-white/60 bg-white/70 px-2 py-1.5 text-sm text-[#2D2424] focus:outline-none"
+      >
+        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function LinkRow({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex w-full items-center gap-3 px-2 py-3 text-left text-sm font-semibold text-[#2D2424] transition hover:bg-white/30">
+      <Icon className="h-5 w-5" />
+      <span className="flex-1">{label}</span>
+      <span className="text-[#746767]">→</span>
+    </button>
   );
 }
 

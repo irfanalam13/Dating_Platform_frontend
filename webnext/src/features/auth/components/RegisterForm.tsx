@@ -17,7 +17,7 @@ export default function RegisterForm() {
 
   const [form, setForm] = useState({
     full_name: "",
-    username: "",
+    phone: "",
     email: "",
     password: "",
     confirm_password: "",
@@ -38,8 +38,8 @@ export default function RegisterForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.full_name || !form.username || !form.email) {
-      return showError("All fields are required");
+    if (!form.full_name || !form.email) {
+      return showError("Full name and email are required");
     }
     if (!isLengthValid) {
       return showError("Password must be at least 10 characters");
@@ -50,7 +50,8 @@ export default function RegisterForm() {
 
     mutate({
       full_name: form.full_name,
-      username: form.username,
+      // Phone is optional; only send it when provided.
+      ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
       email: form.email,
       password: password,
       confirm_password: confirm_password,
@@ -118,10 +119,10 @@ export default function RegisterForm() {
         />
 
         <input
-          name="username"
-          placeholder="Username"
-          
-          value={form.username}
+          name="phone"
+          type="tel"
+          placeholder="Phone number (optional)"
+          value={form.phone}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
         />

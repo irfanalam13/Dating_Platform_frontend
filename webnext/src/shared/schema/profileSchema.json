@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "user_profile": {
+    "scope": "user_profile",
+    "sections": {
+      "basic_information": [
+        { "key": "full_name", "label": "Full Name", "type": "text", "required": true, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": [] },
+        { "key": "gender", "label": "Gender", "type": "select", "required": true, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": ["Male", "Female", "Other"] },
+        { "key": "date_of_birth", "label": "Date of Birth", "type": "date", "required": true, "visible": true, "visibility": "matches", "exists": true, "dependency": {}, "options": [] },
+        { "key": "age", "label": "Age", "type": "number", "required": false, "visible": true, "visibility": "public", "exists": true, "computed": "from date_of_birth", "dependency": {}, "options": [] },
+        { "key": "height_cm", "label": "Height", "type": "number", "unit": "cm", "display": "ft/in", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": [] },
+        { "key": "weight_kg", "label": "Weight", "type": "number", "unit": "kg", "required": false, "visible": true, "visibility": "private", "dependency": {}, "options": [] },
+        { "key": "city", "label": "Location", "type": "text", "required": true, "visible": true, "visibility": "matches", "exists": true, "dependency": {}, "options": [] },
+        { "key": "nationality", "label": "Nationality", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["nepali", "indian", "other"] },
+        { "key": "citizenship", "label": "Citizenship", "type": "select", "required": false, "visible": true, "visibility": "private", "dependency": {}, "options": ["nepali", "indian", "dual", "other"] },
+        { "key": "languages_spoken", "label": "Languages Spoken", "type": "multiselect", "required": false, "visible": true, "visibility": "public", "dependency": {},
+          "options": ["Nepali", "Hindi", "Maithili", "Bhojpuri", "Tharu", "Newari", "Tamang", "Gurung", "Magar", "Limbu", "English", "Bengali", "Tamil", "Telugu", "Kannada", "Malayalam", "Marathi", "Gujarati", "Punjabi", "Urdu", "Other"] }
+      ],
+      "religion_and_culture": [
+        { "key": "religion", "label": "Religion", "type": "select", "required": false, "visible": true, "visibility": "public", "exists": true, "source": "api:/preference/cultural/religions/", "dependency": {}, "options": "dynamic" },
+        { "key": "community", "label": "Community / Ethnicity", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/communities/?religion={religion_id}", "dependency": { "field": "religion", "op": "isSet" }, "options": "dynamic" },
+        { "key": "caste_category", "label": "Caste Category", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/caste-categories/?community={community_id}", "dependency": { "field": "community", "op": "isSet" }, "options": "dynamic" },
+        { "key": "caste_v2", "label": "Caste", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/castes-v2/?category={caste_category_id}", "dependency": { "field": "caste_category", "op": "isSet" }, "options": "dynamic" },
+        { "key": "sub_caste", "label": "Sub-Caste", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/sub-castes/?caste={caste_v2_id}", "dependency": { "field": "caste_v2", "op": "isSet" }, "options": "dynamic" },
+        { "key": "clan", "label": "Clan", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/clans/?sub_caste={sub_caste_id}", "dependency": { "field": "sub_caste", "op": "isSet" }, "options": "dynamic" },
+        { "key": "gotra_v2", "label": "Gotra", "type": "select", "required": false, "visible": true, "visibility": "public", "source": "api:/preference/cultural/gotras-v2/?clan={clan_id}", "dependency": { "field": "clan", "op": "isSet" }, "options": "dynamic" },
+        { "key": "family_religious_practice", "label": "Family Religious Practice", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["very_religious", "religious", "moderate", "spiritual", "not_practicing"] },
+        
+        { "_key": "personal_religious_practice", "label": "Personal Religious Practice", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["very_religious", "religious", "moderate", "spiritual", "not_practicing"] },
+        { "key": "temple_attendance", "label": "Temple Attendance", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "equals", "value": "Hindu" }, "options": ["daily", "weekly", "monthly", "festivals_only", "rarely"] },
+        { "key": "marriage_tradition_pref", "label": "Marriage Tradition Preference", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": { "field": "religion", "op": "isSet" }, "options": ["traditional", "love", "love_cum_arranged", "court", "no_preference"] }
+      ],
+      "lifestyle": [
+        { "key": "diet", "label": "Diet", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["vegetarian", "eggetarian", "non_vegetarian", "vegan", "jain_vegetarian"] },
+        { "key": "alcohol", "label": "Alcohol", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["never", "occasionally", "frequently"] },
+        { "key": "smoking", "label": "Smoking", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["never", "occasionally", "frequently"] }
+      ],
+      "education_and_career": [
+        { "key": "education_level", "label": "Education Level", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["high_school", "diploma", "bachelor", "master", "phd", "other"] },
+        { "key": "education", "label": "Field / Institution", "type": "text", "required": false, "visible": true, "visibility": "public", "exists": true, "note": "free-text detail kept alongside structured education_level", "dependency": {}, "options": [] },
+        { "key": "career", "label": "Occupation", "type": "text", "required": false, "visible": true, "visibility": "public", "exists": true, "note": "existing field serves Occupation", "dependency": {}, "options": [] },
+        { "key": "industry", "label": "Industry", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["it_software", "healthcare", "education", "government", "business_finance", "engineering", "arts_media", "agriculture", "hospitality", "self_employed", "student", "other"] },
+        { "key": "income_range", "label": "Income Range", "type": "select", "required": false, "visible": true, "visibility": "private", "dependency": {}, "options": ["below_2_5l", "2_5_to_5l", "5_to_10l", "10_to_20l", "above_20l", "prefer_not"], "note": "currency band resolved by nationality (NPR/INR)" }
+      ],
+      "family": [
+        { "key": "family_type", "label": "Family Type", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["joint", "nuclear"] },
+        { "key": "family_values", "label": "Family Values", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["traditional", "moderate", "liberal"] },
+        { "key": "parents_religion_importance", "label": "Parents Religion Importance", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["very_important", "important", "flexible", "not_important"] }
+      ],
+      "relationship": [
+        { "key": "relationship_intent", "label": "Relationship Goal", "type": "select", "required": false, "visible": true, "visibility": "public", "exists": true, "dependency": {}, "options": ["dating", "serious", "marriage", "marriage_family", "friendship"] },
+        { "key": "wants_children", "label": "Wants Children", "type": "select", "required": false, "visible": true, "visibility": "public", "dependency": {}, "options": ["yes", "no", "undecided"] }
+      ]
+    }
+  },
+  "partner_preferences": {
+    "scope": "partner_preferences",
+    "sections": {
+      "cultural_preference": [
+        { "key": "preferred_religion", "label": "Preferred Religion", "type": "select", "required": false, "visible": true, "exists": true, "source": "api:/preference/cultural/religions/", "dependency": {}, "options": "dynamic" },
+        { "key": "preferred_community", "label": "Preferred Community", "type": "select", "required": false, "visible": true, "source": "api:/preference/cultural/communities/?religion={preferred_religion_id}", "dependency": { "field": "preferred_religion", "op": "isSet" }, "options": "dynamic" },
+        { "key": "preferred_caste_category", "label": "Preferred Caste Category", "type": "select", "required": false, "visible": true, "source": "api:/preference/cultural/caste-categories/?community={preferred_community_id}", "dependency": { "field": "preferred_community", "op": "isSet" }, "options": "dynamic" },
+        { "key": "preferred_caste_v2", "label": "Preferred Caste", "type": "select", "required": false, "visible": true, "source": "api:/preference/cultural/castes-v2/?category={preferred_caste_category_id}", "dependency": { "field": "preferred_caste_category", "op": "isSet" }, "options": "dynamic" },
+        { "key": "preferred_sub_caste", "label": "Preferred Sub-Caste", "type": "select", "required": false, "visible": true, "source": "api:/preference/cultural/sub-castes/?caste={preferred_caste_v2_id}", "dependency": { "field": "preferred_caste_v2", "op": "isSet" }, "options": "dynamic" },
+        { "key": "gotra_rule", "label": "Preferred Gotra Rule", "type": "select", "required": false, "visible": true, "dependency": {}, "options": ["must_differ", "same_ok", "no_preference"] }
+      ],
+      "ranges": [
+        { "key": "min_age", "label": "Min Age", "type": "number", "required": false, "visible": true, "exists": true, "dependency": {}, "options": [] },
+        { "key": "max_age", "label": "Max Age", "type": "number", "required": false, "visible": true, "exists": true, "dependency": {}, "options": [] },
+        { "key": "preferred_min_height_cm", "label": "Min Height", "type": "number", "unit": "cm", "required": false, "visible": true, "dependency": {}, "options": [] },
+        { "key": "preferred_max_height_cm", "label": "Max Height", "type": "number", "unit": "cm", "required": false, "visible": true, "dependency": {}, "options": [] },
+        { "key": "max_distance_km", "label": "Distance Range", "type": "select", "required": false, "visible": true, "exists": true, "dependency": {}, "options": [10, 25, 50, 100] }
+      ],
+      "lifestyle_preference": [
+        { "key": "preferred_education", "label": "Preferred Education", "type": "select", "required": false, "visible": true, "exists": true, "dependency": {}, "options": ["", "high_school", "bachelor", "master", "phd"] },
+        { "key": "preferred_diet", "label": "Diet Preference", "type": "multiselect", "required": false, "visible": true, "dependency": {}, "options": ["vegetarian", "eggetarian", "non_vegetarian", "vegan", "jain_vegetarian"] },
+        { "key": "preferred_alcohol", "label": "Alcohol Preference", "type": "select", "required": false, "visible": true, "dependency": {}, "options": ["", "never", "occasionally", "frequently"] },
+        { "key": "preferred_smoking", "label": "Smoking Preference", "type": "select", "required": false, "visible": true, "dependency": {}, "options": ["", "never", "occasionally", "frequently"] }
+      ],
+      "religious_compatibility": [
+        { "key": "accept_different_religion", "label": "Accept Different Religion", "type": "boolean", "required": false, "visible": true, "dependency": {}, "options": [true, false] },
+        { "key": "accept_different_community", "label": "Accept Different Community", "type": "boolean", "required": false, "visible": true, "dependency": {}, "options": [true, false] },
+        { "key": "accept_different_caste", "label": "Accept Different Caste", "type": "boolean", "required": false, "visible": true, "dependency": {}, "options": [true, false] },
+        { "key": "accept_different_gotra", "label": "Accept Different Gotra", "type": "boolean", "required": false, "visible": true, "dependency": {}, "options": [true, false] }
+      ],
+      "deal_breakers": [
+        { "key": "deal_breakers", "label": "Deal Breakers", "type": "object", "required": false, "visible": true, "dependency": {},
+          "shape": { "must_have": "string[]", "nice_to_have": "string[]", "avoid": "string[]" },
+          "options": [] }
+      ]
+    }
+  }
+}

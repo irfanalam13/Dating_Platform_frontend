@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
 
   const resetMutation = useResetPassword();
 
-  const isLengthValid = password.length >= 8;
+  const isLengthValid = password.length >= 10;
   const hasNumber = /\d/.test(password);
   const hasLetter = /[A-Za-z]/.test(password);
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
       return;
     }
     if (!isLengthValid) {
-      showError("Password must be at least 8 characters.");
+      showError("Password must be at least 10 characters.");
       return;
     }
     if (!passwordsMatch) {
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
                       ? <CheckCircle className="text-green-500" size={15} />
                       : <XCircle className="text-red-400" size={15} />}
                     <span className={isLengthValid ? "text-green-600" : "text-[#746767]"}>
-                      At least 8 characters
+                      At least 10 characters
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

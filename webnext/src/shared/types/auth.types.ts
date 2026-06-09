@@ -51,8 +51,9 @@
 export interface User {
   id: number;
   email: string;
-  username: string;
   full_name?: string;
+  // Internal URL slug (not a user-facing handle). Returned as profile_url.
+  profile_url?: string;
 }
 
 export interface Tokens {
@@ -76,7 +77,8 @@ export interface LoginPayload {
 
 export interface RegisterPayload {
   full_name: string;
-  username: string;
+  // Optional, private phone number (no OTP). Email is the verified login id.
+  phone?: string;
   email: string;
   password: string;
   confirm_password: string;

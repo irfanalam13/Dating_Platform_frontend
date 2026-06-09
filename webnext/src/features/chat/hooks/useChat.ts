@@ -14,10 +14,15 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
 import type {
   Message,
+  ReplyPreview,
   WSChatEvent,
   WSChatMessage,
   WSTypingEvent,
   WSReadEvent,
+  WSMessageEdited,
+  WSMessageDeleted,
+  WSReactionUpdate,
+  WSAttachmentReady,
   ChatUser,
 } from "@/shared/types/chat.types";
 import { getFreshToken } from '@/shared/utils/wsToken'
@@ -29,12 +34,20 @@ export const chatKeys = {
     ["messages", conversationId] as const,
 };
 
+/** Lightweight reply target supplied by the composer. */
+export interface ReplyTarget {
+  uuid: string;
+  content: string;
+  sender_id: number;
+  type?: string;
+}
+
 interface UseChatReturn {
   messages: Message[];
   isLoading: boolean;
   typingUsers: Set<string>;
   wsStatus: "connecting" | "connected" | "disconnected" | "error";
-  send: (text: string) => void;
+  send: (text: string, replyTo?: ReplyTarget | null) => void;
   sendTyping: (isTyping: boolean) => void;
   sendRead: () => void;
 }
@@ -44,18 +57,13 @@ export function useChat(conversationId: string | null): UseChatReturn {
   const queryClient                   = useQueryClient();
   const { markConversationRead }      = useNotificationContext();
 
-  //   wsRef holds the WS instance
   const wsRef                         = useRef<ChatWebSocket | null>(null);
-
-  //   wsStatusRef mirrors wsStatus so send() always reads current value
-  // without needing wsStatus in its dependency array (which causes stale closure)
   const wsStatusRef                   = useRef<UseChatReturn["wsStatus"]>("disconnected");
 
   const [wsStatus, setWsStatus]       = useState<UseChatReturn["wsStatus"]>("disconnected");
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const typingTimers                  = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Keep wsStatusRef in sync with wsStatus state
   const updateStatus = useCallback((status: UseChatReturn["wsStatus"]) => {
     wsStatusRef.current = status;
     setWsStatus(status);
@@ -69,7 +77,29 @@ export function useChat(conversationId: string | null): UseChatReturn {
     staleTime: Infinity,
   });
 
-  const messages = useMemo(() => data?.results ?? [], [data]);
+  // Always render in chronological order (oldest → newest, newest at the
+  // bottom) regardless of how items were inserted — initial page, optimistic
+  // send, or a live WS message from the other person. Sorting by created_at is
+  // the deterministic fix: an incoming message can never jump to the top.
+  const messages = useMemo(() => {
+    const list = data?.results ?? [];
+    return [...list].sort(
+      (a, b) =>
+        new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
+    );
+  }, [data]);
+
+  // Helper: patch the cached message list.
+  const patchMessages = useCallback(
+    (updater: (list: Message[]) => Message[]) => {
+      if (!conversationId) return;
+      queryClient.setQueryData<{ results: Message[] }>(
+        chatKeys.messages(conversationId),
+        (old) => ({ ...old, results: updater(old?.results ?? []) })
+      );
+    },
+    [conversationId, queryClient]
+  );
 
   // ── WS event handler ─────────────────────────────────
   const handleWSEvent = useCallback(
@@ -79,52 +109,62 @@ export function useChat(conversationId: string | null): UseChatReturn {
         case "message": {
           const e = event as WSChatMessage;
           const senderId = parseInt(e.sender_id, 10);
-          const newMsg: Message = {
-            id:           e.message_id,
-            conversation: conversationId!,
-            sender: {
-              id:        senderId,
-              username:  e.sender_name,
-              email:     "",
-              is_online: true,
-              last_seen: null,
-            },
-            content:    e.message,
-            is_read:    false,
-            read_at:    null,
-            created_at: e.timestamp,
-          };
-
+          const content = e.content ?? e.message;
           const isOwnEcho = currentUser?.id === senderId;
 
-          queryClient.setQueryData<{ results: Message[] }>(
-            chatKeys.messages(conversationId!),
-            (old) => {
-              const existing = old?.results ?? [];
-
-              // Already have this server message — ignore the duplicate.
-              if (existing.some((m) => m.id === newMsg.id)) {
-                return { ...old, results: existing };
+          patchMessages((existing) => {
+            // Resolve a reply preview from messages already in the cache.
+            let replyPreview: ReplyPreview | null = null;
+            if (e.reply_to) {
+              const ref = existing.find((m) => m.uuid === e.reply_to);
+              if (ref) {
+                replyPreview = {
+                  uuid: ref.uuid!, type: ref.type ?? "text",
+                  content: ref.content, sender_id: Number(ref.sender.id),
+                  is_deleted_for_all: !!ref.is_deleted_for_all,
+                };
               }
-
-              // Server echo of a message we just sent → swap the matching
-              // optimistic (temp) entry in place so it doesn't appear twice.
-              if (isOwnEcho) {
-                const tempIdx = existing.findIndex(
-                  (m) => m.id.startsWith("temp-") && m.content === newMsg.content
-                );
-                if (tempIdx !== -1) {
-                  const next = [...existing];
-                  next[tempIdx] = newMsg;
-                  return { ...old, results: next };
-                }
-              }
-
-              return { ...old, results: [...existing, newMsg] };
             }
-          );
 
-          // Only mark read for messages from the other person, not our own echo.
+            const newMsg: Message = {
+              id: e.message_id,
+              uuid: e.uuid,
+              conversation: conversationId!,
+              sender: {
+                id: senderId, full_name: e.sender_name, display_name: e.sender_name,
+                is_online: true, last_seen: null,
+              },
+              type: e.msg_type ?? "text",
+              content,
+              reply_to: replyPreview,
+              attachments: e.attachments ?? [],
+              reactions: [],
+              is_edited: e.is_edited ?? false,
+              is_deleted_for_all: e.is_deleted ?? false,
+              is_read: false,
+              read_at: null,
+              created_at: e.timestamp,
+            };
+
+            // Dedup by uuid (or legacy id).
+            if (existing.some((m) =>
+              (newMsg.uuid && m.uuid === newMsg.uuid) || String(m.id) === String(newMsg.id))) {
+              return existing;
+            }
+            // Own echo → swap the optimistic temp entry in place.
+            if (isOwnEcho) {
+              const tempIdx = existing.findIndex(
+                (m) => String(m.id ?? "").startsWith("temp-") && m.content === newMsg.content
+              );
+              if (tempIdx !== -1) {
+                const next = [...existing];
+                next[tempIdx] = newMsg;
+                return next;
+              }
+            }
+            return [...existing, newMsg];
+          });
+
           if (!isOwnEcho) {
             wsRef.current?.sendRead();
             markConversationRead(conversationId!);
@@ -132,10 +172,73 @@ export function useChat(conversationId: string | null): UseChatReturn {
           break;
         }
 
+        case "message_edited": {
+          const e = event as WSMessageEdited;
+          patchMessages((list) => list.map((m) =>
+            m.uuid === e.message_uuid
+              ? { ...m, content: e.content, is_edited: true }
+              : m
+          ));
+          break;
+        }
+
+        case "message_deleted": {
+          const e = event as WSMessageDeleted;
+          patchMessages((list) => list.map((m) =>
+            m.uuid === e.message_uuid
+              ? { ...m, content: "", is_deleted_for_all: true, attachments: [] }
+              : m
+          ));
+          break;
+        }
+
+        case "reaction_update": {
+          const e = event as WSReactionUpdate;
+          const mine = currentUser ? String(currentUser.id) === e.user_id : false;
+          patchMessages((list) => list.map((m) => {
+            if (m.uuid !== e.message_uuid) return m;
+            const reactions = [...(m.reactions ?? [])];
+            const idx = reactions.findIndex((r) => r.emoji === e.emoji);
+            if (e.action === "added") {
+              if (idx === -1) reactions.push({ emoji: e.emoji, count: 1, me: mine });
+              else reactions[idx] = {
+                ...reactions[idx],
+                count: reactions[idx].count + 1,
+                me: reactions[idx].me || mine,
+              };
+            } else if (idx !== -1) {
+              const count = reactions[idx].count - 1;
+              if (count <= 0) reactions.splice(idx, 1);
+              else reactions[idx] = {
+                ...reactions[idx], count,
+                me: mine ? false : reactions[idx].me,
+              };
+            }
+            return { ...m, reactions };
+          }));
+          break;
+        }
+
+        case "attachment_ready": {
+          const e = event as WSAttachmentReady;
+          patchMessages((list) => list.map((m) =>
+            m.uuid === e.message_uuid
+              ? {
+                  ...m,
+                  attachments: (m.attachments ?? []).map((a) =>
+                    a.uuid === e.attachment_uuid
+                      ? { ...a, scan_status: e.scan_status }
+                      : a
+                  ),
+                }
+              : m
+          ));
+          break;
+        }
+
         case "typing": {
           const e = event as WSTypingEvent;
           const uid = e.user_id;
-
           if (currentUser && uid === String(currentUser.id)) break;
 
           if (e.is_typing) {
@@ -185,7 +288,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
         case "ping":
           break
         case "error": {
-          logger.error("ChatWS error:", event.message);
+          logger.error("ChatWS error:", (event as { message: string }).message);
           break;
         }
 
@@ -193,7 +296,7 @@ export function useChat(conversationId: string | null): UseChatReturn {
           break;
       }
     },
-    [conversationId, currentUser, queryClient, markConversationRead]
+    [conversationId, currentUser, queryClient, markConversationRead, patchMessages]
   );
 
   // ── WS lifecycle ─────────────────────────────────────
@@ -201,17 +304,16 @@ export function useChat(conversationId: string | null): UseChatReturn {
     if (!conversationId) return;
     if (!currentUser)    return;
 
-    let cancelled = false                  //   prevent race condition
+    let cancelled = false
 
     const connectWS = async () => {
-      const token = await getFreshToken()  //   always fresh token
+      const token = await getFreshToken()
       if (!token) {
         logger.warn("useChat: no token — WS not started");
         return;
       }
-      if (cancelled) return;              //   component unmounted before token arrived
+      if (cancelled) return;
 
-      // Tear down any existing connection first
       if (wsRef.current) {
         wsRef.current.disconnect();
         wsRef.current = null;
@@ -237,35 +339,34 @@ export function useChat(conversationId: string | null): UseChatReturn {
 
       wsRef.current = ws;
       const unsub = ws.subscribe(handleWSEvent);
-      ws.connect(token);                  //   fresh token
+      ws.connect(token);
 
       ws.sendRead();
       markConversationRead(conversationId);
 
-      return unsub                        //   return unsub for cleanup
+      return unsub
     }
 
-    let unsubFn: (() => void) | undefined  //   store unsub
+    let unsubFn: (() => void) | undefined
 
     connectWS().then(unsub => {
       unsubFn = unsub
     })
 
     return () => {
-      cancelled = true                    //   cancel if unmounted
+      cancelled = true
       logger.log("useChat: cleanup WS");
-      unsubFn?.()                         //   unsubscribe handlers
+      unsubFn?.()
       wsRef.current?.disconnect();
       wsRef.current = null;
       updateStatus("disconnected");
       setTypingUsers(new Set());
     };
   }, [conversationId, currentUser, handleWSEvent, markConversationRead, updateStatus]);
-  // ── Public actions ───────────────────────────────────
 
-  //   Uses wsRef directly — no stale closure on wsStatus
+  // ── Public actions ───────────────────────────────────
   const send = useCallback(
-    (text: string) => {
+    (text: string, replyTo?: ReplyTarget | null) => {
       const trimmed = text.trim();
       if (!trimmed || !conversationId) return;
 
@@ -273,43 +374,46 @@ export function useChat(conversationId: string | null): UseChatReturn {
         logger.warn("❌ wsRef.current is null — WS not initialized");
         return;
       }
-
       if (wsStatusRef.current !== "connected") {
         logger.warn("❌ WS not connected —", wsStatusRef.current);
         return;
       }
 
-      //   Optimistic update — show the sender's own message immediately.
-      // Reconciled/deduped when the server echoes it back (see "message" handler).
       if (currentUser) {
+        const replyPreview: ReplyPreview | null = replyTo
+          ? {
+              uuid: replyTo.uuid, type: replyTo.type ?? "text",
+              content: replyTo.content, sender_id: replyTo.sender_id,
+              is_deleted_for_all: false,
+            }
+          : null;
+
         const optimistic: Message = {
           id:           `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
           conversation: conversationId,
           sender: {
             id:        currentUser.id,
-            username:  currentUser.username ?? "",
-            email:     currentUser.email ?? "",
+            full_name:    currentUser.full_name ?? null,
+            display_name: currentUser.full_name ?? null,
             is_online: true,
             last_seen: null,
           },
+          type:       "text",
           content:    trimmed,
+          reply_to:   replyPreview,
+          attachments: [],
+          reactions:  [],
           is_read:    false,
           read_at:    null,
           created_at: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<{ results: Message[] }>(
-          chatKeys.messages(conversationId),
-          (old) => ({
-            ...old,
-            results: [...(old?.results ?? []), optimistic],
-          })
-        );
+        patchMessages((list) => [...list, optimistic]);
       }
 
-      wsRef.current.sendMessage(trimmed);
+      wsRef.current.sendMessage(trimmed, replyTo ? { replyTo: replyTo.uuid } : undefined);
     },
-    [conversationId, currentUser, queryClient]   // reads wsStatus from ref, not deps
+    [conversationId, currentUser, patchMessages]
   );
 
   const sendTyping = useCallback((isTyping: boolean) => {

@@ -7,6 +7,14 @@ export interface PrivacySettings {
   show_profile_image: boolean;
   allow_messages_from: "everyone" | "matches" | "none";
   is_profile_public: boolean;
+  // Per-field "hide from others" toggles (apply to the public profile view).
+  show_dob?: boolean;
+  show_height?: boolean;
+  show_weight?: boolean;
+  show_languages?: boolean;
+  show_education?: boolean;
+  show_career?: boolean;
+  show_religion?: boolean;
 }
 
 export interface ProfileSettings {
@@ -67,9 +75,22 @@ export const blockProfile = async (profileId: number): Promise<{ message: string
   return res.data;
 };
 
+// Must match backend ReportReason choices (apps/report/models.py).
+export type ReportReasonValue =
+  | "fake_identity"
+  | "scam"
+  | "harassment"
+  | "sexual_content"
+  | "violence"
+  | "hate_speech"
+  | "underage"
+  | "impersonation"
+  | "spam"
+  | "other";
+
 export const reportProfile = async (
   profileId: number,
-  data: { reason: "spam" | "fake" | "abuse" | "nudity" | "other"; description?: string }
+  data: { reason: ReportReasonValue; description?: string }
 ): Promise<{ message: string }> => {
   const res = await api.post(`/reports/report/${profileId}/`, data);
   return res.data;

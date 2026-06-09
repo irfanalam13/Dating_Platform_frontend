@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HeartHandshake, MessageCircle, UserCheck, X } from "lucide-react";
+import { HeartHandshake, MessageCircle, UserCheck, X, Send } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
   useReceivedMatches,
+  useSentMatches,
   useAcceptMatch,
   useRejectMatch,
+  useCancelMatch,
   useStartConversation,
 } from "@/features/matcher/hooks/useMatches";
 
@@ -16,26 +18,24 @@ export default function MatchesPage() {
 
   const { data: matches = [], isLoading: matchesLoading } = useAcceptedMatches();
   const { data: received = [], isLoading: receivedLoading } = useReceivedMatches();
+  const { data: sent = [] } = useSentMatches();
   const acceptMutation = useAcceptMatch();
   const rejectMutation = useRejectMatch();
+  const cancelMutation = useCancelMatch();
   const conversationMutation = useStartConversation();
 
   const isLoading = matchesLoading || receivedLoading;
 
-  // Once someone becomes a mutual match they must not linger in "Pending
-  // interests" — even if the backend still returns them on /matcher/received/.
-  // Build a set of identifiers for everyone already accepted, then drop any
-  // pending entry that points at one of them.
-  const acceptedKeys = new Set<string>();
-  matches.forEach((m) => {
-    if (m.user_id != null) acceptedKeys.add(String(m.user_id).toLowerCase());
-    if (m.email) acceptedKeys.add(m.email.toLowerCase());
-    if (m.name) acceptedKeys.add(m.name.toLowerCase());
-  });
-  const pending = received.filter((item) => {
-    if (item.sender == null) return true;
-    return !acceptedKeys.has(String(item.sender).toLowerCase());
-  });
+  // "Pending interests" = incoming requests still awaiting your response.
+  // /matcher/received/ returns requests of every status, so keep only the
+  // pending ones. This is also what makes an accepted/rejected request vanish
+  // from the list once the refetch lands — instead of lingering with a stale
+  // status because it still came back in the response.
+  const pending = received.filter((item) => item.status === "pending");
+
+  // "Sent requests" must only show requests still awaiting a response — not
+  // accepted (now mutual friends), rejected, cancelled or expired ones.
+  const pendingSent = sent.filter((item) => item.status === "pending");
 
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
@@ -76,8 +76,9 @@ export default function MatchesPage() {
           </div>
         )}
 
-        {/* ── Empty state ── */}
-        {!isLoading && matches.length === 0 && (
+        {/* ── Empty state ── only when there's nothing to show at all (no
+            mutual matches AND no incoming interests waiting on you). ── */}
+        {!isLoading && matches.length === 0 && pending.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
               <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
@@ -142,19 +143,36 @@ export default function MatchesPage() {
               {pending.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-md p-3"
+                  className="flex items-center justify-between gap-3 rounded-md p-3"
                 >
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {item.sender || "Someone"}
-                    </p>
-                    <p className="text-xs text-[#746767]">
-                      {item.is_super || item.type === "superstar"
-                        ? "is super interested in your profile"
-                        : "is interested in your profile"}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      item.user?.user_id != null &&
+                      router.push(`/profile/${item.user.user_id}`)
+                    }
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-label={`View ${item.user?.name || "profile"}`}
+                  >
+                    <ProfileImage
+                      src={item.user?.profile_image}
+                      name={item.user?.name || item.user?.email}
+                      alt={item.user?.name || "Profile"}
+                      className="h-12 w-12 shrink-0 rounded-full"
+                      textClassName="text-base"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {item.user?.name || item.user?.email || "Someone"}
+                      </p>
+                      <p className="truncate text-xs text-[#746767]">
+                        {item.match_percentage != null
+                          ? `${item.match_percentage}% match · interested in you`
+                          : "is interested in your profile"}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => rejectMutation.mutate(item.id)}
                       disabled={rejectMutation.isPending}
@@ -172,6 +190,41 @@ export default function MatchesPage() {
                       <HeartHandshake className="h-4 w-4" />
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Sent requests (cancellable) ── */}
+        {!isLoading && pendingSent.length > 0 && (
+          <section className="mt-6 rounded-lg border border-[#EADDD2] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Send className="h-5 w-5 text-[#7A2432]" />
+              <h2 className="font-semibold">Sent requests</h2>
+            </div>
+            <div className="space-y-3">
+              {pendingSent.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-md p-3">
+                  <div className="flex items-center gap-3">
+                    <ProfileImage
+                      src={item.user?.profile_image}
+                      name={item.user?.name || "?"}
+                      className="h-10 w-10 rounded-full"
+                      textClassName="text-sm"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">{item.user?.name || "Someone"}</p>
+                      <p className="text-xs text-[#746767]">Waiting for a response</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => cancelMutation.mutate(item.id)}
+                    disabled={cancelMutation.isPending}
+                    className="glass-btn rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
                 </div>
               ))}
             </div>
