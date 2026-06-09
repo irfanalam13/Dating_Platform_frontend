@@ -86,7 +86,7 @@ export const useLogin = () => {
       setAuth(user as unknown as Parameters<typeof setAuth>[0]);
       queryClient.setQueryData(["authUser"], user);
       setLoggedInCookie();
-      showSuccess("Welcome back!");
+      showSuccess(`Welcome ${user.name}!`);
       router.push("/dashboard");
     },
 
