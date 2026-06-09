@@ -26,7 +26,7 @@
             hobbies: "",
             bio: "",
             ethnicity: "",
-            gan: "",
+
             horoscope: "",
             is_profile_public: "true",
           });
@@ -60,7 +60,7 @@
               hobbies: data.hobbies || "",
               bio: data.bio || "",
               ethnicity: data.ethnicity || "",
-              gan: data.gan || "",
+
               horoscope: data.horoscope || "",
               is_profile_public: String(data.is_profile_public ?? true),
             }));
@@ -180,7 +180,7 @@
                             placeholder={culture.caste ? "Select gotra" : "Select a caste first"}
                             disabled={!culture.caste}
                           />
-                          <Field label="Gan" value={form.gan} onChange={(v) => update("gan", v)} optional />
+
                           <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
                           <Field label="Interests" value={form.hobbies} onChange={(v) => update("hobbies", v)} placeholder="Music, hiking, reading" />
                         </>

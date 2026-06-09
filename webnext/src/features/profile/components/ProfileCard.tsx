@@ -160,14 +160,14 @@ export default function ProfileCard() {
   const compatibilityTags = (data as any).compatibility_tags ?? [];
 
   // Parse preferences → your_hobbies section
-  let yourHobbies: { gotra?: string; religion?: string; caste?: string; horoscope?: string; gans?: string; preferences?: string; hobbies?: string } = {};
+  let yourHobbies: { gotra?: string; religion?: string; caste?: string; horoscope?: string; preferences?: string; hobbies?: string } = {};
   if (data.preferences) {
     try {
       const parsed = JSON.parse(data.preferences as string);
       yourHobbies = parsed.your_hobbies ?? {};
     } catch {}
   }
-  const hobbyChips = [yourHobbies.gotra, yourHobbies.religion, yourHobbies.caste, yourHobbies.horoscope, yourHobbies.gans].filter(Boolean) as string[];
+  const hobbyChips = [yourHobbies.gotra, yourHobbies.religion, yourHobbies.caste, yourHobbies.horoscope].filter(Boolean) as string[];
   const hasHobbySection = hobbyChips.length > 0 || yourHobbies.preferences || yourHobbies.hobbies;
 
   return (
@@ -332,13 +332,13 @@ export default function ProfileCard() {
         )}
 
         {/* ── Cultural ── */}
-        {(data.religion_name || data.caste_name || data.gotra_name || data.gan || data.horoscope) && (
+        {(data.religion_name || data.caste_name || data.gotra_name || data.horoscope) && (
           <Section title="Cultural background">
             <div className="grid grid-cols-2 gap-3">
               {data.religion_name && <InfoCard icon={Star} label="Religion" value={data.religion_name} />}
               {data.caste_name && <InfoCard icon={Star} label="Caste" value={data.caste_name} />}
               {data.gotra_name && <InfoCard icon={Star} label="Gotra" value={data.gotra_name} />}
-              {data.gan && <InfoCard icon={Star} label="Gan" value={data.gan} />}
+
               {data.horoscope && <InfoCard icon={Star} label="Horoscope" value={data.horoscope} />}
             </div>
           </Section>

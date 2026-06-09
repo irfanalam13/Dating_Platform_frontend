@@ -237,7 +237,7 @@ export default function ProfileClient({
     const religion     = isOwn ? data!.religion_name       : publicData!.religion_name;
     const caste        = isOwn ? data!.caste_name          : publicData!.caste_name;
     const gotra        = isOwn ? data!.gotra_name          : publicData!.gotra_name;
-    const gan          = isOwn ? data!.gan                 : publicData!.gan;
+
     const horoscope    = isOwn ? data!.horoscope           : publicData!.horoscope;
     const isProfilePublic = isOwn ? data!.is_profile_public : publicData!.is_profile_public;
     // Someone else viewing a private account → blur the photo (privacy = blur).
@@ -367,7 +367,7 @@ export default function ProfileClient({
               <p><span className="font-semibold text-[#2D2424]">Religion:</span> {religion || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
               <p><span className="font-semibold text-[#2D2424]">Caste:</span> {caste || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
               <p><span className="font-semibold text-[#2D2424]">Gotra:</span> {gotra || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-              <p><span className="font-semibold text-[#2D2424]">Gan:</span> {gan || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+
               <p><span className="font-semibold text-[#2D2424]">Horoscope:</span> {horoscope || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
             </div>
           </div>

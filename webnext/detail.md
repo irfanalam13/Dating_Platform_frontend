@@ -8,7 +8,7 @@
 ## 1. What this project is
 
 A **Next.js 16** dating/matchmaking web app called **MatchMakers**, oriented toward
-Nepali / South-Asian culture (it has fields for religion, caste, gotra, gan, and
+Nepali / South-Asian culture (it has fields for religion, caste, gotra, and
 horoscope). The frontend talks to a **Django REST + WebSocket backend** hosted on Render.
 
 The real application code lives entirely inside `webnext/`. The outer
@@ -223,7 +223,7 @@ Everything depends on auth, so understand this first.
 | File | Role |
 |---|---|
 | `components/home.tsx` | **The main swiping screen.** Fetches `getDiscoverProfiles()` (`GET /matcher/recommendations/`), shows a card stack. Swipe **up = like, down = pass** — via drag, arrow keys, *or* mouse wheel. framer-motion drives the card animations and the LIKE/PASS labels. On a mutual match it pops a `MatchModal`; tapping a card opens `ViewProfileModal`. Has "Discover" / "My Type" tabs. |
-| `components/preferences.tsx` | Set **your hobbies** and **partner's type**: religion, caste, gotra, gan, horoscope (chips) + free-text. Serialized to JSON and saved via `updateProfile` (PATCH `/profile/me/`). |
+| `components/preferences.tsx` | Set **your hobbies** and **partner's type**: religion, caste, gotra, horoscope (chips) + free-text. Serialized to JSON and saved via `updateProfile` (PATCH `/profile/me/`). |
 
 **Swipe flow in `home.tsx`:**
 1. Load recommendations into a `queue`; `current = queue[0]`.

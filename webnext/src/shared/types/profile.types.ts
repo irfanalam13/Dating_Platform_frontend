@@ -32,7 +32,7 @@ export interface Profile {
   gotra_name?: string;
 
   ethnicity: string;
-  gan: string;
+
   horoscope: string;
 
   // Legacy field (local file upload)
@@ -119,7 +119,7 @@ export interface PublicProfile {
   values: string;
   hobbies: string;
   ethnicity: string;
-  gan: string;
+
   horoscope: string;
   religion_name?: string;
   caste_name?: string;

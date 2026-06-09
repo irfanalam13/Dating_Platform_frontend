@@ -22,7 +22,7 @@ type ChoiceForm = {
   gotra: string;
   gotra_id: number | null;
   horoscope: string;
-  gans: string;
+
   preferences: string;
   hobbies: string;
 };
@@ -50,7 +50,6 @@ const emptyForm = (): ChoiceForm => ({
   gotra: "",
   gotra_id: null,
   horoscope: "",
-  gans: "",
   preferences: "",
   hobbies: "",
 });
@@ -101,7 +100,7 @@ const HOROSCOPE_OPTIONS = [
   "Pisces",
 ];
 
-const GANS_OPTIONS = ["Dev", "Manushya", "Rakhshas", "Not sure"];
+
 
 function toPayload(input?: string): PreferencePayload {
   if (!input || !input.trim()) {
@@ -110,10 +109,16 @@ function toPayload(input?: string): PreferencePayload {
 
   try {
     const parsed = JSON.parse(input) as Partial<PreferencePayload>;
+    const parsedFilters = parsed.filters ?? {};
     return {
       your_hobbies: { ...emptyForm(), ...(parsed.your_hobbies ?? {}) },
       partners_type: { ...emptyForm(), ...(parsed.partners_type ?? {}) },
-      filters: { ...emptyFilters(), ...(parsed.filters ?? {}) },
+      filters: {
+        ...emptyFilters(),
+        ...parsedFilters,
+        max_age: typeof parsedFilters.max_age === 'number' && parsedFilters.max_age > 0 ? parsedFilters.max_age : 60,
+        min_age: typeof parsedFilters.min_age === 'number' && parsedFilters.min_age > 0 ? parsedFilters.min_age : 18,
+      },
     };
   } catch {
     return { your_hobbies: emptyForm(), partners_type: emptyForm(), filters: emptyFilters() };
@@ -159,8 +164,8 @@ export default function PreferencesPage() {
     }));
   };
 
-  // String chips (horoscope, gans) — toggle on/off.
-  const setChoice = (key: "horoscope" | "gans", value: string) => {
+  // String chips (horoscope) — toggle on/off.
+  const setChoice = (key: "horoscope", value: string) => {
     setFormState((prev) => ({
       ...prev,
       [activeScope]: {
@@ -241,17 +246,18 @@ export default function PreferencesPage() {
     //    `preferences` JSON blob so this screen repopulates on the next visit.
     const yh = formState.your_hobbies;
     const formData = new FormData();
-    formData.append("preferences", JSON.stringify(formState));
+    const stateToSave = { ...formState, partners_type: formState.your_hobbies };
+    formData.append("preferences", JSON.stringify(stateToSave));
     if (yh.religion_id != null) formData.append("religion", String(yh.religion_id));
     if (yh.caste_id != null) formData.append("caste", String(yh.caste_id));
     if (yh.gotra_id != null) formData.append("gotra", String(yh.gotra_id));
     if (yh.horoscope) formData.append("horoscope", yh.horoscope);
-    if (yh.gans) formData.append("gan", yh.gans);
+
     if (yh.hobbies) formData.append("hobbies", yh.hobbies);
 
     // 2. "Partner's type" + match filters describe what you WANT → write to the
     //    preferences the matcher's My-Type deck filters on.
-    const pt = formState.partners_type;
+    const pt = formState.your_hobbies;
     const f = formState.filters;
     const prefsPayload: PreferencesPayload = {
       min_age: f.min_age,
@@ -264,7 +270,7 @@ export default function PreferencesPage() {
       preferred_caste: pt.caste_id,
       preferred_gotra: pt.gotra_id,
       preferred_horoscope: pt.horoscope,
-      preferred_gan: pt.gans,
+
       preferred_hobbies: pt.hobbies,
       preferred_preferences: pt.preferences,
     };
@@ -331,24 +337,6 @@ export default function PreferencesPage() {
           </div>
         )}
 
-        <section className="mb-4 rounded-3xl border border-white/60 bg-white/45 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setActiveScope("your_hobbies")}
-              style={{ color: activeScope === "your_hobbies" ? "#2D2424" : "#746767" }}
-              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
-            >
-              Your hobbies
-            </button>
-            <button
-              onClick={() => setActiveScope("partners_type")}
-              style={{ color: activeScope === "partners_type" ? "#7A2432" : "#746767" }}
-              className="glass-btn h-11 rounded-full text-sm font-semibold transition"
-            >
-              Partner&apos;s type
-            </button>
-          </div>
-        </section>
 
         <section className="mb-4 space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div>
@@ -400,6 +388,7 @@ export default function PreferencesPage() {
             min={18}
             max={60}
             onChange={(value) => setFilter("max_age", Math.max(value, filters.min_age))}
+            reverseFill={true}
           />
         </section>
 
@@ -436,13 +425,6 @@ export default function PreferencesPage() {
             options={HOROSCOPE_OPTIONS}
             selected={current.horoscope}
             onSelect={(value) => setChoice("horoscope", value)}
-          />
-
-          <ChipSection
-            title="Gans"
-            options={GANS_OPTIONS}
-            selected={current.gans}
-            onSelect={(value) => setChoice("gans", value)}
           />
 
           <OpenQuestion
@@ -505,8 +487,8 @@ function CulturalChips({
                 onClick={() => onSelect(option.id, option.name)}
                 style={
                   active
-                    ? { backgroundColor: "#5FD08A", color: "#14532D" }
-                    : { color: "#2D2424" }
+                     ? { backgroundColor: "#5FD08A", color: "#14532D" }
+                     : { color: "#2D2424" }
                 }
                 className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
               >
@@ -644,13 +626,16 @@ function RangeField({
   min,
   max,
   onChange,
+  reverseFill = false,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
   onChange: (value: number) => void;
+  reverseFill?: boolean;
 }) {
+  const percentage = ((value - min) / (max - min)) * 100;
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
@@ -666,7 +651,12 @@ function RangeField({
         step={1}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/55 accent-[#7A2432] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
+        style={{
+          background: reverseFill
+            ? `linear-gradient(to right, rgba(255, 255, 255, 0.55) ${percentage}%, #7A2432 ${percentage}%)`
+            : `linear-gradient(to right, #7A2432 ${percentage}%, rgba(255, 255, 255, 0.55) ${percentage}%)`
+        }}
+        className="h-2 w-full cursor-pointer appearance-none rounded-full accent-[#7A2432] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
       />
     </div>
   );

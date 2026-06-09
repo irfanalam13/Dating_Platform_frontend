@@ -55,7 +55,7 @@ export interface Preferences {
 
   // From ChoiceForm
   preferred_horoscope: string;
-  preferred_gan: string;
+
   preferred_hobbies: string;
   preferred_preferences: string;
 }
@@ -82,7 +82,7 @@ export interface ChoiceForm {
   religion: string;
   caste: string;
   horoscope: string;
-  gans: string;
+
   preferences: string;
   hobbies: string;
 }

@@ -392,7 +392,7 @@ export default function HomePage() {
         showSuccess(
           variables.kind === "superstar"
             ? `you gave ${username} superstar`
-            : `you like ${username}`
+            : `you liked ${username}`
         );
       }
       setViewProfile(null);
@@ -558,7 +558,7 @@ export default function HomePage() {
                 </p>
                 <button
                   onClick={() => router.push("/preferences")}
-                  className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
+                  className="glass-btn mt-5 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold text-[#2D2424]"
                 >
                   Edit preferences
                 </button>
