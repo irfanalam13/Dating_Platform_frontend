@@ -84,9 +84,6 @@ export const useLogin = () => {
       setAuth(user as unknown as Parameters<typeof setAuth>[0]);
       queryClient.setQueryData(["authUser"], user);
       setLoggedInCookie();
-<<<<<<< HEAD
-      showSuccess(`Welcome ${user.name}!`);
-=======
 
       const hour = new Date().getHours();
       const timeGreeting =
@@ -97,7 +94,6 @@ export const useLogin = () => {
       const name = (user as any)?.full_name ?? "";
 
       showSuccess(`${timeGreeting}${name ? `, ${name}` : ""}!`);
->>>>>>> 6f6c5ea (update welcome back system)
       router.push("/dashboard");
     },
 
