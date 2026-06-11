@@ -2,7 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Bell, GraduationCap, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+// NOTE: `GraduationCap` and `Users` icons were removed from this import because
+// the College Mode / Subscription / Followers links below are temporarily
+// disabled (see "FUTURE FEATURE" blocks). Re-add them to this import when you
+// uncomment those sections.
+import { Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
@@ -187,10 +191,19 @@ export default function SettingsPage() {
           <div className="divide-y divide-[#EADDD2]/70">
             <LinkRow icon={Bell} label="Notification preferences" onClick={() => router.push("/settings/notifications")} />
             <LinkRow icon={ShieldCheck} label="Verification" onClick={() => router.push("/settings/verification")} />
+            {/* ───── FUTURE FEATURE: FOLLOWERS / FOLLOWING (disabled) ─────
+                To re-enable: uncomment the line below and re-add `Users` to the
+                lucide-react import at the top of this file.
             <LinkRow icon={Users} label="Followers & Following" onClick={() => router.push("/connections")} />
+            ──────────────────────────────────────────────────────────── */}
           </div>
         </section>
 
+        {/* ───── FUTURE FEATURES: COLLEGE MODE + SUBSCRIPTION (disabled) ─────
+            Both entry buttons live in this section. To re-enable, uncomment the
+            whole <section> below and re-add `GraduationCap` to the lucide-react
+            import at the top of this file. The College Mode page still exists at
+            /college and the API at shared/api/college.api.ts.
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-2 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div className="grid grid-cols-2 divide-x divide-[#EADDD2]/70">
             <button onClick={() => router.push("/college")} className="rounded-2xl p-4 text-left transition hover:bg-white/30">
@@ -205,6 +218,7 @@ export default function SettingsPage() {
             </button>
           </div>
         </section>
+            ──────────────────────────────────────────────────────────────── */}
 
         <section className="mb-8">
           <button

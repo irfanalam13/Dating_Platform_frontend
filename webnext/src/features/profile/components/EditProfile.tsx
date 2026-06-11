@@ -17,26 +17,18 @@ import {
 import {
   NATIONALITY_OPTIONS,
   CITIZENSHIP_OPTIONS,
-  RELIGIOUS_PRACTICE_OPTIONS,
-  TEMPLE_ATTENDANCE_OPTIONS,
-  MARRIAGE_TRADITION_OPTIONS,
   DIET_OPTIONS,
   FREQUENCY_OPTIONS,
   EDUCATION_LEVEL_OPTIONS,
   INDUSTRY_OPTIONS,
   INCOME_RANGE_OPTIONS,
-  FAMILY_TYPE_OPTIONS,
-  FAMILY_VALUES_OPTIONS,
-  IMPORTANCE_OPTIONS,
-  RELATIONSHIP_GOAL_OPTIONS,
-  WANTS_CHILDREN_OPTIONS,
   LANGUAGE_OPTIONS,
   type Option,
 } from "@/shared/constants/profileOptions";
 import api from "@/shared/api/client";
 import { getReligionRules } from "@/shared/constants/religionRules";
 
-const steps = ["Identity", "Lifestyle", "Culture", "Family"];
+const steps = ["Identity", "Lifestyle", "Culture"];
 
 // The deep cultural cascade tracked by FK id, separate from the string form
 // because empty FK ids must NOT be sent to the backend.
@@ -396,21 +388,6 @@ export default function EditProfile() {
                 </>
               )}
 
-              {step === 3 && (
-                <>
-                  <ChoiceSelect label="Family religious practice" value={form.family_religious_practice} onChange={(v) => update("family_religious_practice", v)} options={RELIGIOUS_PRACTICE_OPTIONS} optional />
-                  <ChoiceSelect label="Personal religious practice" value={form.personal_religious_practice} onChange={(v) => update("personal_religious_practice", v)} options={RELIGIOUS_PRACTICE_OPTIONS} optional />
-                  {rules.showTemple && (
-                    <ChoiceSelect label="Temple attendance" value={form.temple_attendance} onChange={(v) => update("temple_attendance", v)} options={TEMPLE_ATTENDANCE_OPTIONS} optional />
-                  )}
-                  <ChoiceSelect label="Marriage tradition preference" value={form.marriage_tradition_pref} onChange={(v) => update("marriage_tradition_pref", v)} options={MARRIAGE_TRADITION_OPTIONS} optional />
-                  <ChoiceSelect label="Family type" value={form.family_type} onChange={(v) => update("family_type", v)} options={FAMILY_TYPE_OPTIONS} optional />
-                  <ChoiceSelect label="Family values" value={form.family_values} onChange={(v) => update("family_values", v)} options={FAMILY_VALUES_OPTIONS} optional />
-                  <ChoiceSelect label="Parents' religion importance" value={form.parents_religion_importance} onChange={(v) => update("parents_religion_importance", v)} options={IMPORTANCE_OPTIONS} optional />
-                  <ChoiceSelect label="Relationship goal" value={form.relationship_intent} onChange={(v) => update("relationship_intent", v)} options={RELATIONSHIP_GOAL_OPTIONS} optional />
-                  <ChoiceSelect label="Wants children" value={form.wants_children} onChange={(v) => update("wants_children", v)} options={WANTS_CHILDREN_OPTIONS} optional />
-                </>
-              )}
             </motion.div>
           </AnimatePresence>
 
@@ -493,73 +470,113 @@ function Field({ label, value, onChange, type = "text", placeholder, optional }:
   );
 }
 
-// Date-of-birth picker built from three explicit dropdowns (Day / Month / Year)
-// instead of a native <input type="date">. The native control on many browsers
-// lets the year be left blank or partially typed, which silently produced an
-// empty value — the profile then saved as "incomplete" even though the user
-// thought they'd entered a date. Discrete selects make that impossible: the
-// value is only emitted as a valid YYYY-MM-DD once all three parts are chosen.
-// Year range 1965–2008 maps to the 18–60 age window the platform allows.
+// Date of birth: three Day / Month / Year combo fields (no native calendar).
+// Each is an <input list> backed by a <datalist>, so the user can TYPE the
+// value or PICK it from the dropdown. Local state holds the parts so partial
+// entries accumulate; the value is only emitted as YYYY-MM-DD once all three
+// are valid. Year range 1965–2008 maps to the 18–60 age window allowed.
 const DOB_MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const DOB_YEARS = Array.from({ length: 2008 - 1965 + 1 }, (_, i) => 2008 - i);
+// Year range is derived from today, not hardcoded, so it never goes stale:
+// newest = this year minus the 18-year minimum age, oldest = minus 80.
+const DOB_MIN_AGE = 8;
+const DOB_MAX_AGE = 80;
+const DOB_THIS_YEAR = new Date().getFullYear();
+const DOB_MAX_YEAR = DOB_THIS_YEAR - DOB_MIN_AGE;
+const DOB_MIN_YEAR = DOB_THIS_YEAR - DOB_MAX_AGE;
+const DOB_YEARS = Array.from({ length: DOB_MAX_YEAR - DOB_MIN_YEAR + 1 }, (_, i) => DOB_MAX_YEAR - i);
+
+// Accept either a month name ("February") or a number ("2"); returns 1–12 or NaN.
+const monthToNum = (m: string) => {
+  const t = m.trim().toLowerCase();
+  if (!t) return NaN;
+  const idx = DOB_MONTHS.findIndex((n) => n.toLowerCase() === t);
+  if (idx >= 0) return idx + 1;
+  const n = Number(t);
+  return n >= 1 && n <= 12 ? n : NaN;
+};
 
 function DobPicker({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: boolean }) {
-  const [y, m, d] = value ? value.split("-") : ["", "", ""];
-  const year = y ?? "";
-  const month = m ? String(Number(m)) : "";
-  const day = d ? String(Number(d)) : "";
+  const split = (v: string) => {
+    const [yy, mm, dd] = v ? v.split("-") : ["", "", ""];
+    return {
+      year: yy ?? "",
+      month: mm ? DOB_MONTHS[Number(mm) - 1] ?? "" : "",
+      day: dd ? String(Number(dd)) : "",
+    };
+  };
+  const [parts, setParts] = useState(() => split(value));
 
-  // Days available depend on the chosen month/year (leap years included).
-  const daysInMonth = year && month ? new Date(Number(year), Number(month), 0).getDate() : 31;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  // Sync down only when the parent supplies a real date (e.g. loaded from the
+  // API). Don't reset on an empty value, so clearing one field doesn't wipe
+  // the in-progress entries in the others.
+  useEffect(() => {
+    if (value) setParts(split(value));
+  }, [value]);
 
-  const emit = (ny: string, nm: string, nd: string) => {
-    if (!ny || !nm || !nd) {
-      onChange(""); // partial selection is treated as "no date yet"
+  const { year, month, day } = parts;
+
+  // Day field always offers 1–31; commit() clamps impossible dates (e.g. a
+  // chosen Feb 31 collapses to Feb 28/29).
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const commit = (next: { year: string; month: string; day: string }) => {
+    setParts(next);
+    const yn = Number(next.year);
+    const mn = monthToNum(next.month);
+    const dn = Number(next.day);
+    if (!next.year || Number.isNaN(yn) || Number.isNaN(mn) || !dn || Number.isNaN(dn)) {
+      onChange(""); // partial / invalid entry is treated as "no date yet"
       return;
     }
-    // Clamp the day if the new month/year has fewer days (e.g. 31 → Feb).
-    const dim = new Date(Number(ny), Number(nm), 0).getDate();
-    const cd = Math.min(Number(nd), dim);
-    onChange(`${ny}-${String(nm).padStart(2, "0")}-${String(cd).padStart(2, "0")}`);
+    // Clamp the day if the month/year has fewer days (e.g. 31 → Feb).
+    const dim = new Date(yn, mn, 0).getDate();
+    const cd = Math.min(dn, dim);
+    onChange(`${yn}-${String(mn).padStart(2, "0")}-${String(cd).padStart(2, "0")}`);
   };
 
-  const selectClass = `h-12 w-full appearance-none rounded-md border px-3 pr-8 text-sm outline-none focus:border-[#7A2432] ${error ? "border-red-500" : "border-[#EADDD2]"}`;
+  const fieldClass = `h-12 w-full rounded-md border px-3 text-sm outline-none focus:border-[#7A2432] ${error ? "border-red-500" : "border-[#EADDD2]"}`;
 
   return (
     <div className="block">
       <span className="mb-1.5 block text-sm font-medium">Date of birth</span>
       <div className="grid grid-cols-3 gap-3">
-        <div className="relative">
-          <select value={day} onChange={(e) => emit(year, month, e.target.value)} className={selectClass}>
-            <option value="">Day</option>
-            {days.map((dd) => (
-              <option key={dd} value={dd}>{dd}</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
-        </div>
-        <div className="relative">
-          <select value={month} onChange={(e) => emit(year, e.target.value, day)} className={selectClass}>
-            <option value="">Month</option>
-            {DOB_MONTHS.map((name, i) => (
-              <option key={name} value={i + 1}>{name}</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
-        </div>
-        <div className="relative">
-          <select value={year} onChange={(e) => emit(e.target.value, month, day)} className={selectClass}>
-            <option value="">Year</option>
-            {DOB_YEARS.map((yy) => (
-              <option key={yy} value={yy}>{yy}</option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
-        </div>
+        <input
+          list="dob-days"
+          value={day}
+          onChange={(e) => commit({ ...parts, day: e.target.value })}
+          placeholder="Day"
+          inputMode="numeric"
+          className={fieldClass}
+        />
+        <datalist id="dob-days">
+          {days.map((dd) => <option key={dd} value={dd} />)}
+        </datalist>
+
+        <input
+          list="dob-months"
+          value={month}
+          onChange={(e) => commit({ ...parts, month: e.target.value })}
+          placeholder="Month"
+          className={fieldClass}
+        />
+        <datalist id="dob-months">
+          {DOB_MONTHS.map((name) => <option key={name} value={name} />)}
+        </datalist>
+
+        <input
+          list="dob-years"
+          value={year}
+          onChange={(e) => commit({ ...parts, year: e.target.value })}
+          placeholder="Year"
+          inputMode="numeric"
+          className={fieldClass}
+        />
+        <datalist id="dob-years">
+          {DOB_YEARS.map((yy) => <option key={yy} value={yy} />)}
+        </datalist>
       </div>
       {error && <span className="mt-1.5 block text-xs font-medium text-red-600">Please add your date of birth to continue.</span>}
     </div>

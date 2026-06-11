@@ -34,7 +34,10 @@ import type { Profile, PublicProfile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
 import { blockProfile, reportProfile, type ReportReasonValue } from "@/shared/api/mvp.api";
 import { showSuccess, showError } from "@/shared/utils/toast";
-import FollowButton from "@/features/follow/components/FollowButton";
+// FUTURE FEATURE: FOLLOWERS / FOLLOWING (disabled). Re-enable this import
+// together with the <FollowButton> usages and the "Followers & Following"
+// button further down in this file.
+// import FollowButton from "@/features/follow/components/FollowButton";
 
 // Values MUST match the backend ReportReason choices
 // (dating_backend/django/apps/report/models.py). Mismatched values 400.
@@ -537,6 +540,8 @@ export default function ProfileClient({
                 <PenLine className="h-4 w-4" />
                 Edit profile
               </button>
+              {/* ───── FUTURE FEATURE: FOLLOWERS / FOLLOWING (disabled) ─────
+                  To re-enable, uncomment this button.
               <button
                 onClick={() => router.push("/connections")}
                 className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
@@ -544,6 +549,7 @@ export default function ProfileClient({
                 <HeartHandshake className="h-4 w-4" />
                 Followers &amp; Following
               </button>
+              ──────────────────────────────────────────────────────────── */}
             </>
           ) : relationship === "matched" ? (
             // Already friends/matched → message + follow state, no Interest/Pass.
@@ -562,7 +568,9 @@ export default function ProfileClient({
                   <><MessageCircle className="h-4 w-4" /> Message</>
                 )}
               </button>
+              {/* FUTURE FEATURE: FOLLOW (disabled) — re-enable with the import at top.
               {publicData?.user && <FollowButton userId={publicData.user} className="w-full" />}
+              */}
             </>
           ) : relationship === "requested" ? (
             // Interest already sent and still pending.
@@ -573,13 +581,17 @@ export default function ProfileClient({
               >
                 <Check className="h-4 w-4" /> Request sent
               </button>
+              {/* FUTURE FEATURE: FOLLOW (disabled) — re-enable with the import at top.
               {publicData?.user && <FollowButton userId={publicData.user} className="w-full" />}
+              */}
             </>
           ) : (
             <>
+              {/* FUTURE FEATURE: FOLLOW (disabled) — re-enable with the import at top.
               {publicData?.user && (
                 <FollowButton userId={publicData.user} className="w-full" />
               )}
+              */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={onPass}

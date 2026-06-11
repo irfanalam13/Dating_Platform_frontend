@@ -24,7 +24,10 @@ export default function RegisterForm() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+    // Phone: keep digits only and cap at 10 so longer/invalid input can't slip through.
+    if (name === "phone") value = value.replace(/\D/g, "").slice(0, 10);
+    setForm({ ...form, [name]: value });
   };
 
   const password = form.password.trim();
@@ -121,6 +124,8 @@ export default function RegisterForm() {
         <input
           name="phone"
           type="tel"
+          inputMode="numeric"
+          maxLength={10}
           placeholder="Phone number (optional)"
           value={form.phone}
           onChange={handleChange}
