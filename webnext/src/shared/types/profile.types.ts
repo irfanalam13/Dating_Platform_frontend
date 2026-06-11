@@ -92,6 +92,8 @@ export interface Profile {
   verified: boolean;
 
   compatibility_tags?: string[]; // Add this line
+  // 0–100 match score, present only on the My-Type deck (null on Discover).
+  match_percentage?: number | null;
 
   created_at: string;
   updated_at: string;

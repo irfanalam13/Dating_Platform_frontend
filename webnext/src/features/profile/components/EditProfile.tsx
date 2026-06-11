@@ -153,7 +153,14 @@ export default function EditProfile() {
   const [languages, setLanguages] = useState<string[]>([]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
+<<<<<<< HEAD
 >>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
+=======
+  // Inline DoB validation: the very first step requires a valid date of birth
+  // before the user can advance, so they never reach "Save" only to be told
+  // the profile is incomplete.
+  const [dobError, setDobError] = useState(false);
+>>>>>>> 6f6c5ea (update welcome back system)
 
   const [culture, setCulture] = useState<Culture>(emptyCulture());
 
@@ -331,7 +338,11 @@ export default function EditProfile() {
               {step === 0 && (
                 <>
                   <Field label="Full name" value={form.full_name} onChange={(v) => update("full_name", v)} />
-                  <Field label="Date of birth" type="date" value={form.date_of_birth} onChange={(v) => update("date_of_birth", v)} />
+                  <DobPicker
+                    value={form.date_of_birth}
+                    onChange={(v) => { update("date_of_birth", v); setDobError(false); }}
+                    error={dobError}
+                  />
                   <Select label="Gender" value={form.gender} onChange={(v) => update("gender", v)} options={["male", "female", "other"]} />
                   <Field label="City" value={form.city} onChange={(v) => update("city", v)} placeholder="Kathmandu, Pokhara..." />
                   <div className="grid grid-cols-2 gap-3">
@@ -496,7 +507,18 @@ export default function EditProfile() {
               Back
             </button>
             {step < steps.length - 1 ? (
-              <button onClick={() => setStep((value) => value + 1)} className="flex h-12 items-center justify-center gap-2 rounded-md bg-[#7A2432] font-semibold text-white">
+              <button
+                onClick={() => {
+                  // Date of birth is mandatory and lives on the first step —
+                  // block advancing (and flag the field) until it's filled.
+                  if (step === 0 && !form.date_of_birth) {
+                    setDobError(true);
+                    return;
+                  }
+                  setStep((value) => value + 1);
+                }}
+                className="flex h-12 items-center justify-center gap-2 rounded-md bg-[#7A2432] font-semibold text-white"
+              >
                 Next <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
@@ -557,6 +579,79 @@ function Field({ label, value, onChange, type = "text", placeholder, optional }:
       <span className="mb-1.5 block text-sm font-medium">{label} {optional && <span className="text-[#746767]">(optional)</span>}</span>
       <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]" />
     </label>
+  );
+}
+
+// Date-of-birth picker built from three explicit dropdowns (Day / Month / Year)
+// instead of a native <input type="date">. The native control on many browsers
+// lets the year be left blank or partially typed, which silently produced an
+// empty value — the profile then saved as "incomplete" even though the user
+// thought they'd entered a date. Discrete selects make that impossible: the
+// value is only emitted as a valid YYYY-MM-DD once all three parts are chosen.
+// Year range 1965–2008 maps to the 18–60 age window the platform allows.
+const DOB_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const DOB_YEARS = Array.from({ length: 2008 - 1965 + 1 }, (_, i) => 2008 - i);
+
+function DobPicker({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: boolean }) {
+  const [y, m, d] = value ? value.split("-") : ["", "", ""];
+  const year = y ?? "";
+  const month = m ? String(Number(m)) : "";
+  const day = d ? String(Number(d)) : "";
+
+  // Days available depend on the chosen month/year (leap years included).
+  const daysInMonth = year && month ? new Date(Number(year), Number(month), 0).getDate() : 31;
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const emit = (ny: string, nm: string, nd: string) => {
+    if (!ny || !nm || !nd) {
+      onChange(""); // partial selection is treated as "no date yet"
+      return;
+    }
+    // Clamp the day if the new month/year has fewer days (e.g. 31 → Feb).
+    const dim = new Date(Number(ny), Number(nm), 0).getDate();
+    const cd = Math.min(Number(nd), dim);
+    onChange(`${ny}-${String(nm).padStart(2, "0")}-${String(cd).padStart(2, "0")}`);
+  };
+
+  const selectClass = `h-12 w-full appearance-none rounded-md border px-3 pr-8 text-sm outline-none focus:border-[#7A2432] ${error ? "border-red-500" : "border-[#EADDD2]"}`;
+
+  return (
+    <div className="block">
+      <span className="mb-1.5 block text-sm font-medium">Date of birth</span>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="relative">
+          <select value={day} onChange={(e) => emit(year, month, e.target.value)} className={selectClass}>
+            <option value="">Day</option>
+            {days.map((dd) => (
+              <option key={dd} value={dd}>{dd}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+        </div>
+        <div className="relative">
+          <select value={month} onChange={(e) => emit(year, e.target.value, day)} className={selectClass}>
+            <option value="">Month</option>
+            {DOB_MONTHS.map((name, i) => (
+              <option key={name} value={i + 1}>{name}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+        </div>
+        <div className="relative">
+          <select value={year} onChange={(e) => emit(e.target.value, month, day)} className={selectClass}>
+            <option value="">Year</option>
+            {DOB_YEARS.map((yy) => (
+              <option key={yy} value={yy}>{yy}</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+        </div>
+      </div>
+      {error && <span className="mt-1.5 block text-xs font-medium text-red-600">Please add your date of birth to continue.</span>}
+    </div>
   );
 }
 

@@ -192,6 +192,12 @@ function ViewProfileModal({
           >
             <X className="h-4 w-4 text-white" />
           </button>
+          {typeof profile.match_percentage === "number" && (
+            <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-[#7A2432]/85 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-[#FFD27A]" />
+              {profile.match_percentage}% match
+            </span>
+          )}
           <div className="absolute bottom-4 left-4">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">
@@ -639,6 +645,14 @@ export default function HomePage() {
               {current.is_private && (
                 <span className="absolute left-4 top-4 z-10 rounded-full bg-black/45 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
                   Private
+                </span>
+              )}
+
+              {/* My-Type match score — only present on the My-Type deck. */}
+              {typeof current.match_percentage === "number" && (
+                <span className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full bg-[#7A2432]/85 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-[#FFD27A]" />
+                  {current.match_percentage}% match
                 </span>
               )}
 

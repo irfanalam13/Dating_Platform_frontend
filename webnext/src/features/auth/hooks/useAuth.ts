@@ -73,8 +73,6 @@ export const useLogin = () => {
     mutationFn: loginUser,
 
     onSuccess: (res: unknown) => {
-      // The access token was already pulled into memory by loginUser()'s
-      // single refreshOnce() call; here we only need the user object.
       const user = extractUser(res);
 
       if (!user) {
@@ -86,7 +84,20 @@ export const useLogin = () => {
       setAuth(user as unknown as Parameters<typeof setAuth>[0]);
       queryClient.setQueryData(["authUser"], user);
       setLoggedInCookie();
+<<<<<<< HEAD
       showSuccess(`Welcome ${user.name}!`);
+=======
+
+      const hour = new Date().getHours();
+      const timeGreeting =
+        hour < 12 ? "Good morning" :
+        hour < 17 ? "Good afternoon" :
+                    "Good evening";
+
+      const name = (user as any)?.full_name ?? "";
+
+      showSuccess(`${timeGreeting}${name ? `, ${name}` : ""}!`);
+>>>>>>> 6f6c5ea (update welcome back system)
       router.push("/dashboard");
     },
 
