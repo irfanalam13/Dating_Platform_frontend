@@ -48,6 +48,7 @@ export interface Profile {
   ethnicity: string;
 
   horoscope: string;
+  gan: string;
 
   // Basic information
   height_cm?: number | null;
@@ -167,6 +168,7 @@ export interface PublicProfile {
   ethnicity: string;
 
   horoscope: string;
+  gan?: string;
   religion_name?: string;
   caste_name?: string;
   gotra_name?: string;

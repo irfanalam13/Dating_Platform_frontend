@@ -151,20 +151,16 @@ function toPayload(input?: string): PreferencePayload {
 
   try {
     const parsed = JSON.parse(input) as Partial<PreferencePayload>;
-    const parsedFilters = parsed.filters ?? {};
+    const parsedFilters: Partial<Filters> = parsed.filters ?? {};
     return {
       your_hobbies: { ...emptyForm(), ...(parsed.your_hobbies ?? {}) },
       partners_type: { ...emptyForm(), ...(parsed.partners_type ?? {}) },
       filters: {
         ...emptyFilters(),
-<<<<<<< HEAD
         ...parsedFilters,
+        deal_breakers: { ...emptyFilters().deal_breakers, ...(parsedFilters.deal_breakers ?? {}) },
         max_age: typeof parsedFilters.max_age === 'number' && parsedFilters.max_age > 0 ? parsedFilters.max_age : 60,
         min_age: typeof parsedFilters.min_age === 'number' && parsedFilters.min_age > 0 ? parsedFilters.min_age : 18,
-=======
-        ...(parsed.filters ?? {}),
-        deal_breakers: { ...emptyFilters().deal_breakers, ...(parsed.filters?.deal_breakers ?? {}) },
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
       },
     };
   } catch {
@@ -270,19 +266,11 @@ export default function PreferencesPage() {
     //    JSON blob so this screen repopulates on the next visit.
     const yh = formState.your_hobbies;
     const formData = new FormData();
-<<<<<<< HEAD
-    const stateToSave = { ...formState, partners_type: formState.your_hobbies };
-    formData.append("preferences", JSON.stringify(stateToSave));
-    if (yh.religion_id != null) formData.append("religion", String(yh.religion_id));
-    if (yh.caste_id != null) formData.append("caste", String(yh.caste_id));
-    if (yh.gotra_id != null) formData.append("gotra", String(yh.gotra_id));
-=======
     formData.append("preferences", JSON.stringify(formState));
     LEVELS.forEach((level) => {
       const id = yh[`${level}_id` as `${Level}_id`];
       if (id != null) formData.append(level, String(id));
     });
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
     if (yh.horoscope) formData.append("horoscope", yh.horoscope);
 
     if (yh.hobbies) formData.append("hobbies", yh.hobbies);
@@ -404,16 +392,6 @@ export default function PreferencesPage() {
           <RangeField label="Min age" value={filters.min_age} min={18} max={60} onChange={(v) => setFilter("min_age", Math.min(v, filters.max_age))} />
           <RangeField label="Max age" value={filters.max_age} min={18} max={60} onChange={(v) => setFilter("max_age", Math.max(v, filters.min_age))} />
 
-<<<<<<< HEAD
-          <RangeField
-            label="Max age"
-            value={filters.max_age}
-            min={18}
-            max={60}
-            onChange={(value) => setFilter("max_age", Math.max(value, filters.min_age))}
-            reverseFill={true}
-          />
-=======
           <MultiChips title="Diet preference" options={DIET_OPTIONS} selected={filters.preferred_diet} onToggle={toggleDiet} />
 
           <div className="space-y-2">
@@ -430,7 +408,6 @@ export default function PreferencesPage() {
             <TagListField label="Nice to have" values={filters.deal_breakers.nice_to_have} onChange={(v) => setDealBreaker("nice_to_have", v)} />
             <TagListField label="Avoid" values={filters.deal_breakers.avoid} onChange={(v) => setDealBreaker("avoid", v)} />
           </div>
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
         </section>
 
         <section className="space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
@@ -455,46 +432,11 @@ export default function PreferencesPage() {
           )}
 
           {culturalRules.showHoroscope && (
-            <>
-              <ChipSection title="Horoscope" options={HOROSCOPE_OPTIONS} selected={current.horoscope} onSelect={(v) => setChoice("horoscope", v)} />
-              <ChipSection title="Gans" options={GANS_OPTIONS} selected={current.gans} onSelect={(v) => setChoice("gans", v)} />
-            </>
+            <ChipSection title="Horoscope" options={HOROSCOPE_OPTIONS} selected={current.horoscope} onSelect={(v) => setChoice("horoscope", v)} />
           )}
 
-<<<<<<< HEAD
-          <CulturalChips
-            title="Gotra"
-            options={gotras}
-            selectedId={current.gotra_id}
-            onSelect={selectGotra}
-            loading={gotrasLoading}
-            emptyHint={current.caste_id ? "No gotras for this caste." : "Select a caste first."}
-          />
-
-          <ChipSection
-            title="Horoscope"
-            options={HOROSCOPE_OPTIONS}
-            selected={current.horoscope}
-            onSelect={(value) => setChoice("horoscope", value)}
-          />
-
-          <OpenQuestion
-            label="Preferences"
-            value={current.preferences}
-            onChange={(value) => setText("preferences", value)}
-            placeholder="Type your preference here"
-          />
-
-          <OpenQuestion
-            label="Hobbies"
-            value={current.hobbies}
-            onChange={(value) => setText("hobbies", value)}
-            placeholder="Type your hobbies"
-          />
-=======
           <OpenQuestion label="Preferences" value={current.preferences} onChange={(v) => setText("preferences", v)} placeholder="Type your preference here" />
           <OpenQuestion label="Hobbies" value={current.hobbies} onChange={(v) => setText("hobbies", v)} placeholder="Type your hobbies" />
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
 
           <button
             onClick={save}
@@ -537,15 +479,7 @@ function CulturalChips({
               <button
                 key={option.id}
                 onClick={() => onSelect(option.id, option.name)}
-<<<<<<< HEAD
-                style={
-                  active
-                     ? { backgroundColor: "#5FD08A", color: "#14532D" }
-                     : { color: "#2D2424" }
-                }
-=======
                 style={active ? { backgroundColor: "#5FD08A", color: "#14532D" } : { color: "#2D2424" }}
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
                 className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-medium transition"
               >
                 {option.name}

@@ -281,11 +281,6 @@ export default function ProfileClient({
     const ethnicity    = isOwn ? data!.ethnicity           : publicData!.ethnicity;
     const values       = isOwn ? data!.values              : publicData!.values;
     const religion     = isOwn ? data!.religion_name       : publicData!.religion_name;
-<<<<<<< HEAD
-    const caste        = isOwn ? data!.caste_name          : publicData!.caste_name;
-    const gotra        = isOwn ? data!.gotra_name          : publicData!.gotra_name;
-
-=======
     const community    = isOwn ? data!.community_name       : publicData!.community_name;
     // Prefer the deep-taxonomy name (set by the edit cascade), fall back to the legacy FK name.
     const caste        = (isOwn ? (data!.caste_v2_name ?? data!.caste_name)
@@ -294,8 +289,7 @@ export default function ProfileClient({
     const clan         = isOwn ? data!.clan_name            : publicData!.clan_name;
     const gotra        = (isOwn ? (data!.gotra_v2_name ?? data!.gotra_name)
                                 : (publicData!.gotra_v2_name ?? publicData!.gotra_name));
-    const gan          = isOwn ? data!.gan                 : publicData!.gan;
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
+    // const gan          = isOwn ? data!.gan                 : publicData!.gan;
     const horoscope    = isOwn ? data!.horoscope           : publicData!.horoscope;
 
     // Basic details + lifestyle (any may be null when the owner hid it publicly).

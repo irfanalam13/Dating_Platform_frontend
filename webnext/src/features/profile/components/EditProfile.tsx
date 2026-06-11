@@ -38,30 +38,6 @@ import { getReligionRules } from "@/shared/constants/religionRules";
 
 const steps = ["Identity", "Lifestyle", "Culture", "Family"];
 
-<<<<<<< HEAD
-        export default function EditProfile() {
-          const router = useRouter();
-          const { data } = useMyProfile();
-          const mutation = useUpdateProfile();
-          const [step, setStep] = useState(0);
-          const [form, setForm] = useState({
-            full_name: "",
-            date_of_birth: "",
-            gender: "",
-            city: "",
-            education: "",
-            career: "",
-            values: "",
-            hobbies: "",
-            bio: "",
-            ethnicity: "",
-
-            horoscope: "",
-            is_profile_public: "true",
-          });
-          const [photo, setPhoto] = useState<File | null>(null);
-          const [showDiscard, setShowDiscard] = useState(false);
-=======
 // The deep cultural cascade tracked by FK id, separate from the string form
 // because empty FK ids must NOT be sent to the backend.
 type Culture = {
@@ -73,7 +49,6 @@ type Culture = {
   clan: number | null;
   gotra_v2: number | null;
 };
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
 
 const emptyCulture = (): Culture => ({
   religion: null,
@@ -85,32 +60,6 @@ const emptyCulture = (): Culture => ({
   gotra_v2: null,
 });
 
-<<<<<<< HEAD
-          useEffect(() => {
-            if (!data) return;
-            setForm((current) => ({
-              ...current,
-              full_name: data.full_name || "",
-              date_of_birth: data.date_of_birth || "",
-              gender: data.gender || "",
-              city: data.city || "",
-              education: data.education || "",
-              career: data.career || "",
-              values: data.values || "",
-              hobbies: data.hobbies || "",
-              bio: data.bio || "",
-              ethnicity: data.ethnicity || "",
-
-              horoscope: data.horoscope || "",
-              is_profile_public: String(data.is_profile_public ?? true),
-            }));
-            setCulture({
-              religion: data.religion ?? null,
-              caste: data.caste ?? null,
-              gotra: data.gotra ?? null,
-            });
-          }, [data]);
-=======
 export default function EditProfile() {
   const router = useRouter();
   const { data } = useMyProfile();
@@ -153,14 +102,10 @@ export default function EditProfile() {
   const [languages, setLanguages] = useState<string[]>([]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
-<<<<<<< HEAD
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
-=======
   // Inline DoB validation: the very first step requires a valid date of birth
   // before the user can advance, so they never reach "Save" only to be told
   // the profile is incomplete.
   const [dobError, setDobError] = useState(false);
->>>>>>> 6f6c5ea (update welcome back system)
 
   const [culture, setCulture] = useState<Culture>(emptyCulture());
 
@@ -469,39 +414,6 @@ export default function EditProfile() {
             </motion.div>
           </AnimatePresence>
 
-<<<<<<< HEAD
-                      {step === 2 && (
-                        <>
-                          <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
-                          <CultureSelect
-                            label="Religion"
-                            value={culture.religion}
-                            onChange={selectReligion}
-                            options={religions}
-                            placeholder="Select religion"
-                          />
-                          <CultureSelect
-                            label="Caste"
-                            value={culture.caste}
-                            onChange={selectCaste}
-                            options={castes}
-                            placeholder={culture.religion ? "Select caste" : "Select a religion first"}
-                            disabled={!culture.religion}
-                          />
-                          <CultureSelect
-                            label="Gotra"
-                            value={culture.gotra}
-                            onChange={selectGotra}
-                            options={gotras}
-                            placeholder={culture.caste ? "Select gotra" : "Select a caste first"}
-                            disabled={!culture.caste}
-                          />
-
-                          <Field label="Horoscope" value={form.horoscope} onChange={(v) => update("horoscope", v)} optional />
-                          <Field label="Interests" value={form.hobbies} onChange={(v) => update("hobbies", v)} placeholder="Music, hiking, reading" />
-                        </>
-                      )}
-=======
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] font-semibold disabled:opacity-40">
               Back
@@ -529,7 +441,6 @@ export default function EditProfile() {
           </div>
         </section>
       </div>
->>>>>>> fbc04ca0e5e30436092d8402daceb9005bb59364
 
       {/* ── Discard changes confirmation ── */}
       <AnimatePresence>
