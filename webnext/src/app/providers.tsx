@@ -1,10 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useAuth } from "@/features/auth";
+
+// Dev-only. The import() lives in a branch that is statically dead in
+// production (NODE_ENV is inlined as a constant), so the bundler tree-shakes
+// @tanstack/react-query-devtools out of the prod bundle entirely. In prod this
+// resolves to a no-op component.
+const ReactQueryDevtools =
+  process.env.NODE_ENV === "development"
+    ? dynamic(
+        () =>
+          import("@tanstack/react-query-devtools").then(
+            (m) => m.ReactQueryDevtools
+          ),
+        { ssr: false }
+      )
+    : () => null;
 import { NotificationProvider } from "@/features/notification/context/NotificationContext";
 import AppToaster from "@/shared/ui/toaster";
 

@@ -58,6 +58,34 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Auto-memoization (the babel-plugin-react-compiler dep is already installed
+  // but was never activated). Removes manual useMemo/useCallback overhead and
+  // trims unnecessary re-renders on the client.
+  reactCompiler: true,
+
+  // Drop the `X-Powered-By: Next.js` response header — one fewer byte-of-no-value
+  // header on every response, and a small infoleak removed.
+  poweredByHeader: false,
+
+  // Brotli/gzip on the Node response is handled by the platform/CDN; keep Next's
+  // own gzip on as a backstop for self-hosted deploys.
+  compress: true,
+
+  // Source maps bloat the production build output and are not needed for the
+  // browser bundle; keeping them off speeds builds and avoids shipping them.
+  productionBrowserSourceMaps: false,
+
+  experimental: {
+    // Inline Tailwind's CSS into the document <head> as a <style> tag instead of
+    // a render-blocking <link>. Eliminates the CSS request waterfall on first
+    // load — a direct FCP/LCP win for first-time visitors with atomic CSS.
+    inlineCss: true,
+
+    // framer-motion is a large barrel; only pull the modules actually imported.
+    // (lucide-react is already optimized by Next's defaults.)
+    optimizePackageImports: ["framer-motion"],
+  },
+
   images: {
     remotePatterns: [
       //   Unsplash
