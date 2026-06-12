@@ -14,8 +14,8 @@ export default function Page() {
   }, [loading, isAuthenticated, router]);
 
   return (
-    <main className="grid min-h-[100dvh] place-items-center text-sm text-[#746767]">
-      MatchMaker Opening...
+    <main className="grid min-h-[100dvh] place-items-center text-[#746767]">
+      <span className="log-font text-4xl">MatchMakers</span>
     </main>
   );
 }

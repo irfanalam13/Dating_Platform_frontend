@@ -6,7 +6,14 @@ module.exports = {
     "./src/shared/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        // Inter is the app-wide default. `font-sans` utilities and the
+        // Preflight base font both resolve to this. The brand name overrides
+        // it locally via the `.log-font` (Beau Rivage) class.
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 };
