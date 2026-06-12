@@ -145,15 +145,6 @@ function CompletionBar({ score }: { score: number }) {
           style={{ width: `${score}%`, backgroundColor: color }}
         />
       </div>
-      {score < 100 && (
-        <p className="mt-2 text-xs text-[#746767]">
-          {score < 50
-            ? "Complete your profile to get more matches."
-            : score < 80
-            ? "Almost there — add a few more details."
-            : "Great profile! Small touches can still help."}
-        </p>
-      )}
     </div>
   );
 }
@@ -720,19 +711,6 @@ export default function ProfileClient({
           </div>
         )}
 
-        {/* ── Incomplete nudge (own only) ── */}
-        {isOwn && score < 80 && (
-          <button
-            onClick={() => router.push("/profile/edit")}
-            className="glass-btn flex w-full items-center justify-between rounded-3xl px-4 py-3"
-          >
-            <div className="text-left">
-              <p className="text-sm font-semibold text-black">Complete your profile</p>
-              <p className="text-xs text-[#746767]">More details = better matches</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-black" />
-          </button>
-        )}
       </div>
     </main>
   );

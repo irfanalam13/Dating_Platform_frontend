@@ -334,21 +334,6 @@ export default function ProfileCard() {
             </div>
           </Section>
         )}
-
-        {/* ── Incomplete nudge ── */}
-        {/* {score < 80 && (
-          <button
-            onClick={() => router.push("/profile/edit")}
-            className="flex w-full items-center justify-between rounded-xl border border-dashed border-[#7A2432]/40 px-4 py-3"
-          >
-            <div className="text-left">
-              <p className="text-sm font-semibold text-[#7A2432]">Complete your profile</p>
-              <p className="text-xs text-[#746767]">More details = better matches</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[#7A2432]" />
-          </button> */}
-        
-
       </div>
     </main>
   );

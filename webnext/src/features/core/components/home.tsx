@@ -621,11 +621,12 @@ export default function HomePage() {
               onDragEnd={(_, info) => {
                 const offset = info.offset.y;
                 const velocity = info.velocity.y;
+                // Reel-style: swipe UP → next (new) profile, swipe DOWN → previous (old).
                 // Easier to trigger on a phone: small flick OR a short drag.
                 if (offset < -60 || velocity < -500) {
-                  goBack();
-                } else if (offset > 60 || velocity > 500) {
                   goNext();
+                } else if (offset > 60 || velocity > 500) {
+                  goBack();
                 } else {
                   dragY.set(0);
                 }
