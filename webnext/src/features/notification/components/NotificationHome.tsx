@@ -136,8 +136,8 @@ export default function NotificationHome() {
                 key={item.id}
                 onClick={() => handleOpen(item)}
                 className={
-                  "flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors " +
-                  (item.is_read ? "border-[#EADDD2] bg-white" : "border-[#D4A89A] bg-[#FEF6F0]")
+                  "glass-card flex w-full items-start gap-3 rounded-lg border p-4 text-left " +
+                  (item.is_read ? "border-[#EADDD2]" : "border-[#D4A89A]")
                 }
               >
                 <span

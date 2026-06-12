@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, MoreVertical, Flag, Ban, UserRound } from 'lucide-react'
 import { getConversations, editMessage, forwardMessage, reportMessage, uploadAttachment, sendChatMessage } from '@/shared/api/chat.api'
-import { blockProfile, reportProfile } from '@/shared/api/mvp.api'
+import { blockProfile, unblockProfile, getBlockedUsers, reportProfile } from '@/shared/api/mvp.api'
 import { useAuth } from '@/features/auth'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
 import { useChat } from '../hooks/useChat'
@@ -34,6 +34,7 @@ const REPORT_REASONS: { value: string; label: string }[] = [
 export default function ChatWindow({ conversationId }: Props) {
   const { user }        = useAuth()
   const router          = useRouter()
+  const queryClient     = useQueryClient()
   const { onlineUsers } = useNotificationContext()
   const bottomRef       = useRef<HTMLDivElement>(null)
 
@@ -67,10 +68,35 @@ export default function ChatWindow({ conversationId }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [showReportUser, setShowReportUser] = useState(false)
 
+  // Who the current user has blocked. Used to swap the message bar for an
+  // "Unblock chat" prompt — blocking no longer kicks you out of the thread.
+  const { data: blockedUsers } = useQuery({
+    queryKey: ['blocked-users'],
+    queryFn: getBlockedUsers,
+  })
+
+  const isBlocked: boolean =
+    !!otherProfileId &&
+    (blockedUsers ?? []).some(
+      (b) => b.blocked_profile_id === otherProfileId || b.blocked === other?.id,
+    )
+
   const blockUserMutation = useMutation({
     mutationFn: blockProfile,
-    onSuccess: () => { showSuccess('User blocked.'); router.push('/home') },
+    onSuccess: () => {
+      showSuccess('User blocked. Neither of you can message until you unblock.')
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] })
+    },
     onError: (err) => showError(err, 'Could not block user.'),
+  })
+
+  const unblockUserMutation = useMutation({
+    mutationFn: unblockProfile,
+    onSuccess: () => {
+      showSuccess('User unblocked.')
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] })
+    },
+    onError: (err) => showError(err, 'Could not unblock user.'),
   })
 
   const reportUserMutation = useMutation({
@@ -255,18 +281,37 @@ export default function ChatWindow({ conversationId }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input ──────────────────────────────────────── */}
-      <MessageInput
-        onSend={handleSend}
-        onTyping={sendTyping}
-        disabled={false}
-        replyTo={replyTo}
-        onCancelReply={() => setReplyTo(null)}
-        editing={editing}
-        onSubmitEdit={handleSubmitEdit}
-        onCancelEdit={() => setEditing(null)}
-        onAttachImage={handleAttachImage}
-      />
+      {/* ── Input (or "Unblock chat" prompt when blocked) ─ */}
+      {isBlocked ? (
+        <div className="border-t border-white/50 bg-white/60 px-4 py-4 backdrop-blur-md">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-2 text-center">
+            <p className="text-sm text-[#746767]">
+              You blocked this person. Neither of you can send messages.
+            </p>
+            <button
+              type="button"
+              onClick={() => { if (otherProfileId) unblockUserMutation.mutate(otherProfileId) }}
+              disabled={!otherProfileId || unblockUserMutation.isPending}
+              className="glass-btn flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+            >
+              <Ban className="h-4 w-4" />
+              {unblockUserMutation.isPending ? 'Unblocking…' : 'Unblock chat'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <MessageInput
+          onSend={handleSend}
+          onTyping={sendTyping}
+          disabled={false}
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
+          editing={editing}
+          onSubmitEdit={handleSubmitEdit}
+          onCancelEdit={() => setEditing(null)}
+          onAttachImage={handleAttachImage}
+        />
+      )}
 
       {/* ── Forward modal ── */}
       {forwardMsg && (

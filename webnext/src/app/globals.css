@@ -46,6 +46,27 @@ body {
   transform: translateY(1px);
 }
 
+/* Pure glossy glass surface — for cards/panels. No text-color override,
+   so existing dark text stays fully readable on the frosted background. */
+.glass-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.20) 45%, rgba(255, 255, 255, 0.10) 100%),
+    rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0.14) 100%),
+    rgba(255, 255, 255, 0.30);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
 /* Glossy frosted glass — replaces solid dark-red (#7A2432) backgrounds */
 .glass-glossy {
   background:
