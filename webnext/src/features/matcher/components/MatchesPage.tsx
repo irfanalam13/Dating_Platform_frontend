@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HeartHandshake, MessageCircle, UserCheck, X, Send } from "lucide-react";
+import { HeartHandshake, MessageCircle, UserCheck, X, Send, UserX } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
@@ -79,14 +79,14 @@ export default function MatchesPage() {
         {!isLoading && matches.length === 0 && pending.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
-              <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+              <UserX className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No mutual matches yet</h2>
               <p className="mt-2 text-sm leading-6 text-[#746767]">
                 Show interest from Discover. When both people agree, they appear here.
               </p>
               <button
                 onClick={() => router.push("/home")}
-                className="mt-5 h-11 rounded-md bg-[#7A2432] px-5 text-sm font-semibold text-white"
+                className="glass-glossy mt-5 h-11 rounded-md px-5 text-sm font-semibold"
               >
                 Go to Discover
               </button>
@@ -117,10 +117,10 @@ export default function MatchesPage() {
                   onClick={() => conversationMutation.mutate(match.user_id)}
                   disabled={conversationMutation.isPending}
                   aria-label={`Message ${match.name || match.email}`}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
+                  className="glass-glossy grid h-10 w-10 place-items-center rounded-full disabled:opacity-50"
                 >
                   {conversationMutation.isPending ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   ) : (
                     <MessageCircle className="h-5 w-5" />
                   )}
@@ -183,7 +183,7 @@ export default function MatchesPage() {
                       onClick={() => acceptMutation.mutate(item.id)}
                       disabled={acceptMutation.isPending}
                       aria-label="Match back"
-                      className="grid h-9 w-9 place-items-center rounded-full bg-[#7A2432] text-white disabled:opacity-50"
+                      className="glass-glossy grid h-9 w-9 place-items-center rounded-full disabled:opacity-50"
                     >
                       <HeartHandshake className="h-4 w-4" />
                     </button>

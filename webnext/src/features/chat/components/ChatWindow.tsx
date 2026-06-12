@@ -84,7 +84,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const blockUserMutation = useMutation({
     mutationFn: blockProfile,
     onSuccess: () => {
-      showSuccess('User blocked. Neither of you can message until you unblock.')
+      showSuccess('User blocked')
       queryClient.invalidateQueries({ queryKey: ['blocked-users'] })
     },
     onError: (err) => showError(err, 'Could not block user.'),

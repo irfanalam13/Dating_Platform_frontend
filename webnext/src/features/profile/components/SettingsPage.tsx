@@ -10,7 +10,6 @@ import { Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, Shield
 import {
   getBlockedUsers,
   getPrivacySettings,
-  unblockProfile,
   updatePrivacySettings,
 } from "@/shared/api/mvp.api";
 import { getChatPrivacy, updateChatPrivacy, type ChatPrivacy } from "@/shared/api/chat.api";
@@ -33,11 +32,6 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["myProfile"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
-  });
-
-  const unblockMutation = useMutation({
-    mutationFn: unblockProfile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blockedUsers"] }),
   });
 
   const { data: chatPrivacy } = useQuery({ queryKey: ["chatPrivacy"], queryFn: getChatPrivacy, retry: false });
@@ -106,20 +100,14 @@ export default function SettingsPage() {
 
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <SectionTitle icon={UserRound} title="Blocked contacts" detail="People you block are hidden from discover and chat." />
-          {blocked.length === 0 && <p className="mt-3 text-sm text-[#746767]">No blocked users.</p>}
-          <div className="mt-1 divide-y divide-[#EADDD2]/70">
-            {blocked.map((item) => (
-              <div key={item.id} className="flex items-center justify-between py-3">
-                <span className="text-sm">{item.blocked_email}</span>
-                <button
-                  onClick={() => unblockMutation.mutate(item.blocked_profile_id)}
-                  className="text-sm font-semibold text-[#7A2432]"
-                >
-                  Unblock
-                </button>
-              </div>
-            ))}
-          </div>
+          <div className="mt-2 h-px w-full bg-[#EADDD2]/70" />
+          <button
+            onClick={() => router.push("/settings/blocked")}
+            className="flex h-11 w-full items-center justify-between pt-1 text-sm font-semibold text-[#2D2424]"
+          >
+            {blocked.length > 0 ? `View blocked list (${blocked.length})` : "View blocked list"}
+            <span className="text-[#746767]">→</span>
+          </button>
         </section>
 
         {/* Profile field visibility (Facebook-style hide) */}
