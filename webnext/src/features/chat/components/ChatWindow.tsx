@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, MoreVertical, Flag, Ban, UserRound } from 'lucide-react'
+import { ChevronLeft, MoreVertical, Flag, Ban } from 'lucide-react'
 import { getConversations, editMessage, forwardMessage, reportMessage, uploadAttachment, sendChatMessage } from '@/shared/api/chat.api'
 import { blockProfile, unblockProfile, getBlockedUsers, reportProfile } from '@/shared/api/mvp.api'
 import { useAuth } from '@/features/auth'
@@ -223,16 +223,6 @@ export default function ChatWindow({ conversationId }: Props) {
               {/* click-away backdrop */}
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
               <div role="menu" className="absolute right-0 z-50 mt-2 w-48 space-y-1 rounded-2xl border border-white/60 bg-white/40 p-1.5 shadow-[0_10px_30px_rgba(16,24,40,0.18)] backdrop-blur-md">
-                {other && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); router.push(`/profile/${other.id}`) }}
-                    className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium"
-                  >
-                    <UserRound className="h-4 w-4 text-[#746767]" /> View profile
-                  </button>
-                )}
                 <button
                   type="button"
                   role="menuitem"
