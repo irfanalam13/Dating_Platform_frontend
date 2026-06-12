@@ -130,7 +130,7 @@ export default function ProfilePage({ data }: any) {
         </div>
 
         {/* Action Button */}
-        <button className="w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-red-500 text-white font-semibold flex items-center justify-center gap-2 active:scale-95 transition">
+        <button className="glass-btn-rose w-full mt-4 py-3 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-95">
           <Heart className="w-5 h-5" />
           Like Profile
         </button>

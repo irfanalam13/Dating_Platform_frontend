@@ -76,7 +76,7 @@ export default function AccountDeletionPage() {
                     <button
                       onClick={handleDelete}
                       disabled={isLoading}
-                      className="w-full bg-red-500 hover:bg-red-600 active:scale-95 disabled:opacity-70 text-white font-bold py-3 rounded-full transition-all duration-200 shadow-lg text-sm"
+                      className="glass-btn-danger w-full active:scale-95 disabled:opacity-70 font-bold py-3 rounded-full text-sm"
                     >
                       {isLoading ? 'Deleting...' : 'Yes, delete my account'}
                     </button>
@@ -119,7 +119,7 @@ export default function AccountDeletionPage() {
                     <button
                       onClick={handleFinalDelete}
                       disabled={isLoading}
-                      className="w-full bg-red-500 hover:bg-red-600 active:scale-95 disabled:opacity-70 text-white font-bold py-3 rounded-full transition-all duration-200 shadow-lg text-sm"
+                      className="glass-btn-danger w-full active:scale-95 disabled:opacity-70 font-bold py-3 rounded-full text-sm"
                     >
                       {isLoading ? 'Confirming...' : 'Confirm deletion'}
                     </button>

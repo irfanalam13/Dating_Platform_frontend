@@ -124,7 +124,7 @@ function MatchModal({
           <button
             onClick={onMessage}
             disabled={isPending}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-60"
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl glass-glossy text-sm font-semibold disabled:opacity-60"
           >
             {isPending ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -193,7 +193,7 @@ function ViewProfileModal({
             <X className="h-4 w-4 text-white" />
           </button>
           {typeof profile.match_percentage === "number" && (
-            <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-[#7A2432]/85 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+            <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full glass-glossy px-3 py-1 text-xs font-bold shadow-lg">
               <Sparkles className="h-3.5 w-3.5 text-[#FFD27A]" />
               {profile.match_percentage}% match
             </span>
@@ -281,7 +281,7 @@ function ViewProfileModal({
             <button
               onClick={onLike}
               disabled={isPending}
-              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-50"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl glass-glossy text-sm font-semibold disabled:opacity-50"
             >
               {isPending ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -514,12 +514,13 @@ export default function HomePage() {
             >
               DISCOVER
             </button>
+
             <button
               type="button"
               onClick={() => setActiveSection("myType")}
               className={`rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.16em] transition ${
                 activeSection === "myType"
-                  ? "border border-white/75 bg-white/80 text-[#2D2424] shadow-[0_6px_16px_rgba(16,24,40,0.08)]"
+                  ? "border border-white/75 bg-white/80 text-[#B78A3B] shadow-[0_6px_16px_rgba(16,24,40,0.08)]"
                   : "text-[#746767]"
               }`}
             >
@@ -578,7 +579,7 @@ export default function HomePage() {
                 </p>
                 <button
                   onClick={handleRefresh}
-                  className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
+                  className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl glass-glossy px-5 text-sm font-semibold"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Refresh
@@ -650,7 +651,7 @@ export default function HomePage() {
 
               {/* My-Type match score — only present on the My-Type deck. */}
               {typeof current.match_percentage === "number" && (
-                <span className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full bg-[#7A2432]/85 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+                <span className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full glass-glossy px-3 py-1 text-xs font-bold shadow-lg">
                   <Sparkles className="h-3.5 w-3.5 text-[#FFD27A]" />
                   {current.match_percentage}% match
                 </span>
@@ -847,7 +848,7 @@ export default function HomePage() {
             </p>
             <button
               onClick={handleRefresh}
-              className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#7A2432] px-5 text-sm font-semibold text-white"
+              className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl glass-glossy px-5 text-sm font-semibold"
             >
               <RefreshCw className="h-4 w-4" />
               Try Again

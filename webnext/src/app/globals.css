@@ -46,6 +46,82 @@ body {
   transform: translateY(1px);
 }
 
+/* Glossy frosted glass — replaces solid dark-red (#7A2432) backgrounds */
+.glass-glossy {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.18) 42%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #7A2432;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-glossy:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.28) 42%, rgba(255, 255, 255, 0.10) 100%),
+    rgba(255, 255, 255, 0.40);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.glass-glossy:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.10);
+}
+
+/* Rose-tinted frosted glass — for primary/like CTAs that used to be red */
+.glass-btn-rose {
+  background: linear-gradient(135deg, rgba(255, 68, 88, 0.30), rgba(255, 107, 129, 0.22));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 24px rgba(255, 68, 88, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-btn-rose:hover {
+  background: linear-gradient(135deg, rgba(255, 68, 88, 0.42), rgba(255, 107, 129, 0.32));
+  box-shadow: 0 10px 30px rgba(255, 68, 88, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-1px);
+}
+
+.glass-btn-rose:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 12px rgba(255, 68, 88, 0.18);
+}
+
+/* Red-tinted frosted glass — for destructive (danger) actions */
+.glass-btn-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.32), rgba(220, 38, 38, 0.24));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-btn-danger:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.46), rgba(220, 38, 38, 0.36));
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transform: translateY(-1px);
+}
+
+.glass-btn-danger:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.20);
+}
+
 [class*="border"] {
   border-color: rgba(255, 255, 255, 0.45) !important;
   box-shadow: 0 6px 18px rgba(16,24,40,0.06);

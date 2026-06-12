@@ -30,13 +30,9 @@ function NotificationIcon({ type }: { type: NotificationType }) {
   }
 }
 
-function iconClass(type: NotificationType, isRead: boolean): string {
-  if (isRead) return "bg-[#F8EFE6] text-[#746767]";
-  switch (type) {
-    case "safety_alert": return "bg-red-600 text-white";
-    case "missed_call":  return "bg-orange-500 text-white";
-    default:             return "bg-[#7A2432] text-white";
-  }
+function iconClass(_type: NotificationType, _isRead: boolean): string {
+  // Pure glossy glass for every notification icon.
+  return "glass-glossy";
 }
 
 function useNotificationNavigation() {
@@ -99,8 +95,7 @@ export default function NotificationHome() {
               <span className="text-lg leading-none">←</span>
             </button>
             <div>
-              <h1 className="text-2xl font-semibold">Notifications</h1>
-              <p className="text-sm text-[#746767]">Matches, messages, and safety updates.</p>
+              <p className="text-2xl font-semibold text-[#B78A3B]">Notifications</p>
             </div>
             {unreadCount > 0 && (
               <button

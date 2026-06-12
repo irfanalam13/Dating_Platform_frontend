@@ -51,9 +51,7 @@ export default function MatchesPage() {
               <span className="text-lg leading-none">←</span>
             </button>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Matches</p>
-              <h1 className="text-2xl font-semibold">People who chose you too</h1>
-              <p className="mt-1 text-sm text-[#746767]">Conversation opens only after mutual interest.</p>
+              <p className="text-2xl font-semibold text-[#B78A3B]"> Your Matches</p>
             </div>
           </div>
         </header>
