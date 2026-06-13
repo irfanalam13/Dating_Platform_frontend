@@ -18,6 +18,22 @@ const API_PROXY_TARGET =
   process.env.BACKEND_ORIGIN ||
   "http://localhost:8000";
 
+// ⚠️ TEMPORARY DEBUG — remove after verifying the production proxy config.
+// Runs at BUILD time, so this prints in the Vercel build logs (not to users).
+// Confirms what values the bundle was actually built with. No secrets logged:
+// API_URL/WS_URL are public NEXT_PUBLIC_* values; only the proxy target's
+// origin is shown (no path/credentials).
+console.log("[next.config debug] NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+console.log("[next.config debug] resolved API_URL:", API_URL);
+console.log("[next.config debug] resolved WS_URL:", WS_URL);
+console.log(
+  "[next.config debug] API_URL mode:",
+  API_URL.startsWith("/")
+    ? "RELATIVE → Vercel same-origin proxy ✅"
+    : "ABSOLUTE → calling backend directly ⚠️ (third-party cookies; Safari/ITP will fail)"
+);
+console.log("[next.config debug] proxy forwards /api/v1/* to:", API_PROXY_TARGET);
+
 // Bare origin (scheme + host[:port]) for the API, used in connect-src.
 let apiOrigin = "";
 try {
