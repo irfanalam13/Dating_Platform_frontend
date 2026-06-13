@@ -7,13 +7,14 @@ import {
   getSentMatches,
   rejectMatch,
   cancelMatch,
+  removeMatch,
 } from "@/shared/api/matcher.api";
 import { getConversation } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
 import { showError, showSuccess } from "@/shared/utils/toast"
 import { createOrGetConversation } from "@/shared/api/chat.api"
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import type { PendingMatch, MatchRequestItem } from "@/shared/types/matcher.types";
+import type { PendingMatch, MatchRequestItem, AcceptedMatch } from "@/shared/types/matcher.types";
 
 export function useAcceptedMatches() {
   // const { user } = useAuth();
@@ -74,6 +75,34 @@ export function useCancelMatch() {
     },
     onSuccess: () => showSuccess("Request withdrawn."),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["sentMatches"] }),
+  });
+}
+
+// Remove an existing (mutual) match — from the Matches list or a profile page.
+// Keyed by the OTHER user's id. Optimistically drops them from the accepted list
+// and refreshes everything tied to the relationship.
+export function useRemoveMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => removeMatch(userId),
+    onMutate: async (userId: number) => {
+      await queryClient.cancelQueries({ queryKey: ["acceptedMatches"] });
+      const prev = queryClient.getQueryData<AcceptedMatch[]>(["acceptedMatches"]);
+      queryClient.setQueryData<AcceptedMatch[]>(["acceptedMatches"], (old = []) =>
+        old.filter((m) => m.user_id !== userId)
+      );
+      return { prev };
+    },
+    onError: (err, _userId, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["acceptedMatches"], ctx.prev);
+      showError(err, "Could not remove match.");
+    },
+    onSuccess: () => showSuccess("Match removed."),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["acceptedMatches"] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["deck"] });
+    },
   });
 }
 

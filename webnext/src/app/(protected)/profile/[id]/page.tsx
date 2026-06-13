@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useUserProfile } from "@/features/profile/hooks/useProfile"; //   not usePublicProfile
 import { sendInterest } from "@/shared/api/profile.api";
 import {
-  useAcceptedMatches, useSentMatches, useStartConversation,
+  useAcceptedMatches, useSentMatches, useStartConversation, useRemoveMatch,
 } from "@/features/matcher/hooks/useMatches";
 import ProfileClient from "@/features/profile/components/ProfileClient";
 
@@ -24,6 +24,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { data: accepted = [] } = useAcceptedMatches();
   const { data: sent = [] } = useSentMatches();
   const startConversation = useStartConversation();
+  const removeMatch = useRemoveMatch();
 
   // The route param is the *user* id, but the match endpoint
   // (/matcher/send/<profile_id>/) keys off the Profile PK. They differ — using
@@ -64,6 +65,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       relationship={relationship}
       onMessage={() => targetUserId && startConversation.mutate(targetUserId)}
       isMessaging={startConversation.isPending}
+      onRemoveMatch={
+        targetUserId ? () => removeMatch.mutate(targetUserId) : undefined
+      }
+      isRemoving={removeMatch.isPending}
     />
   );
 }

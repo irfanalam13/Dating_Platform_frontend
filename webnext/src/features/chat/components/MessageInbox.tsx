@@ -129,7 +129,20 @@ export function MessageInbox() {
         {matchParticipants.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 pb-3">
-              {matchParticipants.map(({ person, isOnline }) => (
+              {matchParticipants.map(({ person, isOnline }) => {
+                // Ring colour: RED only when the person has an active story;
+                // otherwise GREEN if they're online, faint GRAY if offline.
+                // (No stories backend yet, so `has_story` is always falsy for
+                // now — when it ships, this lights up automatically.)
+                const hasStory = Boolean(
+                  (person as { has_story?: boolean }).has_story
+                );
+                const ringBackground = hasStory
+                  ? "linear-gradient(135deg, #ff3b30, #ff5e57)"
+                  : isOnline
+                  ? "linear-gradient(135deg, #00D46A, #2ee6a0)"
+                  : "#d4d4d8";
+                return (
                 <button
                   key={person.id}
                   // TODO(stories): if this person has an active story, open the
@@ -141,11 +154,7 @@ export function MessageInbox() {
                   <div className="relative">
                     <div
                       className="rounded-full p-[2px]"
-                      style={{
-                        background: isOnline
-                          ? "linear-gradient(135deg, #ff4fa3, #ff7a59)"
-                          : "linear-gradient(135deg, #7a2432, #ff4f6d)",
-                      }}
+                      style={{ background: ringBackground }}
                     >
                       <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
                         <ProfileImage
@@ -162,7 +171,8 @@ export function MessageInbox() {
                     )}
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-2 h-px w-full bg-gray-300" />
