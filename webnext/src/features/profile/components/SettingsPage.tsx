@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // the College Mode / Subscription / Followers links below are temporarily
 // disabled (see "FUTURE FEATURE" blocks). Re-add them to this import when you
 // uncomment those sections.
-import { Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, Sparkles, GraduationCap, Crown, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
@@ -55,13 +55,13 @@ export default function SettingsPage() {
             </button>
             <div>
               <h1 className="text-2xl font-semibold">Settings</h1>
-              <p className="text-sm text-[#746767]">Control privacy, preferences, and safety.</p>
+              <p className="text-sm text-[#746767]">Privacy, Preferences, & Safety</p>
             </div>
           </div>
         </header>
 
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <SectionTitle icon={Lock} title="Account privacy" detail="MVP privacy works with your Django privacy app." />
+          <SectionTitle icon={Lock} title="Account privacy" />
           <div className="overflow-hidden rounded-2xl">
             <div className="divide-y divide-[#EADDD2]/70">
               <Toggle
@@ -81,13 +81,10 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-          <div className="mt-3 text-sm text-[#746767]">
-            Messages are locked to mutual matches for MVP safety.
-          </div>
         </section>
 
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <SectionTitle icon={SlidersHorizontal} title="Match preferences" detail="Basic filters are powered by preference APIs." />
+          <SectionTitle icon={SlidersHorizontal} title="Your preferences" />
           <div className="mt-2 h-px w-full bg-[#EADDD2]/70" />
           <button
             onClick={() => router.push("/preferences")}
@@ -99,7 +96,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <SectionTitle icon={UserRound} title="Blocked contacts" detail="People you block are hidden from discover and chat." />
+          <SectionTitle icon={UserRound} title="Blocked contacts" />
           <div className="mt-2 h-px w-full bg-[#EADDD2]/70" />
           <button
             onClick={() => router.push("/settings/blocked")}
@@ -112,7 +109,7 @@ export default function SettingsPage() {
 
         {/* Profile field visibility (Facebook-style hide) */}
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <SectionTitle icon={Lock} title="Profile visibility" detail="Choose which personal details others can see on your profile." />
+          <SectionTitle icon={Lock} title="Profile visibility options" />
           <div className="divide-y divide-[#EADDD2]/70">
             <Toggle label="Show date of birth" checked={privacy?.show_dob ?? false}
               onChange={(v) => privacyMutation.mutate({ show_dob: v })} />
@@ -133,12 +130,11 @@ export default function SettingsPage() {
             <Toggle label="Show religion & caste" checked={privacy?.show_religion ?? true}
               onChange={(v) => privacyMutation.mutate({ show_religion: v })} />
           </div>
-          <p className="mt-2 text-xs text-[#746767]">You always see your own details — these only affect what others see.</p>
         </section>
 
         {/* Chat privacy */}
         <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <SectionTitle icon={MessageCircle} title="Chat privacy" detail="Who can reach you and what they can see." />
+          <SectionTitle icon={MessageCircle} title="Chat privacy" />
           <div className="space-y-3">
             <Select
               label="Who can message me"
@@ -187,26 +183,17 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* ───── FUTURE FEATURES: COLLEGE MODE + SUBSCRIPTION (disabled) ─────
-            Both entry buttons live in this section. To re-enable, uncomment the
-            whole <section> below and re-add `GraduationCap` to the lucide-react
-            import at the top of this file. The College Mode page still exists at
-            /college and the API at shared/api/college.api.ts.
-        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-2 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
-          <div className="grid grid-cols-2 divide-x divide-[#EADDD2]/70">
-            <button onClick={() => router.push("/college")} className="rounded-2xl p-4 text-left transition hover:bg-white/30">
-              <GraduationCap className="mb-3 h-5 w-5 text-[#2D2424]" />
-              <span className="block font-semibold">College Mode</span>
-              <span className="block text-xs text-[#746767]">Student verification</span>
-            </button>
-            <button className="rounded-2xl p-4 text-left transition hover:bg-white/30">
-              <Bell className="mb-3 h-5 w-5 text-[#2D2424]" />
-              <span className="block font-semibold">Subscription</span>
-              <span className="block text-xs text-[#746767]">Minimal MVP emphasis</span>
-            </button>
+        {/* Upcoming features — preview of what's coming next (not yet live) */}
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+          <SectionTitle icon={Sparkles} title="Upcoming features" />
+          <div className="overflow-hidden rounded-2xl">
+            <div className="divide-y divide-[#EADDD2]/70">
+              <UpcomingRow icon={GraduationCap} label="College Mode" detail="Exclusively for college students." />
+              <UpcomingRow icon={MessageCircle} label="AI companion" detail="Your personal AI partner to chat with." />
+              <UpcomingRow icon={Crown} label="Exclusive Premium features" detail="Super options to enhance your experience." />
+            </div>
           </div>
         </section>
-            ──────────────────────────────────────────────────────────────── */}
 
         <section className="mb-8">
           <button
@@ -261,6 +248,23 @@ function LinkRow({ icon: Icon, label, onClick }: { icon: LucideIcon; label: stri
       <span className="flex-1">{label}</span>
       <span className="text-[#746767]">→</span>
     </button>
+  );
+}
+
+function UpcomingRow({ icon: Icon, label, detail }: { icon: LucideIcon; label: string; detail: string }) {
+  return (
+    <div className="flex items-center gap-3 py-3 text-sm">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/50 text-[#2D2424]">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <span className="block font-semibold text-[#2D2424]">{label}</span>
+        <span className="block text-xs leading-5 text-[#746767]">{detail}</span>
+      </div>
+      <span className="shrink-0 rounded-full border border-[#B78A3B]/40 bg-[#B78A3B]/10 px-2.5 py-1 text-[11px] font-semibold text-[#B78A3B]">
+        Soon
+      </span>
+    </div>
   );
 }
 
