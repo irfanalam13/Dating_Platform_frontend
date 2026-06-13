@@ -5,6 +5,35 @@ const isDev = process.env.NODE_ENV !== "production";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 
+// Server-side only (NOT exposed to the browser): where the rewrite proxy below
+// forwards /api/v1/* requests. The browser uses a RELATIVE API base URL
+// (NEXT_PUBLIC_API_URL=/api/v1) and Next.js proxies the call to this origin
+// server-side. That makes the auth cookies the backend sets first-party to THIS
+// origin — the only way Safari/iOS/macOS (which block third-party cookies via
+// ITP) will store and resend the `refresh` cookie. Talking to the backend origin
+// directly makes those cookies third-party → Safari drops the refresh cookie →
+// /auth/refresh/ sees no token → forced logout ("invalid refresh token").
+const API_PROXY_TARGET =
+  process.env.API_PROXY_TARGET ||
+  process.env.BACKEND_ORIGIN ||
+  "http://localhost:8000";
+
+// ⚠️ TEMPORARY DEBUG — remove after verifying the production proxy config.
+// Runs at BUILD time, so this prints in the Vercel build logs (not to users).
+// Confirms what values the bundle was actually built with. No secrets logged:
+// API_URL/WS_URL are public NEXT_PUBLIC_* values; only the proxy target's
+// origin is shown (no path/credentials).
+console.log("[next.config debug] NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+console.log("[next.config debug] resolved API_URL:", API_URL);
+console.log("[next.config debug] resolved WS_URL:", WS_URL);
+console.log(
+  "[next.config debug] API_URL mode:",
+  API_URL.startsWith("/")
+    ? "RELATIVE → Vercel same-origin proxy ✅"
+    : "ABSOLUTE → calling backend directly ⚠️ (third-party cookies; Safari/ITP will fail)"
+);
+console.log("[next.config debug] proxy forwards /api/v1/* to:", API_PROXY_TARGET);
+
 // Bare origin (scheme + host[:port]) for the API, used in connect-src.
 let apiOrigin = "";
 try {
@@ -67,6 +96,13 @@ const nextConfig = {
   // header on every response, and a small infoleak removed.
   poweredByHeader: false,
 
+  // Keep trailing slashes intact when proxying to the backend. Without this Next
+  // normalizes `/api/v1/auth/refresh/` → `/api/v1/auth/refresh` before the rewrite
+  // forwards it, and Django's APPEND_SLASH then tries to 301-redirect the POST
+  // (which it can't do without losing the body) → 500. Django's API routes all
+  // require the trailing slash, so we must preserve it.
+  skipTrailingSlashRedirect: true,
+
   // Brotli/gzip on the Node response is handled by the platform/CDN; keep Next's
   // own gzip on as a backstop for self-hosted deploys.
   compress: true,
@@ -128,6 +164,31 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+    ];
+  },
+
+  // Same-origin API proxy. The browser calls /api/v1/* on THIS origin and Next
+  // forwards it (cookies + Set-Cookie passed through transparently) to the real
+  // backend. Keeping the round-trip same-origin is what makes the httpOnly auth
+  // cookies first-party so Safari/iOS keep the refresh cookie. The /api/v1 path
+  // is excluded from `proxy.ts` middleware, so these never get redirected to
+  // /login. WebSockets still connect directly via NEXT_PUBLIC_WS_URL (they auth
+  // by access-token query param, not cookies, so they're unaffected).
+  async rewrites() {
+    return [
+      {
+        // Trailing slash is re-added here: Next's `:path*` capture drops it, but
+        // every Django/DRF route ends in `/` (APPEND_SLASH). Without it Django
+        // would try to 301-redirect the request to the slash URL — which fails on
+        // POST (can't redirect and keep the body) → 500. Forwarding with the slash
+        // also avoids the 301 round-trip on GETs.
+        source: "/api/v1/:path*/",
+        destination: `${API_PROXY_TARGET}/api/v1/:path*/`,
+      },
+      {
+        source: "/api/v1/:path*",
+        destination: `${API_PROXY_TARGET}/api/v1/:path*/`,
       },
     ];
   },

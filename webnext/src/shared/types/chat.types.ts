@@ -97,6 +97,10 @@ export interface Message {
   is_read: boolean;
   read_at: string | null;
   created_at: string;
+  /** Client-only: the server rejected this send (e.g. unmatched > 24h). */
+  failed?: boolean;
+  /** Client-only: rejection reason, shown under the failed bubble. */
+  error?: string;
 }
 
 // ─────────────────────────────────────────────────────────

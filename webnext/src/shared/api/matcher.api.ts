@@ -27,6 +27,13 @@ export const cancelMatch = async (matchId: number): Promise<{ message: string }>
   return res.data;
 };
 
+// Remove an existing (mutual) match. Keyed by the OTHER user's id so it works
+// from both the Matches list and a profile page.
+export const removeMatch = async (userId: number): Promise<{ message: string }> => {
+  const res = await api.post(`/matcher/unmatch/${userId}/`);
+  return res.data;
+};
+
 export const getSentMatches = async (): Promise<MatchRequestItem[]> => {
   const res = await api.get("/matcher/sent/");
   return Array.isArray(res.data) ? res.data : res.data?.results ?? [];

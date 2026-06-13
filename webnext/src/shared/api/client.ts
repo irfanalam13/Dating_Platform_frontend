@@ -16,8 +16,37 @@ declare module "axios" {
 // Axios instance
 // ─────────────────────────────────────────────────────────
 
+// Final base URL Axios will use. Unchanged behaviour — just hoisted into a
+// const so the debug block below can print the exact resolved value.
+const resolvedBaseURL: string =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+
+// ─────────────────────────────────────────────────────────
+// ⚠️ TEMPORARY DEBUG — remove after verifying the production API URL.
+// NEXT_PUBLIC_* values are inlined into the client bundle and are NOT secrets,
+// so printing this one is safe. Only the API URL is logged — no other env vars.
+// Gated so it never runs for normal production users: it prints automatically
+// in dev, or in prod ONLY when you set NEXT_PUBLIC_DEBUG_API=true in Vercel.
+// Runs at module load (once per client load + once per server render), so it
+// surfaces in BOTH the browser console and the Vercel server/function logs.
+// ─────────────────────────────────────────────────────────
+const DEBUG_API: boolean =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_DEBUG_API === "true";
+
+if (DEBUG_API) {
+  console.log("[api-debug] NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+  console.log("[api-debug] resolved axios baseURL:", resolvedBaseURL);
+  console.log(
+    "[api-debug] mode:",
+    resolvedBaseURL.startsWith("/")
+      ? "RELATIVE → Vercel same-origin proxy ✅"
+      : "ABSOLUTE → calling backend directly ⚠️ (third-party cookies; Safari/ITP will fail)"
+  );
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
+  baseURL: resolvedBaseURL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

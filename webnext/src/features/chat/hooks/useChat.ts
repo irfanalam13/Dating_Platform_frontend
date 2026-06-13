@@ -64,17 +64,31 @@ export function useChat(conversationId: string | null): UseChatReturn {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const typingTimers                  = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Messages whose send was rejected by the server (e.g. "user not in matches
+  // list" once the 24h unmatch grace lapses). Kept OUTSIDE the React Query cache
+  // so the 5s polling refetch can't wipe the failure + its reason from view.
+  const lastSentRef                   = useRef<string | null>(null);
+  const [failedMessages, setFailedMessages] = useState<Message[]>([]);
+
   const updateStatus = useCallback((status: UseChatReturn["wsStatus"]) => {
     wsStatusRef.current = status;
     setWsStatus(status);
   }, []);
 
   // ── Message history ──────────────────────────────────
+  // The WebSocket delivers messages instantly when it's healthy, but it can drop
+  // events (reconnects, token refresh, backgrounded tab). A short polling + focus
+  // refetch is the safety net so a new message always shows WITHOUT a manual
+  // refresh. Safe to refetch-replace here: the chat only renders the latest page
+  // (no scrolled-back history to clobber).
   const { data, isLoading } = useQuery({
     queryKey: chatKeys.messages(conversationId ?? ""),
     queryFn:  () => getMessages(conversationId!),
     enabled:  !!conversationId,
-    staleTime: Infinity,
+    staleTime: 3_000,
+    refetchInterval: 5_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Always render in chronological order (oldest → newest, newest at the
@@ -83,11 +97,19 @@ export function useChat(conversationId: string | null): UseChatReturn {
   // the deterministic fix: an incoming message can never jump to the top.
   const messages = useMemo(() => {
     const list = data?.results ?? [];
-    return [...list].sort(
+    // Failed (rejected) sends are merged in so they stay visible — right under
+    // the messages the user just sent — even across polling refetches.
+    return [...list, ...failedMessages].sort(
       (a, b) =>
         new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime()
     );
-  }, [data]);
+  }, [data, failedMessages]);
+
+  // A different conversation starts with a clean slate of failures.
+  useEffect(() => {
+    setFailedMessages([]);
+    lastSentRef.current = null;
+  }, [conversationId]);
 
   // Helper: patch the cached message list.
   const patchMessages = useCallback(
@@ -288,7 +310,22 @@ export function useChat(conversationId: string | null): UseChatReturn {
         case "ping":
           break
         case "error": {
-          logger.error("ChatWS error:", (event as { message: string }).message);
+          const reason = (event as { message: string }).message;
+          logger.error("ChatWS error:", reason);
+          // Attach the failure to the message the user just tried to send: pull
+          // the optimistic temp out of the cache and into `failedMessages` so it
+          // renders as "not delivered" with the reason underneath it.
+          const tempId = lastSentRef.current;
+          if (tempId) {
+            let failed: Message | undefined;
+            patchMessages((list) => {
+              const found = list.find((m) => m.id === tempId);
+              if (found) failed = { ...found, failed: true, error: reason };
+              return list.filter((m) => m.id !== tempId);
+            });
+            if (failed) setFailedMessages((prev) => [...prev, failed as Message]);
+            lastSentRef.current = null;
+          }
           break;
         }
 
@@ -409,6 +446,9 @@ export function useChat(conversationId: string | null): UseChatReturn {
         };
 
         patchMessages((list) => [...list, optimistic]);
+        // Remember this send so a server rejection ("error" event) can be tied
+        // back to it and shown as failed right under the thread.
+        lastSentRef.current = optimistic.id;
       }
 
       wsRef.current.sendMessage(trimmed, replyTo ? { replyTo: replyTo.uuid } : undefined);

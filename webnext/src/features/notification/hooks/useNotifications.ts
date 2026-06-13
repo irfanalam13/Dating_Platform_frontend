@@ -42,6 +42,10 @@ export function useNotificationList(): UseNotificationListReturn {
     },
     staleTime: 30_000,
     retry: 1,
+    // Safety net so new notifications (e.g. match requests) appear without a
+    // manual refresh even if the realtime WS event is missed.
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   return {

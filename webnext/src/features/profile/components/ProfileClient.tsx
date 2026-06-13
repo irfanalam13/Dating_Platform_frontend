@@ -29,6 +29,7 @@ import {
   Check,
   ArrowLeft,
   X,
+  UserX,
 } from "lucide-react";
 import type { Profile, PublicProfile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
@@ -71,6 +72,9 @@ interface ProfileClientProps {
   relationship?: "matched" | "requested" | "none";
   onMessage?: () => void;
   isMessaging?: boolean;
+  // Matched state only — remove/undo the mutual match.
+  onRemoveMatch?: () => void;
+  isRemoving?: boolean;
 }
 
 // ─── Social link meta ─────────────────────────────────────────────────────────
@@ -198,6 +202,8 @@ export default function ProfileClient({
   relationship = "none",
   onMessage,
   isMessaging,
+  onRemoveMatch,
+  isRemoving,
 }: ProfileClientProps) {
   const router = useRouter();
   const [zoomImage, setZoomImage] = useState(false);
@@ -559,6 +565,23 @@ export default function ProfileClient({
                   <><MessageCircle className="h-4 w-4" /> Message</>
                 )}
               </button>
+              {onRemoveMatch && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Remove your match with ${name || "this person"}?`)) {
+                      onRemoveMatch();
+                    }
+                  }}
+                  disabled={isRemoving}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-3xl border border-[#EADDD2] text-sm font-semibold text-[#7A2432] disabled:opacity-50"
+                >
+                  {isRemoving ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <><UserX className="h-4 w-4" /> Remove match</>
+                  )}
+                </button>
+              )}
               {/* FUTURE FEATURE: FOLLOW (disabled) — re-enable with the import at top.
               {publicData?.user && <FollowButton userId={publicData.user} className="w-full" />}
               */}

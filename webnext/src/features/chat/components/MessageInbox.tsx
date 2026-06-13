@@ -131,7 +131,17 @@ export function MessageInbox() {
         {matchParticipants.length > 0 && (
           <div className="mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex gap-3 pb-3">
-              {matchParticipants.map(({ person, isOnline }) => (
+              {matchParticipants.map(({ person, isOnline }) => {
+                // Ring is shown ONLY when the person has an active story (the
+                // reddish gradient). No story → no ring at all, just the plain
+                // avatar. Online/offline lives entirely in the small messenger-
+                // style status dot at the bottom-right. (No stories backend yet,
+                // so `has_story` is always falsy for now — the ring lights up
+                // automatically once stories ship.)
+                const hasStory = Boolean(
+                  (person as { has_story?: boolean }).has_story
+                );
+                return (
                 <button
                   key={person.id}
                   // TODO(stories): if this person has an active story, open the
@@ -141,30 +151,40 @@ export function MessageInbox() {
                   className="flex shrink-0 flex-col items-center gap-1"
                 >
                   <div className="relative">
-                    <div
-                      className="rounded-full p-[2px]"
-                      style={{
-                        background: isOnline
-                          ? "linear-gradient(135deg, #ff4fa3, #ff7a59)"
-                          : "linear-gradient(135deg, #7a2432, #ff4f6d)",
-                      }}
-                    >
-                      <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
-                        <ProfileImage
-                          src={getProfileImage(person)}
-                          name={getDisplayName(person)}
-                          alt={getDisplayName(person)}
-                          className="h-14 w-14 rounded-full"
-                          textClassName="text-lg"
-                        />
+                    {hasStory ? (
+                      <div
+                        className="rounded-full p-[2px]"
+                        style={{ background: "linear-gradient(135deg, #ff3b30, #ff5e57)" }}
+                      >
+                        <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
+                          <ProfileImage
+                            src={getProfileImage(person)}
+                            name={getDisplayName(person)}
+                            alt={getDisplayName(person)}
+                            className="h-14 w-14 rounded-full"
+                            textClassName="text-lg"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    {isOnline && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" />
+                    ) : (
+                      <ProfileImage
+                        src={getProfileImage(person)}
+                        name={getDisplayName(person)}
+                        alt={getDisplayName(person)}
+                        className="h-14 w-14 rounded-full"
+                        textClassName="text-lg"
+                      />
                     )}
+                    {/* Messenger-style active/offline dot. */}
+                    <span
+                      className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${
+                        isOnline ? "bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" : "bg-gray-300"
+                      }`}
+                    />
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-2 h-px w-full bg-gray-300" />

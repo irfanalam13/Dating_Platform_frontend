@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronDown, Sparkles, X } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
 import {
@@ -13,8 +14,9 @@ import {
   useClans,
   useGotrasV2,
 } from "@/features/preference/hooks/usePreference";
-import { updatePreferences } from "@/shared/api/preference.api";
-import type { PreferencesPayload } from "@/shared/types/preference.types";
+import { getPreferences, updatePreferences } from "@/shared/api/preference.api";
+import type { Preferences, PreferencesPayload } from "@/shared/types/preference.types";
+import type { Profile } from "@/shared/types/profile.types";
 import {
   DIET_OPTIONS,
   FREQUENCY_OPTIONS,
@@ -95,7 +97,7 @@ const emptyForm = (): ChoiceForm => ({
 const emptyFilters = (): Filters => ({
   preferred_gender: "",
   preferred_city: "",
-  max_distance_km: 50,
+  max_distance_km: 0,   // "None (any distance)" by default
   min_age: 18,
   max_age: 60,
   preferred_education: "",
@@ -119,11 +121,12 @@ const GENDER_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
+// 0 means "Any distance" (no limit) — the default.
 const DISTANCE_OPTIONS = [
-  { value: 10, label: "Within 10 km" },
-  { value: 25, label: "Within 25 km" },
+  { value: 0, label: "None (any distance)" },
   { value: 50, label: "Within 50 km" },
   { value: 100, label: "Within 100 km" },
+  { value: 500, label: "Within 500 km" },
 ];
 
 const EDUCATION_OPTIONS = [
@@ -168,10 +171,77 @@ function toPayload(input?: string): PreferencePayload {
   }
 }
 
+// Rebuild the whole form from the AUTHORITATIVE database columns so saved
+// settings always reappear on revisit — independent of the opaque `preferences`
+// JSON blob (which is only a convenience mirror and used here as a fallback):
+//   • Match filters  → the saved Preferences row (preferred_gender, age, etc.)
+//   • Cultural cascade + horoscope/hobbies → the profile's own columns.
+function buildFormState(profile: Profile, prefs: Preferences | null): PreferencePayload {
+  const base = toPayload(profile?.preferences);
+
+  const yh: ChoiceForm = {
+    ...base.your_hobbies,
+    religion:          profile.religion_name      ?? base.your_hobbies.religion,
+    religion_id:       profile.religion           ?? base.your_hobbies.religion_id,
+    community:         profile.community_name      ?? base.your_hobbies.community,
+    community_id:      profile.community           ?? base.your_hobbies.community_id,
+    caste_category:    profile.caste_category_name ?? base.your_hobbies.caste_category,
+    caste_category_id: profile.caste_category      ?? base.your_hobbies.caste_category_id,
+    caste_v2:          profile.caste_v2_name       ?? base.your_hobbies.caste_v2,
+    caste_v2_id:       profile.caste_v2            ?? base.your_hobbies.caste_v2_id,
+    sub_caste:         profile.sub_caste_name      ?? base.your_hobbies.sub_caste,
+    sub_caste_id:      profile.sub_caste           ?? base.your_hobbies.sub_caste_id,
+    clan:              profile.clan_name           ?? base.your_hobbies.clan,
+    clan_id:           profile.clan                ?? base.your_hobbies.clan_id,
+    gotra_v2:          profile.gotra_v2_name       ?? base.your_hobbies.gotra_v2,
+    gotra_v2_id:       profile.gotra_v2            ?? base.your_hobbies.gotra_v2_id,
+    horoscope:         profile.horoscope || base.your_hobbies.horoscope,
+    hobbies:           profile.hobbies   || base.your_hobbies.hobbies,
+    preferences:       prefs?.preferred_preferences || base.your_hobbies.preferences,
+  };
+
+  const f: Filters = prefs
+    ? {
+        preferred_gender: prefs.preferred_gender ?? "",
+        preferred_city: prefs.preferred_city ?? "",
+        max_distance_km: prefs.max_distance_km ?? 0,
+        min_age: prefs.min_age ?? 18,
+        max_age: prefs.max_age ?? 60,
+        preferred_education: prefs.preferred_education ?? "",
+        preferred_min_height_cm: prefs.preferred_min_height_cm ?? null,
+        preferred_max_height_cm: prefs.preferred_max_height_cm ?? null,
+        preferred_diet: prefs.preferred_diet ?? [],
+        preferred_alcohol: prefs.preferred_alcohol ?? "",
+        preferred_smoking: prefs.preferred_smoking ?? "",
+        gotra_rule: prefs.gotra_rule ?? "",
+        accept_different_religion: prefs.accept_different_religion ?? true,
+        accept_different_community: prefs.accept_different_community ?? true,
+        accept_different_caste: prefs.accept_different_caste ?? true,
+        accept_different_gotra: prefs.accept_different_gotra ?? true,
+        deal_breakers: {
+          must_have: prefs.deal_breakers?.must_have ?? [],
+          nice_to_have: prefs.deal_breakers?.nice_to_have ?? [],
+          avoid: prefs.deal_breakers?.avoid ?? [],
+        },
+      }
+    : base.filters;
+
+  return { your_hobbies: yh, partners_type: base.partners_type, filters: f };
+}
+
 export default function PreferencesPage() {
   const router = useRouter();
   const { data } = useMyProfile();
+  // The saved Preferences row — the source of truth for the match filters the
+  // user reported losing. Always refetched on mount so edits never look lost.
+  const { data: savedPrefs, isFetched: prefsFetched } = useQuery({
+    queryKey: ["preferences"],
+    queryFn: getPreferences,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
   const updateMutation = useUpdateProfile();
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
 
   const [activeScope, setActiveScope] = useState<PreferenceScope>("your_hobbies");
@@ -184,10 +254,16 @@ export default function PreferencesPage() {
 
   const hasSavedPrefs = Boolean(data?.preferences && data.preferences.trim());
 
+  // Hydrate the form exactly once, after BOTH the profile and the saved
+  // preferences row have loaded, so we never clobber the user's in-progress
+  // edits when the second query resolves. A fresh mount (e.g. reopening "Edit
+  // preferences") resets the ref and re-hydrates from the latest saved data.
+  const hydratedRef = useRef(false);
   useEffect(() => {
-    if (!data) return;
-    setFormState(toPayload(data.preferences));
-  }, [data]);
+    if (!data || !prefsFetched || hydratedRef.current) return;
+    setFormState(buildFormState(data, savedPrefs ?? null));
+    hydratedRef.current = true;
+  }, [data, savedPrefs, prefsFetched]);
 
   const current = formState[activeScope];
   const filters = formState.filters;
@@ -315,6 +391,13 @@ export default function PreferencesPage() {
         updateMutation.mutateAsync(formData),
         updatePreferences(prefsPayload),
       ]);
+      // Refetch the saved row + profile now (while still mounted) so reopening
+      // "Edit preferences" hydrates from the freshly-saved data, not a stale cache.
+      queryClient.invalidateQueries({ queryKey: ["preferences"] });
+      queryClient.invalidateQueries({ queryKey: ["myProfile"] });
+      // Recalculate recommendations immediately — the home "My Type" / Discover
+      // decks rerun their weighted scoring on next view with no manual refresh.
+      queryClient.invalidateQueries({ queryKey: ["deck"] });
       showSuccess("Preferences saved.");
       if (typeof window !== "undefined") localStorage.setItem("loviq_prefs_saved", "1");
       setSaved(true);

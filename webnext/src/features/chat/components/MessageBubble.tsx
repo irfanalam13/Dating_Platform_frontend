@@ -213,8 +213,17 @@ export default function MessageBubble({
             ${isMine ? 'text-indigo-200' : 'text-[#746767]'}`}>
             {message.is_edited && !deleted && <span className="text-[10px]">edited</span>}
             <span className="text-[10px]">{formatTime(message.created_at)}</span>
-            {isMine && <span className="text-[10px]">{message.is_read ? '✓✓' : '✓'}</span>}
+            {isMine && !message.failed && (
+              <span className="text-[10px]">{message.is_read ? '✓✓' : '✓'}</span>
+            )}
           </div>
+
+          {/* Rejected send (e.g. unmatched > 24h) — shown right under the message. */}
+          {message.failed && (
+            <p className={`mt-1 text-[11px] font-medium ${isMine ? 'text-red-200' : 'text-red-600'}`}>
+              ⚠ Not delivered — {message.error || 'message could not be sent'}
+            </p>
+          )}
         </div>
 
         {/* Reactions row */}

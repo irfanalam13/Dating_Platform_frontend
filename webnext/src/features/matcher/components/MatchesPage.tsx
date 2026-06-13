@@ -10,7 +10,7 @@ import {
   useAcceptMatch,
   useRejectMatch,
   useCancelMatch,
-  useUnmatch,
+  useRemoveMatch,
   useStartConversation,
 } from "@/features/matcher/hooks/useMatches";
 
@@ -23,7 +23,9 @@ export default function MatchesPage() {
   const acceptMutation = useAcceptMatch();
   const rejectMutation = useRejectMatch();
   const cancelMutation = useCancelMatch();
-  const unmatchMutation = useUnmatch();
+  // Unmatch an accepted match. Keyed by the OTHER user's id → /matcher/unmatch/<user_id>/
+  // (the reject endpoint only works on PENDING requests, so it can't unmatch).
+  const removeMutation = useRemoveMatch();
   const conversationMutation = useStartConversation();
 
   const isLoading = matchesLoading || receivedLoading;
@@ -103,6 +105,7 @@ export default function MatchesPage() {
               key={match.id}
               className="flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
             >
+              {/* Tapping the photo/name opens this match's profile. */}
               <button
                 type="button"
                 onClick={() => {
@@ -123,17 +126,9 @@ export default function MatchesPage() {
                   <p className="text-sm text-[#746767]">Mutual match</p>
                 </div>
               </button>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  onClick={() => unmatchMutation.mutate(match.id)}
-                  disabled={unmatchMutation.isPending}
-                  aria-label={`Undo match with ${match.name || match.email}`}
-                  title="Undo match"
-                  className="glass-glossy grid h-10 w-10 place-items-center rounded-full disabled:opacity-50"
-                >
-                  <HeartCrack className="h-5 w-5" />
-                </button>
-                {match.user_id != null && (
+
+              {typeof match.user_id === "number" && (
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={() => conversationMutation.mutate(match.user_id)}
                     disabled={conversationMutation.isPending}
@@ -146,8 +141,21 @@ export default function MatchesPage() {
                       <MessageCircle className="h-5 w-5" />
                     )}
                   </button>
-                )}
-              </div>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Remove your match with ${match.name || "this person"}?`)) {
+                        removeMutation.mutate(match.user_id);
+                      }
+                    }}
+                    disabled={removeMutation.isPending}
+                    aria-label={`Remove match with ${match.name || match.email}`}
+                    title="Remove match"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#7A2432] disabled:opacity-50"
+                  >
+                    <HeartCrack className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

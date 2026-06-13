@@ -203,6 +203,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (notif) {
         setNotifications((prev) => [notif, ...prev].slice(0, 50));
         queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      } else if (typeof event.event === "string" && event.event.startsWith("notification.")) {
+        // A server-persisted notification we don't render a local row for yet
+        // (e.g. match_request_received / accepted). Refetch the list so it pops
+        // on the notification page in real time instead of needing a refresh.
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+        setTotalUnread((t) => t + 1);
       }
     },
     [queryClient]
