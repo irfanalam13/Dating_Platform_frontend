@@ -344,7 +344,7 @@ export default function ProfileClient({
 
     //   Fixed — no stray ternary
     const compatibilityTags: string[] = isOwn
-    ? ((data as any).compatibility_tags ?? [])
+    ? ((data as { compatibility_tags?: string[] }).compatibility_tags ?? [])
     : [];
 
     const score = isOwn ? completionScore(data!) : 0;

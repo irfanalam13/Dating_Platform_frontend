@@ -24,7 +24,8 @@ export default function RegisterForm() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
     // Phone: keep digits only and cap at 10 so longer/invalid input can't slip through.
     if (name === "phone") value = value.replace(/\D/g, "").slice(0, 10);
     setForm({ ...form, [name]: value });
@@ -126,7 +127,7 @@ export default function RegisterForm() {
           type="tel"
           inputMode="numeric"
           maxLength={10}
-          placeholder="Phone number (optional)"
+          placeholder="Phone number"
           value={form.phone}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"
@@ -135,7 +136,7 @@ export default function RegisterForm() {
         <input
           name="email"
           type="email"
-          placeholder="Type your email"
+          placeholder="Email"
           value={form.email}
           onChange={handleChange}
           className="w-full px-4 py-3 rounded-xl bg-white/20 text-black placeholder-black/60 outline-none border border-white/20 focus:border-white focus:ring-2 focus:ring-white/40 transition"

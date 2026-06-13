@@ -64,8 +64,8 @@ export function AccountDeactivationPage() {
                     <p className="text-xs font-semibold text-blue-800">ℹ️ What happens?</p>
                     <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
                       <li>Your profile becomes invisible</li>
-                      <li>Matches can't message you</li>
-                      <li>You won't appear in searches</li>
+                      <li>Matches can&apos;t message you</li>
+                      <li>You won&apos;t appear in searches</li>
                     </ul>
                   </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react'
+import { useState, useRef, useCallback, KeyboardEvent } from 'react'
 import { X, Paperclip } from 'lucide-react'
 import { debounceTyping } from '@/shared/lib/utils'
 import type { Message } from '@/shared/types/chat.types'
@@ -25,10 +25,14 @@ export default function MessageInput({
   const isTypingRef = useRef(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Prefill when entering edit mode.
-  useEffect(() => {
+  // Prefill when entering edit mode (or switching which message is edited).
+  // Adjusting state during render — keyed on the message id — avoids the extra
+  // render an effect would cause and only fires when the edited message changes.
+  const [prevEditingId, setPrevEditingId] = useState<Message['id'] | null>(editing?.id ?? null)
+  if ((editing?.id ?? null) !== prevEditingId) {
+    setPrevEditingId(editing?.id ?? null)
     if (editing) setText(editing.content)
-  }, [editing])
+  }
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value)

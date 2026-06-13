@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useSyncExternalStore,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -112,7 +113,7 @@ function MatchModal({
         </div>
         <div className="p-6 text-center">
           <h2 className="text-xl font-bold text-[#2D2424]">
-            It's a mutual match!
+            It&apos;s a mutual match!
           </h2>
           <p className="mt-1.5 text-sm text-[#746767]">
             You and{" "}
@@ -308,12 +309,13 @@ export default function HomePage() {
 
   // Once preferences are saved we persist a flag so the "My Type" page always
   // shows the saved state — permanently, even across reloads/cache misses.
-  const [prefsSaved, setPrefsSaved] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("loviq_prefs_saved") === "1") {
-      setPrefsSaved(true);
-    }
-  }, []);
+  // Read via useSyncExternalStore so the localStorage value is picked up
+  // SSR-safely (server snapshot is false) without a setState-in-effect.
+  const prefsSaved = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem("loviq_prefs_saved") === "1",
+    () => false,
+  );
   const hasChosenType = Boolean(myProfile?.preferences) || prefsSaved;
 
   // ─── State ────────────────────────────────────────────────────────────────────
@@ -339,8 +341,12 @@ export default function HomePage() {
   // (hollow → reddish) and toggles on/off. Superstar (double-tap) does NOT
   // touch this, so a double-tap never lights up the like button.
   const [liked, setLiked] = useState<Set<number>>(new Set());
+  // Mirror `liked` into a ref via an effect (not during render) so event
+  // handlers can read the latest set without taking it as a dependency.
   const likedRef = useRef<Set<number>>(liked);
-  likedRef.current = liked;
+  useEffect(() => {
+    likedRef.current = liked;
+  }, [liked]);
 
   // ─── Query ────────────────────────────────────────────────────────────────────
   // The deck is driven by the active tab. DISCOVER shows everyone; MY TYPE shows
@@ -409,9 +415,12 @@ export default function HomePage() {
     },
   });
 
-  //   FIX 4: isPending ref so handleAction stays stable
+  //   FIX 4: isPending ref so handleAction stays stable. Mirror via an effect
+  // (not during render) so reading it outside render stays current.
   const isPendingRef = useRef(false);
-  isPendingRef.current = interestMutation.isPending;
+  useEffect(() => {
+    isPendingRef.current = interestMutation.isPending;
+  }, [interestMutation.isPending]);
 
   // const conversationMutation = useMutation({
   //   mutationFn: getConversation,
@@ -425,10 +434,11 @@ export default function HomePage() {
   });
 
   // Express interest — "like" (heart button) or "superstar" (double-tap)
+  const { mutate: mutateInterest } = interestMutation;
   const giveInterest = useCallback((kind: "like" | "superstar") => {
     if (!currentRef.current || isPendingRef.current) return;
-    interestMutation.mutate({ profileId: currentRef.current.id, action: "like", kind });
-  }, [interestMutation.mutate]);
+    mutateInterest({ profileId: currentRef.current.id, action: "like", kind });
+  }, [mutateInterest]);
 
   // Heart button: toggles. Tap to like, tap again to unlike, again to like…
   // When un-liking we only clear it locally (there is no un-send endpoint).
@@ -458,13 +468,18 @@ export default function HomePage() {
     }
   }, [giveInterest]);
 
-  useEffect(() => {
+  // Seed the local deck whenever a new query result lands. Adjusting state
+  // during render via a prev-value tracker (instead of an effect) reseeds the
+  // queue exactly when `data` changes, without a setState-in-effect cascade.
+  const [prevData, setPrevData] = useState(data);
+  if (data !== prevData) {
+    setPrevData(data);
     if (data?.results) {
       setQueue(data.results);
       setIndex(0); // start from the first profile on every (re)load
       setQueueReady(true); //   always set ready, even if empty
     }
-  }, [data]);
+  }
 
   // Keyboard + scroll — UP goes back a profile, DOWN advances to the next.
   // The wheel is throttled so one scroll gesture = exactly one profile.
@@ -573,7 +588,7 @@ export default function HomePage() {
             ) : (
               <div>
                 <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
-                <h2 className="text-lg font-semibold">You've seen everyone</h2>
+                <h2 className="text-lg font-semibold">You&apos;ve seen everyone</h2>
                 <p className="mt-2 text-sm text-[#746767]">
                   Check back later or refresh for new profiles.
                 </p>

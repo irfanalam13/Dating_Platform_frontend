@@ -91,9 +91,9 @@ export const useLogin = () => {
         hour < 17 ? "Good afternoon" :
                     "Good evening";
 
-      const name = (user as any)?.full_name ?? "";
+      const firstName = ((user as { full_name?: string })?.full_name ?? "").trim().split(/\s+/)[0] ?? "";
 
-      showSuccess(`${timeGreeting}${name ? `, ${name}` : ""}!`);
+      showSuccess(`${timeGreeting}${firstName ? `, ${firstName}` : ""}!`);
       router.push("/dashboard");
     },
 

@@ -81,12 +81,12 @@ export default function UploadSelfie() {
     formData.append("caption", caption);
 
     mutation.mutate(formData, {
-      onSuccess: (data: any) => {
+      onSuccess: (data) => {
         showSuccess(data?.message || "Posted successfully!");
         clearSelection();
         setCaption("");
       },
-      onError: (err: any) => {
+      onError: (err: unknown) => {
         showError(err, "Failed to upload. Please try again.");
       },
     });

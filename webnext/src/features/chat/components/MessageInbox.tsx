@@ -11,6 +11,7 @@ import { useNotificationContext } from "@/features/notification/context/Notifica
 import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { filterHidden } from "@/features/chat/lib/hiddenConversations";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -49,7 +50,8 @@ export function MessageInbox() {
   });
 
   //   Fix — data is PaginatedResponse<Conversation>, unwrap .results
-  const conversations: Conversation[] = data?.results ?? [];
+  //   filterHidden drops chats the user deleted locally ("delete for me").
+  const conversations: Conversation[] = filterHidden(data?.results ?? []);
 
   // Sort by most recently updated
   const sorted = [...conversations].sort(
@@ -106,7 +108,7 @@ export function MessageInbox() {
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#1a1a2e]">Message inbox</h1>
+              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#B78A3B]">Message inbox</h1>
             </div>
           </div>
         </header>

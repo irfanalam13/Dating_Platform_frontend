@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getInitials } from "@/shared/lib/utils";
 
 interface ProfileImageProps {
@@ -40,7 +40,13 @@ export default function ProfileImage({
   const [broken, setBroken] = useState(false);
 
   // Re-attempt the image when the src changes (e.g. right after a new upload).
-  useEffect(() => setBroken(false), [src]);
+  // Adjusting state during render (per the prev-value pattern) avoids the extra
+  // render an effect would cause.
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (src !== prevSrc) {
+    setPrevSrc(src);
+    setBroken(false);
+  }
 
   const label = (alt || name || "Profile").trim();
 

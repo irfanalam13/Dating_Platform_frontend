@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   Bell,
   HeartHandshake,
   MessageCircle,
@@ -15,7 +16,7 @@ import {
   useMarkNotificationsRead,
   useMarkAllNotificationsRead,
 } from "@/features/notification/hooks/useNotifications";
-import { formatTime } from "@/shared/utils/time";
+import { formatTimeWithClock } from "@/shared/utils/time";
 import { useRouter } from "next/navigation";
 
 function NotificationIcon({ type }: { type: NotificationType }) {
@@ -84,18 +85,18 @@ export default function NotificationHome() {
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md lg:max-w-2xl">
-        <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+        <header className="mb-5 rounded-[28px] border border-white/70 bg-white/65 px-4 py-3 shadow-[0_10px_28px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <span className="text-lg leading-none">←</span>
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
-            <div>
-              <p className="text-2xl font-semibold text-[#B78A3B]">Notifications</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#B78A3B]">Notifications</h1>
             </div>
             {unreadCount > 0 && (
               <button
@@ -155,7 +156,7 @@ export default function NotificationHome() {
                   <span className="mt-0.5 block text-sm leading-5 text-[#746767]">
                     {item.body || "Tap to view details."}
                   </span>
-                  <span className="mt-1 block text-xs text-[#A89090]">{formatTime(item.created_at)}</span>
+                  <span className="mt-1 block text-xs text-[#A89090]">{formatTimeWithClock(item.created_at)}</span>
                 </span>
                 {!item.is_read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#B78A3B]" />}
               </button>

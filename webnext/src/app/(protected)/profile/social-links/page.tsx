@@ -27,7 +27,7 @@ export default function SocialLinksPage() {
 
         {/* Privacy note */}
         <p className="text-xs text-center text-gray-400 mt-4 px-4">
-           Your social links are public. Only add links you're comfortable sharing.
+           Your social links are public. Only add links you&apos;re comfortable sharing.
         </p>
       </div>
     </main>

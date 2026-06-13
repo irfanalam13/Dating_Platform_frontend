@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HeartHandshake, MessageCircle, UserCheck, X, Send, UserX } from "lucide-react";
+import { ArrowLeft, HeartHandshake, MessageCircle, UserCheck, X, Send, UserX, HeartCrack } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
@@ -23,6 +23,8 @@ export default function MatchesPage() {
   const acceptMutation = useAcceptMatch();
   const rejectMutation = useRejectMatch();
   const cancelMutation = useCancelMatch();
+  // Unmatch an accepted match. Keyed by the OTHER user's id → /matcher/unmatch/<user_id>/
+  // (the reject endpoint only works on PENDING requests, so it can't unmatch).
   const removeMutation = useRemoveMatch();
   const conversationMutation = useStartConversation();
 
@@ -42,18 +44,18 @@ export default function MatchesPage() {
   return (
     <main className="min-h-[100dvh] px-4 pb-24 pt-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 rounded-3xl border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+        <header className="mb-5 rounded-[28px] border border-white/70 bg-white/65 px-4 py-3 shadow-[0_10px_28px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <span className="text-lg leading-none">←</span>
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
-            <div>
-              <p className="text-2xl font-semibold text-[#B78A3B]"> Your Matches</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#B78A3B]">Your Matches</h1>
             </div>
           </div>
         </header>
@@ -103,12 +105,12 @@ export default function MatchesPage() {
               key={match.id}
               className="flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
             >
+              {/* Tapping the photo/name opens this match's profile. */}
               <button
                 type="button"
-                onClick={() =>
-                  typeof match.user_id === "number" &&
-                  router.push(`/profile/${match.user_id}`)
-                }
+                onClick={() => {
+                  if (match.user_id != null) router.push(`/profile/${match.user_id}`);
+                }}
                 className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 aria-label={`View ${match.name || match.email}'s profile`}
               >
@@ -120,10 +122,11 @@ export default function MatchesPage() {
                   textClassName="text-lg"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{match.name || match.email}</p>
+                  <p className="truncate font-semibold">{match.name || match.email}</p>
                   <p className="text-sm text-[#746767]">Mutual match</p>
                 </div>
               </button>
+
               {typeof match.user_id === "number" && (
                 <div className="flex shrink-0 items-center gap-2">
                   <button
@@ -149,7 +152,7 @@ export default function MatchesPage() {
                     title="Remove match"
                     className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#7A2432] disabled:opacity-50"
                   >
-                    <UserX className="h-5 w-5" />
+                    <HeartCrack className="h-5 w-5" />
                   </button>
                 </div>
               )}

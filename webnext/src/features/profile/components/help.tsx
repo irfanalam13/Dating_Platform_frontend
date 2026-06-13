@@ -75,7 +75,7 @@ export default function HelpSectionPage() {
               {/* Contact Support */}
               <div className="mt-8 p-4 rounded-xl text-center">
                 {/* <div className="mt-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl text-center"></div> */}
-                  Couldn't find your query on search?
+                  Couldn&apos;t find your query on search?
                 
                 {/* <button className="text-blue-600 hover:text-blue-700 font-semibold text-xs"> */}
                  <p className="text-xs text-slate-600 mb-3">

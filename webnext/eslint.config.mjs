@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // One-off CommonJS codemod scripts at the repo root — not part of the app.
+    "fix-bg.js",
+    "remove-all-bgs.js",
+    "remove-borders.js",
   ]),
 ]);
 

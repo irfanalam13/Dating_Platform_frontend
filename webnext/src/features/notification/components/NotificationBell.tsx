@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
-import { formatTime } from "@/shared/utils/time";
+import { formatTimeWithClock } from "@/shared/utils/time";
 
 export default function NotificationBell() {
   const router                          = useRouter();
@@ -82,7 +82,7 @@ export default function NotificationBell() {
                         {n.body}
                       </p>
                       <p className="mt-1 text-[10px] text-[#A89090]">
-                        {formatTime(n.created_at)}
+                        {formatTimeWithClock(n.created_at)}
                       </p>
                     </div>
                   </div>

@@ -120,7 +120,7 @@ export default function VerifyEmailPage() {
                 <div className="w-full border-t border-[#EADDD2]" />
               </div>
               <div className="relative flex justify-center">
-                <span className="px-3 text-xs text-[#BFAAA0]">Didn't get the email?</span>
+                <span className="px-3 text-xs text-[#BFAAA0]">Didn&apos;t get the email?</span>
               </div>
             </div>
           )}

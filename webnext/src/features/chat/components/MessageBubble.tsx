@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   MoreVertical, Reply, Copy, Pencil, Trash2, Pin, Bookmark, Forward, Flag, SmilePlus,
@@ -34,6 +34,10 @@ export default function MessageBubble({
   const isMine = Number(user?.id) === Number(message.sender.id)
   const [menuOpen, setMenuOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Snapshot of "now" taken when the actions menu opens, so the 15-minute edit
+  // window is computed from a stable value rather than an impure Date.now()
+  // call during render.
+  const [menuOpenedAt, setMenuOpenedAt] = useState(0)
 
   const uuid = message.uuid
   const idStr = message.id != null ? String(message.id) : ''
@@ -41,6 +45,43 @@ export default function MessageBubble({
   const deleted = !!message.is_deleted_for_all
 
   const closeMenus = () => { setMenuOpen(false); setPickerOpen(false) }
+
+  // ── WhatsApp-style swipe-to-reply ──────────────────────────────────────────
+  // Drag the bubble to the right; release past the threshold to reply. A Reply
+  // icon fades in behind the bubble as you drag. Reuses the same onReply path
+  // as the context-menu "Reply" action.
+  const SWIPE_THRESHOLD = 52   // px to drag before a release triggers reply
+  const SWIPE_MAX = 72         // px the bubble can travel
+  const canReply = canAct && !deleted && !!onReply
+  const [dragX, setDragX] = useState(0)
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const swiping = useRef(false)
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (!canReply) return
+    const t = e.touches[0]
+    swipeStart.current = { x: t.clientX, y: t.clientY }
+    swiping.current = false
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!swipeStart.current) return
+    const t = e.touches[0]
+    const dx = t.clientX - swipeStart.current.x
+    const dy = t.clientY - swipeStart.current.y
+    if (!swiping.current) {
+      if (Math.abs(dx) < 8) return
+      // Let vertical scrolling win if the gesture is more up/down than sideways.
+      if (Math.abs(dx) < Math.abs(dy)) { swipeStart.current = null; return }
+      swiping.current = true
+    }
+    setDragX(Math.max(0, Math.min(dx, SWIPE_MAX)))  // right-swipe only
+  }
+  const onTouchEnd = () => {
+    if (dragX >= SWIPE_THRESHOLD) onReply?.(message)
+    swipeStart.current = null
+    swiping.current = false
+    setDragX(0)
+  }
 
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: chatKeys.messages(conversationId) })
@@ -92,11 +133,28 @@ export default function MessageBubble({
 
   const editWindowOpen =
     isMine && message.type !== 'video' && message.type !== 'image' &&
-    (Date.now() - new Date(message.created_at).getTime()) < 15 * 60 * 1000
+    (menuOpenedAt - new Date(message.created_at).getTime()) < 15 * 60 * 1000
 
   return (
-    <div className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} mb-1`}>
-      <div className="flex max-w-[78%] flex-col">
+    <div
+      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} mb-1`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* Swipe-to-reply icon, revealed as the bubble is dragged right */}
+      {canReply && dragX > 0 && (
+        <div
+          className="absolute left-1 top-1/2 -translate-y-1/2 text-[#7A2432]"
+          style={{ opacity: Math.min(1, dragX / SWIPE_THRESHOLD) }}
+        >
+          <Reply className="h-5 w-5" />
+        </div>
+      )}
+      <div
+        className="flex max-w-[78%] flex-col"
+        style={{ transform: dragX ? `translateX(${dragX}px)` : undefined, transition: dragX ? 'none' : 'transform 150ms ease-out' }}
+      >
         {/* Reply quote */}
         {message.reply_to && (
           <div className={`mb-0.5 rounded-lg border-l-2 px-2 py-1 text-[11px] ${
@@ -117,6 +175,7 @@ export default function MessageBubble({
             if (!canAct || deleted) return
             e.preventDefault()
             setPickerOpen(false)
+            setMenuOpenedAt(Date.now())
             setMenuOpen(true)
           }}
           className={`relative cursor-context-menu px-3.5 py-2 rounded-2xl text-sm leading-relaxed
@@ -186,7 +245,7 @@ export default function MessageBubble({
       {canAct && !deleted && (
         <div className={`absolute -top-3 ${isMine ? 'right-1' : 'left-1'} z-10`}>
           <button
-            onClick={() => { setMenuOpen((v) => !v); setPickerOpen(false) }}
+            onClick={() => { setMenuOpenedAt(Date.now()); setMenuOpen((v) => !v); setPickerOpen(false) }}
             className="glass-btn grid h-7 w-7 place-items-center rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
             aria-label="Message actions (or right-click the message)"
           >

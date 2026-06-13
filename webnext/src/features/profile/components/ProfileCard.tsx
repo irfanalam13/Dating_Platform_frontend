@@ -148,7 +148,7 @@ export default function ProfileCard() {
   const hobbies = data.hobbies
     ? data.hobbies.split(",").map((h) => h.trim()).filter(Boolean)
     : [];
-  const compatibilityTags = (data as any).compatibility_tags ?? [];
+  const compatibilityTags = (data as { compatibility_tags?: string[] }).compatibility_tags ?? [];
 
   // Parse preferences → your_hobbies section
   let yourHobbies: { gotra?: string; religion?: string; caste?: string; horoscope?: string; preferences?: string; hobbies?: string } = {};
