@@ -433,9 +433,9 @@ export default function PreferencesPage() {
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B78A3B]">F I L T E R</p>

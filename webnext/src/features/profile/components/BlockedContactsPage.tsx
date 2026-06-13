@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { UserRound } from "lucide-react";
+import { ArrowLeft, UserRound } from "lucide-react";
 import { getBlockedUsers, unblockProfile } from "@/shared/api/mvp.api";
 import { showError, showSuccess } from "@/shared/utils/toast";
 import Avatar from "@/features/profile/components/Avatar";
@@ -38,9 +38,9 @@ export default function BlockedContactsPage() {
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <span className="text-lg leading-none">←</span>
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
             <div>
               <h1 className="text-2xl font-semibold">Blocked</h1>
