@@ -1,16 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { MoreVertical, Pin, PinOff, Bell, BellOff, Archive, ArchiveRestore } from 'lucide-react'
+import { MoreVertical, Pin, PinOff, Bell, BellOff, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import { Conversation } from '@/shared/types/chat.types'
 import { useAuth } from '@/features/auth'
 import ProfileImage from '@/shared/components/ProfileImage'
 import { formatTime } from '@/shared/lib/utils'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
-import { patchConversationState, type ConversationStatePatch } from '@/shared/api/chat.api'
-import { showError } from '@/shared/utils/toast'
+import { patchConversationState, deleteConversation, type ConversationStatePatch } from '@/shared/api/chat.api'
+import { showError, showSuccess } from '@/shared/utils/toast'
+import { hideConversation } from '../lib/hiddenConversations'
 
 interface Props {
   conversation: Conversation
@@ -24,14 +25,17 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
   const { unreadCounts, onlineUsers } = useNotificationContext()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const other = conversation.participants.find((p) => p.id !== user?.id)
   const unread = unreadCounts[conversation.id] ?? conversation.unread_count
   const isOnline = other ? onlineUsers.has(other.id) || other.is_online : false
   const m = conversation.membership
 
+  const closeMenu = () => { setMenuOpen(false); setConfirmDelete(false) }
+
   const patch = async (body: ConversationStatePatch) => {
-    setMenuOpen(false)
+    closeMenu()
     if (!conversation.uuid) return
     try {
       await patchConversationState(conversation.uuid, body)
@@ -41,10 +45,48 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
     }
   }
 
+  const del = async () => {
+    closeMenu()
+    if (!conversation.uuid) return
+    try {
+      await deleteConversation(conversation.uuid)
+      // The backend still lists deleted chats, so remember the deletion locally
+      // and filter it out of the list (until a newer message arrives).
+      hideConversation(conversation.id, new Date().toISOString())
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      showSuccess('Chat deleted')
+      if (isActive) router.push('/chat') // close the open thread we just deleted
+    } catch (e) {
+      showError(e, 'Could not delete conversation.')
+    }
+  }
+
+  // ── Long-press to open the actions menu on mobile ──────────────────────────
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressed = useRef(false)
+  const startPress = () => {
+    longPressed.current = false
+    pressTimer.current = setTimeout(() => { longPressed.current = true; setMenuOpen(true) }, 450)
+  }
+  const cancelPress = () => {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
+  }
+  // Swallow the tap that follows a long-press so it doesn't also open the chat.
+  const handleOpen = () => {
+    if (longPressed.current) { longPressed.current = false; return }
+    onClick()
+  }
+
   return (
-    <div className={`relative flex items-center ${isActive ? 'bg-white/50' : 'hover:bg-white/40'}`}>
+    <div
+      className={`relative flex items-center ${isActive ? 'bg-white/50' : 'hover:bg-white/40'}`}
+      onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true) }}
+    >
       <button
-        onClick={onClick}
+        onClick={handleOpen}
+        onTouchStart={startPress}
+        onTouchEnd={cancelPress}
+        onTouchMove={cancelPress}
         className="flex flex-1 items-center gap-3 px-4 py-3 text-left min-w-0"
       >
         <span
@@ -102,14 +144,34 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
 
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+          <div className="fixed inset-0 z-10" onClick={closeMenu} />
           <div className="absolute right-2 top-12 z-20 w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm">
-            <Item icon={m?.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-              label={m?.is_pinned ? 'Unpin' : 'Pin'} onClick={() => patch({ is_pinned: !m?.is_pinned })} />
-            <Item icon={m?.is_muted ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-              label={m?.is_muted ? 'Unmute' : 'Mute'} onClick={() => patch({ is_muted: !m?.is_muted })} />
-            <Item icon={m?.is_archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-              label={m?.is_archived ? 'Unarchive' : 'Archive'} onClick={() => patch({ is_archived: !m?.is_archived })} />
+            {confirmDelete ? (
+              <div className="p-3">
+                <p className="mb-2 text-xs text-[#746767]">Delete this chat for you?</p>
+                <div className="flex gap-2">
+                  <button onClick={closeMenu}
+                    className="flex-1 rounded-lg border border-[#EADDD2] px-2 py-1.5 text-xs font-medium text-[#2D2424]">
+                    Cancel
+                  </button>
+                  <button onClick={del}
+                    className="flex-1 rounded-lg bg-[#7A2432] px-2 py-1.5 text-xs font-medium text-white">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Item icon={m?.is_pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                  label={m?.is_pinned ? 'Unpin' : 'Pin'} onClick={() => patch({ is_pinned: !m?.is_pinned })} />
+                <Item icon={m?.is_muted ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                  label={m?.is_muted ? 'Unmute' : 'Mute'} onClick={() => patch({ is_muted: !m?.is_muted })} />
+                <Item icon={m?.is_archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+                  label={m?.is_archived ? 'Unarchive' : 'Archive'} onClick={() => patch({ is_archived: !m?.is_archived })} />
+                <Item icon={<Trash2 className="h-4 w-4" />} label="Delete" danger
+                  onClick={() => setConfirmDelete(true)} />
+              </>
+            )}
           </div>
         </>
       )}
@@ -117,9 +179,10 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
   )
 }
 
-function Item({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function Item({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[#2D2424] hover:bg-gray-50">
+    <button onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 ${danger ? 'text-[#7A2432]' : 'text-[#2D2424]'}`}>
       {icon}{label}
     </button>
   )

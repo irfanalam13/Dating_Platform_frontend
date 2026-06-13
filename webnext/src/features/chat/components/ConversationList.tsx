@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getConversations } from '@/shared/api/chat.api'
 import ConversationItem from './ConversationItem'
+import { filterHidden } from '../lib/hiddenConversations'
 
 interface Props {
   activeId: string | null
@@ -20,8 +21,9 @@ export default function ConversationList({ activeId, onSelect }: Props) {
   })
 
   // Pinned conversations float to the top (server already orders by recency).
+  // Locally-deleted chats are filtered out (see hiddenConversations).
   const conversations = useMemo(() => {
-    const list = data?.results ?? []
+    const list = filterHidden(data?.results ?? [])
     return [...list].sort((a, b) =>
       Number(b.membership?.is_pinned ?? false) - Number(a.membership?.is_pinned ?? false)
     )

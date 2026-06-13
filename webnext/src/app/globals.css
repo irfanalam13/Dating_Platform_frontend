@@ -1,15 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Beau+Rivage&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Inter is the default typeface for the entire app. Every element inherits
-   it from <body>; form controls are forced to inherit since browsers
-   otherwise fall back to their own system font. The brand name keeps its
-   own font via .log-font (higher specificity, so it wins over this). */
+/* Inter is the default typeface for the entire app, self-hosted via next/font
+   and exposed as `--font-inter` (set on <html> in the root layout). Every
+   element inherits it from <body>; form controls are forced to inherit since
+   browsers otherwise fall back to their own system font. The brand name keeps
+   its own font via .log-font (higher specificity, so it wins over this). */
 html {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
@@ -33,8 +32,7 @@ textarea {
 }
 
 .log-font {
-  font-family: "Beau Rivage", cursive;
-
+  font-family: var(--font-beau-rivage), "Beau Rivage", cursive;
 }
 
 .glass-btn {

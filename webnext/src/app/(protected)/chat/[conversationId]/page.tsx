@@ -26,7 +26,7 @@ export default function ConversationPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h2 className="text-base font-semibold text-[#2D2424]">Messages</h2>
+          <h2 className="text-base font-semibold text-[#B78A3B]">Messages</h2>
         </div>
         <ConversationList
           activeId={conversationIdStr}
