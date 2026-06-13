@@ -258,8 +258,7 @@ export default function EditProfile() {
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile setup</p>
-              <h1 className="text-2xl font-semibold leading-tight">Build a trustworthy profile</h1>
+              <h1 className="text-2xl font-semibold text-[#B78A3B]">Profile Setup</h1>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2">
