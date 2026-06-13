@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HeartHandshake, MessageCircle, UserCheck, X, Send, UserX } from "lucide-react";
+import { HeartHandshake, MessageCircle, UserCheck, X, Send, UserX, HeartCrack } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,
@@ -10,6 +10,7 @@ import {
   useAcceptMatch,
   useRejectMatch,
   useCancelMatch,
+  useUnmatch,
   useStartConversation,
 } from "@/features/matcher/hooks/useMatches";
 
@@ -22,6 +23,7 @@ export default function MatchesPage() {
   const acceptMutation = useAcceptMatch();
   const rejectMutation = useRejectMatch();
   const cancelMutation = useCancelMatch();
+  const unmatchMutation = useUnmatch();
   const conversationMutation = useStartConversation();
 
   const isLoading = matchesLoading || receivedLoading;
@@ -101,31 +103,51 @@ export default function MatchesPage() {
               key={match.id}
               className="flex items-center gap-3 rounded-lg border border-[#EADDD2] p-4"
             >
-              <ProfileImage
-                src={match.profile_image}
-                name={match.name || match.email}
-                alt={match.name || "Match"}
-                className="h-14 w-14 shrink-0 rounded-full"
-                textClassName="text-lg"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold">{match.name || match.email}</p>
-                <p className="text-sm text-[#746767]">Mutual match</p>
-              </div>
-              {typeof match.user_id === "number" && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (match.user_id != null) router.push(`/profile/${match.user_id}`);
+                }}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                aria-label={`View ${match.name || match.email}'s profile`}
+              >
+                <ProfileImage
+                  src={match.profile_image}
+                  name={match.name || match.email}
+                  alt={match.name || "Match"}
+                  className="h-14 w-14 shrink-0 rounded-full"
+                  textClassName="text-lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{match.name || match.email}</p>
+                  <p className="text-sm text-[#746767]">Mutual match</p>
+                </div>
+              </button>
+              <div className="flex shrink-0 items-center gap-2">
                 <button
-                  onClick={() => conversationMutation.mutate(match.user_id)}
-                  disabled={conversationMutation.isPending}
-                  aria-label={`Message ${match.name || match.email}`}
+                  onClick={() => unmatchMutation.mutate(match.id)}
+                  disabled={unmatchMutation.isPending}
+                  aria-label={`Undo match with ${match.name || match.email}`}
+                  title="Undo match"
                   className="glass-glossy grid h-10 w-10 place-items-center rounded-full disabled:opacity-50"
                 >
-                  {conversationMutation.isPending ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <MessageCircle className="h-5 w-5" />
-                  )}
+                  <HeartCrack className="h-5 w-5" />
                 </button>
-              )}
+                {match.user_id != null && (
+                  <button
+                    onClick={() => conversationMutation.mutate(match.user_id)}
+                    disabled={conversationMutation.isPending}
+                    aria-label={`Message ${match.name || match.email}`}
+                    className="glass-glossy grid h-10 w-10 place-items-center rounded-full disabled:opacity-50"
+                  >
+                    {conversationMutation.isPending ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <MessageCircle className="h-5 w-5" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

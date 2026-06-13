@@ -13,7 +13,7 @@ import { useAuth } from "@/features/auth";
 import { showError, showSuccess } from "@/shared/utils/toast"
 import { createOrGetConversation } from "@/shared/api/chat.api"
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import type { PendingMatch, MatchRequestItem } from "@/shared/types/matcher.types";
+import type { PendingMatch, MatchRequestItem, AcceptedMatch } from "@/shared/types/matcher.types";
 
 export function useAcceptedMatches() {
   // const { user } = useAuth();
@@ -125,6 +125,33 @@ export function useRejectMatch() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["receivedMatches"] });
     },
+  });
+}
+
+// Undo a mutual match. Uses the reject endpoint (keyed by match id) and
+// updates the acceptedMatches cache so the row disappears immediately.
+export function useUnmatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: rejectMatch,
+    onMutate: async (matchId: number) => {
+      await queryClient.cancelQueries({ queryKey: ["acceptedMatches"] });
+      const prev = queryClient.getQueryData<AcceptedMatch[]>(["acceptedMatches"]);
+      queryClient.setQueryData<AcceptedMatch[]>(["acceptedMatches"], (old = []) =>
+        old.filter((m) => m.id !== matchId)
+      );
+      return { prev };
+    },
+    onError: (_err, _matchId, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["acceptedMatches"], ctx.prev);
+      showError(_err, "Could not undo match.");
+    },
+    onSuccess: () => {
+      showSuccess("Match removed.");
+      // The conversation may also disappear/lock — refresh the inbox.
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["acceptedMatches"] }),
   });
 }
 
