@@ -60,7 +60,7 @@ export default function SettingsPage() {
           </div>
         </header>
 
-        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
+        <section className="mb-4 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md" >
           <SectionTitle icon={Lock} title="Account privacy" />
           <div className="overflow-hidden rounded-2xl">
             <div className="divide-y divide-[#EADDD2]/70">
@@ -210,7 +210,7 @@ export default function SettingsPage() {
   );
 }
 
-function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: string; detail: string }) {
+function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: string; detail?: string }) {
   return (
     <div className="mb-3 flex gap-3">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[#2D2424]">
@@ -218,7 +218,7 @@ function SectionTitle({ icon: Icon, title, detail }: { icon: LucideIcon; title: 
       </span>
       <div>
         <h2 className="font-semibold">{title}</h2>
-        <p className="text-sm leading-6 text-[#746767]">{detail}</p>
+        {detail && <p className="text-sm leading-6 text-[#746767]">{detail}</p>}
       </div>
     </div>
   );

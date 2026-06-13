@@ -105,9 +105,16 @@ export function useChat(conversationId: string | null): UseChatReturn {
     );
   }, [data, failedMessages]);
 
-  // A different conversation starts with a clean slate of failures.
-  useEffect(() => {
+  // A different conversation starts with a clean slate of failures. Resetting
+  // the state during render via a prev-value tracker (instead of in an effect)
+  // avoids the extra render an effect would cause; the dedup ref is cleared in
+  // a small effect since ref writes don't belong in render.
+  const [prevConversationId, setPrevConversationId] = useState(conversationId);
+  if (conversationId !== prevConversationId) {
+    setPrevConversationId(conversationId);
     setFailedMessages([]);
+  }
+  useEffect(() => {
     lastSentRef.current = null;
   }, [conversationId]);
 
