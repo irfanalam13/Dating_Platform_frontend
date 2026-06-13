@@ -4,7 +4,20 @@ import Image from "next/image";
 import { Settings, MapPin, Briefcase, GraduationCap, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function ProfilePage({ data }: any) {
+interface ProfileViewerData {
+  profile_image?: string;
+  age?: number | string;
+  full_name?: string;
+  bio?: string;
+  location?: string;
+  about?: string;
+  job?: string;
+  education?: string;
+  interests?: string[];
+  photos?: string[];
+}
+
+export default function ProfilePage({ data }: { data?: ProfileViewerData }) {
   const router = useRouter();
 
   return (

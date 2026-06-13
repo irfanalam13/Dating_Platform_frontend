@@ -511,10 +511,13 @@ function DobPicker({ value, onChange, error }: { value: string; onChange: (value
 
   // Sync down only when the parent supplies a real date (e.g. loaded from the
   // API). Don't reset on an empty value, so clearing one field doesn't wipe
-  // the in-progress entries in the others.
-  useEffect(() => {
+  // the in-progress entries in the others. Adjusting state during render via a
+  // prev-value tracker avoids the extra render an effect would cause.
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (value) setParts(split(value));
-  }, [value]);
+  }
 
   const { year, month, day } = parts;
 
