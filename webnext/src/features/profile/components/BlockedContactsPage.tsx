@@ -44,7 +44,6 @@ export default function BlockedContactsPage() {
             </button>
             <div>
               <h1 className="text-2xl font-semibold">Blocked</h1>
-              <p className="text-sm text-[#746767]">People you’ve blocked can’t message or find you.</p>
             </div>
           </div>
         </header>
@@ -61,10 +60,10 @@ export default function BlockedContactsPage() {
           {!isLoading && blocked.length === 0 && (
             <div className="grid min-h-[300px] place-items-center p-8 text-center">
               <div>
-                <UserRound className="mx-auto mb-3 h-10 w-10 text-[#7A2432]" />
+                <UserRound className="mx-auto mb-3 h-10 w-10 text-[#ED2939]" />
                 <h2 className="font-semibold">No blocked users</h2>
                 <p className="mt-2 text-sm leading-6 text-[#746767]">
-                  When you block someone, they’ll show up here.
+                  Your blocked contacts will appear here
                 </p>
               </div>
             </div>

@@ -478,13 +478,9 @@ const DOB_MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-// Year range is derived from today, not hardcoded, so it never goes stale:
-// newest = this year minus the 18-year minimum age, oldest = minus 80.
-const DOB_MIN_AGE = 8;
-const DOB_MAX_AGE = 80;
-const DOB_THIS_YEAR = new Date().getFullYear();
-const DOB_MAX_YEAR = DOB_THIS_YEAR - DOB_MIN_AGE;
-const DOB_MIN_YEAR = DOB_THIS_YEAR - DOB_MAX_AGE;
+// Year range is fixed to 1965–2008 per product spec (newest first).
+const DOB_MIN_YEAR = 1965;
+const DOB_MAX_YEAR = 2008;
 const DOB_YEARS = Array.from({ length: DOB_MAX_YEAR - DOB_MIN_YEAR + 1 }, (_, i) => DOB_MAX_YEAR - i);
 
 // Accept either a month name ("February") or a number ("2"); returns 1–12 or NaN.
@@ -520,9 +516,14 @@ function DobPicker({ value, onChange, error }: { value: string; onChange: (value
 
   const { year, month, day } = parts;
 
-  // Day field always offers 1–31; commit() clamps impossible dates (e.g. a
-  // chosen Feb 31 collapses to Feb 28/29).
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  // Day is the only typed field: keep digits only, cap at 31 (so 1–31), and
+  // commit() further clamps impossible dates (e.g. a chosen Feb 31 collapses to
+  // Feb 28/29). Month and year are dropdown-only — no typing.
+  const handleDay = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 2);
+    const capped = digits && Number(digits) > 31 ? "31" : digits;
+    commit({ ...parts, day: capped });
+  };
 
   const commit = (next: { year: string; month: string; day: string }) => {
     setParts(next);
@@ -546,39 +547,31 @@ function DobPicker({ value, onChange, error }: { value: string; onChange: (value
       <span className="mb-1.5 block text-sm font-medium">Date of birth</span>
       <div className="grid grid-cols-3 gap-3">
         <input
-          list="dob-days"
           value={day}
-          onChange={(e) => commit({ ...parts, day: e.target.value })}
+          onChange={(e) => handleDay(e.target.value)}
           placeholder="Day"
           inputMode="numeric"
+          maxLength={2}
           className={fieldClass}
         />
-        <datalist id="dob-days">
-          {days.map((dd) => <option key={dd} value={dd} />)}
-        </datalist>
 
-        <input
-          list="dob-months"
+        <select
           value={month}
           onChange={(e) => commit({ ...parts, month: e.target.value })}
-          placeholder="Month"
           className={fieldClass}
-        />
-        <datalist id="dob-months">
-          {DOB_MONTHS.map((name) => <option key={name} value={name} />)}
-        </datalist>
+        >
+          <option value="">Month</option>
+          {DOB_MONTHS.map((name) => <option key={name} value={name}>{name}</option>)}
+        </select>
 
-        <input
-          list="dob-years"
+        <select
           value={year}
           onChange={(e) => commit({ ...parts, year: e.target.value })}
-          placeholder="Year"
-          inputMode="numeric"
           className={fieldClass}
-        />
-        <datalist id="dob-years">
-          {DOB_YEARS.map((yy) => <option key={yy} value={yy} />)}
-        </datalist>
+        >
+          <option value="">Year</option>
+          {DOB_YEARS.map((yy) => <option key={yy} value={yy}>{yy}</option>)}
+        </select>
       </div>
       {error && <span className="mt-1.5 block text-xs font-medium text-red-600">Please add your date of birth to continue.</span>}
     </div>

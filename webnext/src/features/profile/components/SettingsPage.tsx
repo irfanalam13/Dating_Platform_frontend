@@ -199,7 +199,7 @@ export default function SettingsPage() {
           <button
             onClick={() => logout.mutate()}
             disabled={logout.isPending}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 text-sm font-semibold text-[#ff3e3e] disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-red-200 text-sm font-semibold text-[#ff3e3e] disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
             {logout.isPending ? "Logging out..." : "Log out"}
