@@ -73,7 +73,7 @@ export default function MessageInput({
   }, [handleSend, editing, replyTo, onCancelEdit, onCancelReply])
 
   return (
-    <div className="border-t border-white/40 backdrop-blur-md">
+    <div className="shrink-0 border-t border-white/40 backdrop-blur-md [padding-bottom:env(safe-area-inset-bottom)]">
       {/* Reply banner */}
       {replyTo && !editing && (
         <div className="flex items-center gap-2 px-4 pt-2">

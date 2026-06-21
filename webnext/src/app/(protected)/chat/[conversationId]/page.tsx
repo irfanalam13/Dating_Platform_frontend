@@ -12,7 +12,7 @@ export default function ConversationPage() {
 
   return (
     <div
-      className="flex h-[100dvh] overflow-hidden"
+      className="flex h-[100svh] overflow-hidden"
       style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
     >
       {/* ── Desktop-only sidebar (WhatsApp-style persistent list) ── */}

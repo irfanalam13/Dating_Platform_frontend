@@ -7,6 +7,7 @@ import { MoreVertical, Pin, PinOff, Bell, BellOff, Archive, ArchiveRestore, Tras
 import { Conversation } from '@/shared/types/chat.types'
 import { useAuth } from '@/features/auth'
 import ProfileImage from '@/shared/components/ProfileImage'
+import { resolveImageUrl } from '@/shared/lib/mediaUrl'
 import { formatTime } from '@/shared/lib/utils'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
 import { patchConversationState, deleteConversation, type ConversationStatePatch } from '@/shared/api/chat.api'
@@ -98,7 +99,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
           className="relative flex-shrink-0 cursor-pointer"
         >
           <ProfileImage
-            src={other?.profile_picture ?? other?.profile_image}
+            src={resolveImageUrl(other?.profile_picture ?? other?.profile_image)}
             name={other?.display_name ?? other?.full_name ?? '?'}
             className="w-10 h-10 rounded-full"
             textClassName="text-sm"

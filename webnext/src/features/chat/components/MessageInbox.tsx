@@ -11,6 +11,7 @@ import { useNotificationContext } from "@/features/notification/context/Notifica
 import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { resolveImageUrl } from "@/shared/lib/mediaUrl";
 import { filterHidden } from "@/features/chat/lib/hiddenConversations";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -24,7 +25,7 @@ function getDisplayName(person: ConversationParticipant): string {
 }
 
 function getProfileImage(person: ConversationParticipant): string {
-  return person.profile_image ?? person.profile_picture ?? "/default.png";
+  return resolveImageUrl(person.profile_image ?? person.profile_picture) ?? "/default.png";
 }
 
 function getLastMessageText(conversation: Conversation): string {

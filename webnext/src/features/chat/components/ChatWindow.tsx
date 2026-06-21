@@ -14,6 +14,8 @@ import TypingIndicator from './TypingIndicator'
 import { showSuccess, showError } from '@/shared/utils/toast'
 
 import Avatar from '@/features/profile/components/Avatar'
+import ProfileImage from '@/shared/components/ProfileImage'
+import { resolveImageUrl } from '@/shared/lib/mediaUrl'
 import OnlineIndicator from './OnlineIndicator'
 import type { ConversationParticipant, Message } from '@/shared/types/chat.types'
 
@@ -36,7 +38,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const router          = useRouter()
   const queryClient     = useQueryClient()
   const { onlineUsers } = useNotificationContext()
-  const bottomRef       = useRef<HTMLDivElement>(null)
+  const listRef         = useRef<HTMLDivElement>(null)
 
   const { messages, isLoading, typingUsers, send, sendTyping, wsStatus } =
     useChat(conversationId)
@@ -106,8 +108,13 @@ export default function ChatWindow({ conversationId }: Props) {
     onError: (err) => { setShowReportUser(false); showError(err, 'Could not submit report.') },
   })
 
+  // Auto-scroll to the newest message by scrolling the MESSAGE LIST itself —
+  // never `scrollIntoView`, which also scrolls every scrollable ancestor (incl.
+  // the window). That ancestor scroll was dragging the whole chat — and the
+  // input bar — up off the screen when a conversation opened.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = listRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
   const isTyping = typingUsers.size > 0
@@ -164,14 +171,14 @@ export default function ChatWindow({ conversationId }: Props) {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full min-h-0 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
     >
       {/* ── Header (single combined bar) ───────────────── */}
       {/* relative z-30 lifts the whole header (a backdrop-blur stacking context)
           above the messages list so the dropdown menu overflowing below it is
           actually clickable instead of being painted under the message area. */}
-      <div className="relative z-30 flex items-center gap-2 px-3 py-3 border-b border-white/50 bg-white/60 backdrop-blur-md">
+      <div className="relative z-30 flex shrink-0 items-center gap-2 px-3 py-3 border-b border-white/50 bg-white/60 backdrop-blur-md">
         {/* Mobile back — desktop keeps the conversation list visible */}
         <button
           type="button"
@@ -189,7 +196,15 @@ export default function ChatWindow({ conversationId }: Props) {
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             aria-label={`View ${other.display_name ?? other.full_name ?? "member"}'s profile`}
           >
-            <Avatar name={other.display_name ?? other.full_name ?? "Member"} size="md" isOnline={isOtherOnline} />
+            <span className="relative flex-shrink-0">
+              <ProfileImage
+                src={resolveImageUrl(other.profile_picture ?? other.profile_image)}
+                name={other.display_name ?? other.full_name ?? "Member"}
+                className="h-10 w-10 rounded-full"
+                textClassName="text-sm"
+              />
+              <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${isOtherOnline ? "bg-green-500" : "bg-gray-400"}`} />
+            </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-[#1a1a2e]">
                 {other.display_name ?? other.full_name ?? "Member"}
@@ -248,7 +263,7 @@ export default function ChatWindow({ conversationId }: Props) {
       </div>
 
       {/* ── Messages ───────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0.5">
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-0.5">
         {isLoading && (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
@@ -268,12 +283,11 @@ export default function ChatWindow({ conversationId }: Props) {
         ))}
 
         {isTyping && <TypingIndicator />}
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Input (or "Unblock chat" prompt when blocked) ─ */}
       {isBlocked ? (
-        <div className="border-t border-white/50 bg-white/60 px-4 py-4 backdrop-blur-md">
+        <div className="shrink-0 border-t border-white/50 bg-white/60 px-4 py-4 backdrop-blur-md [padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-md flex-col items-center gap-2 text-center">
             <p className="text-sm text-[#746767]">
               You blocked this person. Neither of you can send messages.
