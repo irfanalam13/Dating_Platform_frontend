@@ -11,7 +11,7 @@ import { useNotificationContext } from "@/features/notification/context/Notifica
 import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
 import ProfileImage from "@/shared/components/ProfileImage";
-import { resolveImageUrl } from "@/shared/lib/mediaUrl";
+import { useMatchAvatars, pickAvatar } from "@/features/chat/hooks/useMatchAvatars";
 import { filterHidden } from "@/features/chat/lib/hiddenConversations";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -24,8 +24,11 @@ function getDisplayName(person: ConversationParticipant): string {
   return person.name ?? person.display_name ?? person.full_name ?? "Matched user";
 }
 
-function getProfileImage(person: ConversationParticipant): string {
-  return resolveImageUrl(person.profile_image ?? person.profile_picture) ?? "/default.png";
+function getProfileImage(
+  person: ConversationParticipant,
+  matchAvatars: Map<number, string>,
+): string {
+  return pickAvatar(person.profile_image ?? person.profile_picture, person.id, matchAvatars) ?? "/default.png";
 }
 
 function getLastMessageText(conversation: Conversation): string {
@@ -41,6 +44,7 @@ export function MessageInbox() {
   const router                      = useRouter();
   const { user }                    = useAuth();
   const { unreadCounts, onlineUsers } = useNotificationContext();
+  const matchAvatars                  = useMatchAvatars();
   const [query, setQuery]           = useState("");
 
   const { data, isLoading } = useQuery({
@@ -159,7 +163,7 @@ export function MessageInbox() {
                       >
                         <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
                           <ProfileImage
-                            src={getProfileImage(person)}
+                            src={getProfileImage(person, matchAvatars)}
                             name={getDisplayName(person)}
                             alt={getDisplayName(person)}
                             className="h-14 w-14 rounded-full"
@@ -169,7 +173,7 @@ export function MessageInbox() {
                       </div>
                     ) : (
                       <ProfileImage
-                        src={getProfileImage(person)}
+                        src={getProfileImage(person, matchAvatars)}
                         name={getDisplayName(person)}
                         alt={getDisplayName(person)}
                         className="h-14 w-14 rounded-full"
@@ -234,7 +238,7 @@ export function MessageInbox() {
               if (!person) return null;
 
               const displayName  = getDisplayName(person);
-              const profileImage = getProfileImage(person);
+              const profileImage = getProfileImage(person, matchAvatars);
               const isOnline     = onlineUsers.has(person.id) || person.is_online;
               const unread       = unreadCounts[conversation.id] ?? conversation.unread_count ?? 0;
 

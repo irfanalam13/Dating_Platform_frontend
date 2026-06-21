@@ -8,6 +8,7 @@ import {
   getNotifications,
   markNotificationsRead,
   markAllNotificationsRead,
+  deleteNotification,
 } from "@/shared/api/notification.api";
 
 import type { Notification } from "@/shared/types/notification.types";
@@ -87,6 +88,43 @@ export function useMarkNotificationsRead() {
     },
 
     onError: (_err, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(notificationKeys.all, context.previous);
+      }
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// useDeleteNotification — removes a single notification
+// ─────────────────────────────────────────────────────────
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteNotification(id),
+
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+
+      const previous = queryClient.getQueryData<Notification[]>(
+        notificationKeys.all
+      );
+
+      queryClient.setQueryData<Notification[]>(
+        notificationKeys.all,
+        (old = []) => old.filter((n: Notification) => n.id !== id)
+      );
+
+      return { previous };
+    },
+
+    onError: (_err, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(notificationKeys.all, context.previous);
       }

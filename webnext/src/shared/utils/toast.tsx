@@ -1,6 +1,7 @@
 "use client";
 
-import { toast } from "react-hot-toast";
+import { useRef, useState } from "react";
+import { toast, type Toast } from "react-hot-toast";
 import { AlertCircle, CheckCircle2, X } from "lucide-react";
 
 type ToastSource = string | Error | unknown;
@@ -163,6 +164,98 @@ function extractMessage(source: ToastSource, fallback: string): string {
 	return statusFallback(status) ?? fallback;
 }
 
+// Glass toast card. Swipe it UP (touch or pointer drag) to dismiss — the card
+// follows your finger and, once dragged past the threshold or flicked, is
+// removed. Tapping the X also dismisses it.
+function ToastCard({
+	t,
+	variant,
+	message,
+}: {
+	t: Toast;
+	variant: "success" | "error";
+	message: string;
+}) {
+	const [dragY, setDragY] = useState(0);
+	const startY = useRef<number | null>(null);
+	const dragging = useRef(false);
+
+	const DISMISS_AT = 60; // px dragged up before release dismisses
+
+	const onPointerDown = (e: React.PointerEvent) => {
+		startY.current = e.clientY;
+		dragging.current = true;
+		(e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+	};
+	const onPointerMove = (e: React.PointerEvent) => {
+		if (!dragging.current || startY.current === null) return;
+		// Only track upward movement (negative offset); ignore downward.
+		setDragY(Math.min(0, e.clientY - startY.current));
+	};
+	const endDrag = () => {
+		if (!dragging.current) return;
+		dragging.current = false;
+		startY.current = null;
+		if (dragY < -DISMISS_AT) toast.remove(t.id);
+		else setDragY(0);
+	};
+
+	return (
+		<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+			<div
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={endDrag}
+				onPointerCancel={endDrag}
+				style={{
+					transform: `translateY(${dragY}px)`,
+					opacity: 1 + dragY / 160, // fade as it slides up
+					transition: dragging.current ? "none" : "transform 0.2s ease, opacity 0.2s ease",
+					touchAction: "none",
+				}}
+				className="pointer-events-auto relative w-full max-w-md cursor-grab touch-none select-none overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl active:cursor-grabbing"
+			>
+				<div className="absolute inset-x-0 top-1.5 mx-auto h-1 w-10 rounded-full bg-slate-400/40" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.28)_40%,rgba(248,113,113,0.16)_100%)]" style={{ border: "1px solid rgba(255,255,255,0.5)", borderRadius: "28px" }} />
+				<div className="relative flex items-start gap-4 pr-10 pt-1">
+					<div
+						className={
+							variant === "success"
+								? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700"
+								: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700"
+						}
+					>
+						{variant === "success" ? (
+							<CheckCircle2 className="h-5 w-5" />
+						) : (
+							<AlertCircle className="h-5 w-5" />
+						)}
+					</div>
+
+					<div className="min-w-0 flex-1">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
+							{variant === "success" ? "Success" : "Error"}
+						</p>
+						<p className="mt-1 break-words text-sm leading-6 text-slate-800">
+							{message}
+						</p>
+					</div>
+				</div>
+
+				<button
+					type="button"
+					onClick={(e) => { e.stopPropagation(); toast.remove(t.id); }}
+					style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+					className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-slate-900"
+					aria-label="Dismiss toast"
+				>
+					<X className="h-4 w-4" />
+				</button>
+			</div>
+		</div>
+	);
+}
+
 function showToast(
 	variant: "success" | "error",
 	source: ToastSource,
@@ -172,47 +265,7 @@ function showToast(
 	const id = `${variant}:${message}`;
 
 	toast.custom(
-		(t) => (
-			<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-				<div className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
-					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.28)_40%,rgba(248,113,113,0.16)_100%)]" />
-					<div className="relative flex items-start gap-4 pr-10">
-						<div
-							className={
-								variant === "success"
-									? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700"
-									: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700"
-							}
-						>
-							{variant === "success" ? (
-								<CheckCircle2 className="h-5 w-5" />
-							) : (
-								<AlertCircle className="h-5 w-5" />
-							)}
-						</div>
-
-						<div className="min-w-0 flex-1">
-							<p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
-								{variant === "success" ? "Success" : "Error"}
-							</p>
-							<p className="mt-1 break-words text-sm leading-6 text-slate-800">
-								{message}
-							</p>
-						</div>
-					</div>
-
-					<button
-						type="button"
-						onClick={(e) => { e.stopPropagation(); toast.remove(t.id); }}
-						style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
-						className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-slate-900"
-						aria-label="Dismiss toast"
-					>
-						<X className="h-4 w-4" />
-					</button>
-				</div>
-			</div>
-		),
+		(t) => <ToastCard t={t} variant={variant} message={message} />,
 		{
 			id,
 			duration: variant === "success" ? 3200 : 5200,

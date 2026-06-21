@@ -15,7 +15,7 @@ import { showSuccess, showError } from '@/shared/utils/toast'
 
 import Avatar from '@/features/profile/components/Avatar'
 import ProfileImage from '@/shared/components/ProfileImage'
-import { resolveImageUrl } from '@/shared/lib/mediaUrl'
+import { useMatchAvatars, pickAvatar } from '../hooks/useMatchAvatars'
 import OnlineIndicator from './OnlineIndicator'
 import type { ConversationParticipant, Message } from '@/shared/types/chat.types'
 
@@ -38,6 +38,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const router          = useRouter()
   const queryClient     = useQueryClient()
   const { onlineUsers } = useNotificationContext()
+  const matchAvatars    = useMatchAvatars()
   const listRef         = useRef<HTMLDivElement>(null)
 
   const { messages, isLoading, typingUsers, send, sendTyping, wsStatus } =
@@ -198,7 +199,7 @@ export default function ChatWindow({ conversationId }: Props) {
           >
             <span className="relative flex-shrink-0">
               <ProfileImage
-                src={resolveImageUrl(other.profile_picture ?? other.profile_image)}
+                src={pickAvatar(other.profile_picture ?? other.profile_image, other.id, matchAvatars)}
                 name={other.display_name ?? other.full_name ?? "Member"}
                 className="h-10 w-10 rounded-full"
                 textClassName="text-sm"
@@ -221,8 +222,10 @@ export default function ChatWindow({ conversationId }: Props) {
           {(wsStatus === "disconnected" || wsStatus === "error") && <span className="block h-2 w-2 rounded-full bg-red-500" />}
         </span>
 
-        {/* 3-dot overflow menu */}
-        <div className="relative shrink-0">
+        {/* 3-dot overflow menu (the dropdown itself is rendered at the root,
+            outside this backdrop-blurred header — see below — so its full-screen
+            click-away layer is anchored to the viewport, not the header box). */}
+        <div className="shrink-0">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -233,34 +236,40 @@ export default function ChatWindow({ conversationId }: Props) {
           >
             <MoreVertical className="h-5 w-5" />
           </button>
-          {menuOpen && (
-            <>
-              {/* click-away backdrop */}
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div role="menu" className="absolute right-0 z-50 mt-2 w-48 space-y-1 rounded-2xl border border-white/60 bg-white/40 p-1.5 shadow-[0_10px_30px_rgba(16,24,40,0.18)] backdrop-blur-md">
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={!otherProfileId}
-                  onClick={() => { setMenuOpen(false); setShowReportUser(true) }}
-                  className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
-                >
-                  <Flag className="h-4 w-4 text-[#746767]" /> Report user
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={!otherProfileId || blockUserMutation.isPending}
-                  onClick={() => { setMenuOpen(false); if (otherProfileId) blockUserMutation.mutate(otherProfileId) }}
-                  className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
-                >
-                  <Ban className="h-4 w-4 text-red-600" /> <span className="text-red-600">Block user</span>
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
+
+      {/* ── 3-dot dropdown + click-away ─────────────────────
+          Rendered here (NOT inside the header) on purpose: the header has a
+          `backdrop-filter`, which would re-anchor `position: fixed` children to
+          the header box, so a full-screen click-away placed there only covered
+          the header bar. At the root the fixed layer is viewport-relative, so a
+          tap ANYWHERE dismisses the menu. */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+          <div role="menu" className="fixed right-3 top-16 z-50 w-48 space-y-1 rounded-2xl border border-white/60 bg-white/70 p-1.5 shadow-[0_10px_30px_rgba(16,24,40,0.18)] backdrop-blur-md">
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!otherProfileId}
+              onClick={() => { setMenuOpen(false); setShowReportUser(true) }}
+              className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
+            >
+              <Flag className="h-4 w-4 text-[#746767]" /> Report user
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!otherProfileId || blockUserMutation.isPending}
+              onClick={() => { setMenuOpen(false); if (otherProfileId) blockUserMutation.mutate(otherProfileId) }}
+              className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
+            >
+              <Ban className="h-4 w-4 text-red-600" /> <span className="text-red-600">Block user</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── Messages ───────────────────────────────────── */}
       <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-0.5">

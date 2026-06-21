@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -9,12 +10,15 @@ import {
   UserPlus,
   Phone,
   Megaphone,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
 import type { Notification, NotificationType } from "@/shared/types/notification.types";
 import {
   useNotificationList,
   useMarkNotificationsRead,
   useMarkAllNotificationsRead,
+  useDeleteNotification,
 } from "@/features/notification/hooks/useNotifications";
 import { formatTimeWithClock } from "@/shared/utils/time";
 import { useRouter } from "next/navigation";
@@ -75,6 +79,7 @@ export default function NotificationHome() {
   const { data, isLoading }                              = useNotificationList();
   const { mutate: markRead }                             = useMarkNotificationsRead();
   const { mutate: markAllRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  const { mutate: deleteNotif, isPending: isDeleting }   = useDeleteNotification();
   const unreadCount = data.filter((n: Notification) => !n.is_read).length;
 
   const handleOpen = (item: Notification) => {
@@ -130,37 +135,104 @@ export default function NotificationHome() {
         {!isLoading && data.length > 0 && (
           <div className="space-y-3">
             {data.map((item: Notification) => (
-              <button
+              <NotificationRow
                 key={item.id}
-                onClick={() => handleOpen(item)}
-                className={
-                  "glass-card flex w-full items-start gap-3 rounded-lg border p-4 text-left " +
-                  (item.is_read ? "border-[#EADDD2]" : "border-[#D4A89A]")
-                }
-              >
-                <span
-                  className={
-                    "grid h-10 w-10 shrink-0 place-items-center rounded-full " +
-                    iconClass(item.notification_type, item.is_read)
-                  }
-                >
-                  <NotificationIcon type={item.notification_type} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className={"block text-sm " + (!item.is_read ? "font-semibold" : "font-medium")}>
-                    {item.title}
-                  </span>
-                  <span className="mt-0.5 block text-sm leading-5 text-[#746767]">
-                    {item.body || "Tap to view details."}
-                  </span>
-                  <span className="mt-1 block text-xs text-[#A89090]">{formatTimeWithClock(item.created_at)}</span>
-                </span>
-                {!item.is_read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#B78A3B]" />}
-              </button>
+                item={item}
+                onOpen={() => handleOpen(item)}
+                onDelete={() => deleteNotif(item.id)}
+                isDeleting={isDeleting}
+              />
             ))}
           </div>
         )}
       </div>
     </main>
+  );
+}
+
+// ─── Single notification row (open action + three-dot delete menu) ──────────────
+function NotificationRow({
+  item,
+  onOpen,
+  onDelete,
+  isDeleting,
+}: {
+  item: Notification;
+  onOpen: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <div
+      className={
+        "glass-card relative flex w-full items-start gap-3 rounded-lg border p-4 " +
+        (item.is_read ? "border-[#EADDD2]" : "border-[#D4A89A]")
+      }
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+      >
+        <span
+          className={
+            "grid h-10 w-10 shrink-0 place-items-center rounded-full " +
+            iconClass(item.notification_type, item.is_read)
+          }
+        >
+          <NotificationIcon type={item.notification_type} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={"block text-sm " + (!item.is_read ? "font-semibold" : "font-medium")}>
+            {item.title}
+          </span>
+          <span className="mt-0.5 block text-sm leading-5 text-[#746767]">
+            {item.body || "Tap to view details."}
+          </span>
+          <span className="mt-1 block text-xs text-[#A89090]">{formatTimeWithClock(item.created_at)}</span>
+        </span>
+      </button>
+
+      {!item.is_read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#B78A3B]" />}
+
+      {/* Three-dot actions */}
+      <button
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="Notification actions"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#746767] hover:bg-black/5"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+
+      {menuOpen && (
+        <>
+          {/* click-away backdrop */}
+          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+          <div
+            role="menu"
+            className="absolute right-3 top-12 z-20 w-40 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              disabled={isDeleting}
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete();
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[#F87171] hover:bg-gray-50 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

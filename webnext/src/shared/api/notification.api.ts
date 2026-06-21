@@ -56,6 +56,14 @@ export function getUnreadCount(): Promise<{ unread_count: number }> {
   return data({ method: "GET", url: "/notification/unread-count/" });
 }
 
+/**
+ * DELETE /notification/<id>/
+ * Permanently removes a single notification for the current user.
+ */
+export function deleteNotification(id: string): Promise<void> {
+  return data({ method: "DELETE", url: `/notification/${id}/` });
+}
+
 // ─────────────────────────────────────────────────────────
 // Preferences (per category × channel)
 // ─────────────────────────────────────────────────────────
