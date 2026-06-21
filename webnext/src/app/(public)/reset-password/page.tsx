@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        <div className="rounded-3xl shadow-xl p-8 space-y-6">
+        <div className="rounded-3xl shadow-xl p-6 sm:p-8 space-y-6">
 
           {/* Icon */}
           <div className="flex flex-col items-center text-center space-y-3">

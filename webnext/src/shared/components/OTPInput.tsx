@@ -73,7 +73,7 @@ export default function OTPInput({
   };
 
   return (
-    <div className="flex justify-between gap-2" role="group" aria-label="Verification code">
+    <div className="flex w-full gap-1.5 sm:gap-2" role="group" aria-label="Verification code">
       {digits.map((digit, index) => (
         <input
           key={index}
@@ -90,7 +90,7 @@ export default function OTPInput({
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           aria-label={`Digit ${index + 1}`}
-          className="h-14 w-12 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-center text-xl font-semibold text-[#2D2424] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition disabled:opacity-60"
+          className="h-14 w-full min-w-0 flex-1 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-center text-lg font-semibold text-[#2D2424] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition disabled:opacity-60 sm:text-xl"
         />
       ))}
     </div>
