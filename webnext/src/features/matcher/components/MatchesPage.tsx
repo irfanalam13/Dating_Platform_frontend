@@ -233,18 +233,26 @@ export default function MatchesPage() {
             <div className="space-y-3">
               {pendingSent.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-md p-3">
-                  <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      item.user?.user_id != null &&
+                      router.push(`/profile/${item.user.user_id}`)
+                    }
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-label={`View ${item.user?.name || "profile"}`}
+                  >
                     <ProfileImage
                       src={item.user?.profile_image}
                       name={item.user?.name || "?"}
-                      className="h-10 w-10 rounded-full"
+                      className="h-10 w-10 shrink-0 rounded-full"
                       textClassName="text-sm"
                     />
-                    <div>
-                      <p className="text-sm font-semibold">{item.user?.name || "Someone"}</p>
-                      <p className="text-xs text-[#746767]">Waiting for a response</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{item.user?.name || "Someone"}</p>
+                      <p className="truncate text-xs text-[#746767]">Waiting for a response</p>
                     </div>
-                  </div>
+                  </button>
                   <button
                     onClick={() => cancelMutation.mutate(item.id)}
                     disabled={cancelMutation.isPending}
