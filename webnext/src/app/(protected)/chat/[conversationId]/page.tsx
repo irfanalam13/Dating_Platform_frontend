@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import ChatWindow from "@/features/chat/components/ChatWindow";
@@ -10,9 +11,36 @@ export default function ConversationPage() {
   const params = useParams<{ conversationId: string }>();
   const conversationIdStr = String(params.conversationId);
 
+  // ── Mobile keyboard handling ──────────────────────────────────────────────
+  // `100svh`/`100dvh` are fixed heights that DON'T shrink when the on-screen
+  // keyboard opens, so the input bar ends up floating above the keyboard with a
+  // dead gap below it. We instead size the chat to the *visual viewport* (the
+  // region actually visible above the keyboard) and re-measure as it changes —
+  // so the header stays pinned at the top and the message bar sits flush against
+  // the keyboard. Falls back to the CSS `h-[100svh]` when the API is absent.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const apply = () => {
+      const el = rootRef.current;
+      if (!el) return;
+      el.style.height = `${vv.height}px`;
+      el.style.transform = `translateY(${vv.offsetTop}px)`;
+    };
+    apply();
+    vv.addEventListener("resize", apply);
+    vv.addEventListener("scroll", apply);
+    return () => {
+      vv.removeEventListener("resize", apply);
+      vv.removeEventListener("scroll", apply);
+    };
+  }, []);
+
   return (
     <div
-      className="flex h-[100svh] overflow-hidden"
+      ref={rootRef}
+      className="fixed inset-0 flex h-[100svh] overflow-hidden"
       style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
     >
       {/* ── Desktop-only sidebar (WhatsApp-style persistent list) ── */}
