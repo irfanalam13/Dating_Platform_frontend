@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ChatWebSocket, WSStatus } from '@/shared/lib/websocket'
 import { WSChatEvent } from '@/shared/types/chat.types'
-import { getAccessToken, setAccessToken } from '@/shared/api/client'
-import api from '@/shared/api/client'
+import { getAccessToken, refreshOnce } from '@/shared/api/client'
 
 export function useChatWebSocket(conversationId: string | null) {
   const wsRef = useRef<ChatWebSocket | null>(null)
@@ -13,18 +12,13 @@ export function useChatWebSocket(conversationId: string | null) {
     if (!conversationId) return
 
     const connectWS = async () => {
-      //   Refresh token first
+      // Use the existing access token if present; otherwise refresh ONCE through
+      // the shared, deduped path. A raw /auth/refresh/ here would bypass the
+      // dedupe and race other refreshes into a rotation that blacklists a live
+      // token → spurious "token invalid" logouts.
       let token = getAccessToken()
-
-      try {
-        const refreshRes = await api.post('/auth/refresh/')
-        const newToken = refreshRes?.data?.data?.access || null
-        if (newToken) {
-          setAccessToken(newToken)
-          token = newToken
-        }
-      } catch (e) {
-        console.warn('Could not refresh token before WS connect')
+      if (!token) {
+        token = await refreshOnce()
       }
 
       if (!token) return

@@ -16,7 +16,7 @@ import type { LoginPayload } from "@/shared/types/auth.types";
 import { showSuccess, showError } from "@/shared/utils/toast";
 import { logger } from "@/shared/utils/logger";
 import Cookies from "js-cookie";
-import { setAccessToken } from "@/shared/api/client";
+import { setAccessToken, setRefreshToken } from "@/shared/api/client";
 import { get, extractToken, extractUser } from "@/shared/api/parse";
 
 // ─────────────────────────────────────────────────────────
@@ -271,6 +271,7 @@ export const useLogout = () => {
 
   const cleanup = (): void => {
     setAccessToken(null);
+    setRefreshToken(null);
     setAuth(null);
     queryClient.clear();
     clearLoggedInCookie();

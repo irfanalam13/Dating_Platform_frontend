@@ -30,6 +30,24 @@ export function extractToken(res: unknown): string | null {
   return null;
 }
 
+/** Pull a refresh token out of any of the shapes the API may return. */
+export function extractRefreshToken(res: unknown): string | null {
+  const candidates = [
+    get(res, "data", "data", "tokens", "refresh"),
+    get(res, "data", "tokens", "refresh"),
+    get(res, "data", "data", "refresh"),
+    get(res, "data", "refresh"),
+    get(res, "refresh"),
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.length > 0) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 /** Pull the user object out of any of the shapes the API may return. */
 export function extractUser(res: unknown): Record<string, unknown> | null {
   const candidates = [

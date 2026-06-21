@@ -4,6 +4,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 import { showError } from "@/shared/utils/toast";
 import { logger } from "@/shared/utils/logger";
+import { extractRefreshToken } from "./parse";
 
 // Allow callers to opt out of the interceptor's automatic error toast.
 declare module "axios" {
@@ -154,17 +155,57 @@ export function getAccessToken(): string | null {
   return null;
 }
 
-// shared/api/client.ts — add this
+// ─────────────────────────────────────────────────────────
+// Refresh token storage (JS fallback for cross-host prod)
+// The HttpOnly `refresh` cookie stays primary. But on a Vercel+Render split the
+// cookie isn't sent cross-site, so we also keep the refresh token in
+// sessionStorage and POST it in the refresh body. sessionStorage (not cookie/
+// localStorage) limits exposure: it clears on tab close and isn't sent anywhere
+// automatically. Cleared on logout.
+// ─────────────────────────────────────────────────────────
+
+const REFRESH_KEY = "chat_refresh_token";
+let _refreshToken: string | null = null;
+
+export function setRefreshToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  if (token) {
+    _refreshToken = token;
+    try { sessionStorage.setItem(REFRESH_KEY, token); } catch {}
+  } else {
+    _refreshToken = null;
+    try { sessionStorage.removeItem(REFRESH_KEY); } catch {}
+  }
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  if (_refreshToken) return _refreshToken;
+  try {
+    const fromSession = sessionStorage.getItem(REFRESH_KEY);
+    if (fromSession) { _refreshToken = fromSession; return fromSession; }
+  } catch {}
+  return null;
+}
 
 let refreshPromise: Promise<string | null> | null = null
 
 export const refreshOnce = async (): Promise<string | null> => {
   if (refreshPromise) return refreshPromise
 
-  refreshPromise = api.post('/auth/refresh/')
+  // Send the stored refresh token in the body as a fallback for when the
+  // HttpOnly cookie can't be delivered (cross-host). The backend prefers the
+  // cookie and only uses the body when the cookie is absent.
+  const body = getRefreshToken() ? { refresh: getRefreshToken() } : {}
+
+  refreshPromise = api.post('/auth/refresh/', body)
     .then(res => {
       const token = res?.data?.data?.access ?? null
       if (token) setAccessToken(token)
+      // Persist the rotated refresh token (returned in the body) so the next
+      // body-based refresh uses the current token, not a blacklisted one.
+      const rotated = extractRefreshToken(res)
+      if (rotated) setRefreshToken(rotated)
       return token
     })
     .catch(() => {
@@ -184,6 +225,7 @@ export const refreshOnce = async (): Promise<string | null> => {
 async function forceLogout(): Promise<never> {
   // Clear token from all layers
   setAccessToken(null);
+  setRefreshToken(null);
 
   // Clear all app state
   try {
@@ -228,6 +270,16 @@ function isAuthRoute(url: string): boolean {
 
 api.interceptors.request.use(
   (config) => {
+    // Attach the access token as a Bearer header so authenticated requests work
+    // even when the HttpOnly `access` cookie can't be delivered (cross-host prod:
+    // Vercel frontend + Render backend, where SameSite=Lax cookies aren't sent
+    // cross-site). The backend's CookieJWTAuthentication accepts either. We skip
+    // this on /auth/refresh/ since that path carries the refresh token itself.
+    const token = getAccessToken();
+    if (token && !(config.url ?? "").includes("/auth/refresh/")) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     if (typeof document !== "undefined") {
       const match = document.cookie.match(/csrftoken=([^;]+)/);
       if (match) {
