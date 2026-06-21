@@ -376,8 +376,10 @@ export default function HomePage() {
   // ─── Mutations ────────────────────────────────────────────────────────────────
 
   // ── Browse navigation: scroll/drag DOWN → next, UP → previous ──
+  // Reaching the last profile wraps back to the first, so the deck scrolls
+  // endlessly like a reel instead of dead-ending on the final card.
   const goNext = useCallback(() => {
-    setIndex((i) => (i >= queue.length - 1 ? i : i + 1));
+    setIndex((i) => (queue.length === 0 ? 0 : (i + 1) % queue.length));
     setSwipeDirection("up");
     dragY.set(0);
   }, [queue.length, dragY]);
@@ -536,8 +538,8 @@ export default function HomePage() {
     <main className="min-h-[100dvh] text-[#2D2424]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-4 pb-24 pt-4">
 
-        {/* ── Header ── */}
-        <header className="mb-5 rounded-[26px] border border-white/60 bg-white/55 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+        {/* ── Header (stays pinned to the top while the deck scrolls) ── */}
+        <header className="sticky top-2 z-30 mb-5 rounded-[26px] border border-white/60 bg-white/55 p-2 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
