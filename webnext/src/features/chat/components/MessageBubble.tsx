@@ -53,19 +53,55 @@ export default function MessageBubble({
   const SWIPE_THRESHOLD = 52   // px to drag before a release triggers reply
   const SWIPE_MAX = 72         // px the bubble can travel
   const canReply = canAct && !deleted && !!onReply
+  const canMenu = canAct && !deleted   // same gate as the desktop 3-dot button
   const [dragX, setDragX] = useState(0)
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const swiping = useRef(false)
 
+  // ── Press-and-hold to open the actions menu (mobile) ───────────────────────
+  // Phones don't fire a reliable `contextmenu` on long-press (iOS shows the
+  // text-callout instead), so we time the touch ourselves: hold ~450ms without
+  // moving and the same menu the desktop 3-dot button opens pops up. Any drag
+  // (scroll or swipe-to-reply) cancels it.
+  const LONG_PRESS_MS = 450
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressed = useRef(false)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const clearLongPress = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
   const onTouchStart = (e: React.TouchEvent) => {
-    if (!canReply) return
     const t = e.touches[0]
-    swipeStart.current = { x: t.clientX, y: t.clientY }
-    swiping.current = false
+    touchStart.current = { x: t.clientX, y: t.clientY }
+    longPressed.current = false
+    if (canMenu) {
+      longPressTimer.current = setTimeout(() => {
+        longPressed.current = true
+        // Abort any swipe-in-progress and open the menu.
+        swipeStart.current = null
+        swiping.current = false
+        setDragX(0)
+        setPickerOpen(false)
+        setMenuOpenedAt(Date.now())
+        setMenuOpen(true)
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10)
+      }, LONG_PRESS_MS)
+    }
+    if (canReply) {
+      swipeStart.current = { x: t.clientX, y: t.clientY }
+      swiping.current = false
+    }
   }
   const onTouchMove = (e: React.TouchEvent) => {
-    if (!swipeStart.current) return
     const t = e.touches[0]
+    // Any meaningful movement means this is a scroll/swipe, not a hold.
+    if (touchStart.current) {
+      const mdx = Math.abs(t.clientX - touchStart.current.x)
+      const mdy = Math.abs(t.clientY - touchStart.current.y)
+      if (mdx > 8 || mdy > 8) clearLongPress()
+    }
+    if (!swipeStart.current) return
     const dx = t.clientX - swipeStart.current.x
     const dy = t.clientY - swipeStart.current.y
     if (!swiping.current) {
@@ -77,6 +113,16 @@ export default function MessageBubble({
     setDragX(Math.max(0, Math.min(dx, SWIPE_MAX)))  // right-swipe only
   }
   const onTouchEnd = () => {
+    clearLongPress()
+    touchStart.current = null
+    // A long-press already opened the menu — don't also fire a reply.
+    if (longPressed.current) {
+      longPressed.current = false
+      swipeStart.current = null
+      swiping.current = false
+      setDragX(0)
+      return
+    }
     if (dragX >= SWIPE_THRESHOLD) onReply?.(message)
     swipeStart.current = null
     swiping.current = false
@@ -141,6 +187,7 @@ export default function MessageBubble({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       {/* Swipe-to-reply icon, revealed as the bubble is dragged right */}
       {canReply && dragX > 0 && (
@@ -178,7 +225,7 @@ export default function MessageBubble({
             setMenuOpenedAt(Date.now())
             setMenuOpen(true)
           }}
-          className={`relative cursor-context-menu px-3.5 py-2 rounded-2xl text-sm leading-relaxed
+          className={`relative cursor-context-menu select-none px-3.5 py-2 rounded-2xl text-sm leading-relaxed [-webkit-touch-callout:none] [-webkit-user-select:none]
           ${isMine
             ? 'bg-indigo-600 text-white rounded-br-sm'
             : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}`}>
