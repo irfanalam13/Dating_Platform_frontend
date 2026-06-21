@@ -22,12 +22,15 @@ interface Props {
 export default function ConversationItem({ conversation, isActive, onClick }: Props) {
   const { user } = useAuth()
   const router = useRouter()
-  const { unreadCounts, onlineUsers } = useNotificationContext()
+  const { unreadCounts, onlineUsers, markConversationRead } = useNotificationContext()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const other = conversation.participants.find((p) => p.id !== user?.id)
+  // Coerce to Number so a string/number id mismatch can't make us pick
+  // ourselves (which would render the current user's own avatar/name).
+  const myId = Number(user?.id)
+  const other = conversation.participants.find((p) => Number(p.id) !== myId)
   const unread = unreadCounts[conversation.id] ?? conversation.unread_count
   const isOnline = other ? onlineUsers.has(other.id) || other.is_online : false
   const m = conversation.membership
@@ -74,6 +77,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
   // Swallow the tap that follows a long-press so it doesn't also open the chat.
   const handleOpen = () => {
     if (longPressed.current) { longPressed.current = false; return }
+    markConversationRead(conversation.id)  // clear the badge instantly on open
     onClick()
   }
 

@@ -40,8 +40,8 @@ if (DEBUG_API) {
   console.log(
     "[api-debug] mode:",
     resolvedBaseURL.startsWith("/")
-      ? "RELATIVE → Vercel same-origin proxy ✅"
-      : "ABSOLUTE → calling backend directly ⚠️ (third-party cookies; Safari/ITP will fail)"
+      ? "RELATIVE → Vercel same-origin proxy "
+      : "ABSOLUTE → calling backend directly (third-party cookies; Safari/ITP will fail)"
   );
 }
 

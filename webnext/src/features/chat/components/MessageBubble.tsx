@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   MoreVertical, Reply, Copy, Pencil, Trash2, Pin, Bookmark, Forward, Flag, SmilePlus,
+  Check, CheckCheck, Clock,
 } from 'lucide-react'
 import { Message } from '@/shared/types/chat.types'
 import { formatTime } from '@/shared/lib/utils'
@@ -14,12 +15,21 @@ import {
   saveMessage,
 } from '@/shared/api/chat.api'
 import { chatKeys } from '../hooks/useChat'
+import { useMessageReceipt, type ReceiptStatus } from '../hooks/useMessageReceipt'
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🔥', '🎉']
 
 interface Props {
   message: Message
   conversationId: string
+  /** True for the most recent own message — enables the detailed seen/delivered receipt. */
+  isLastOwn?: boolean
+  /** Search term to highlight inside the message body. */
+  highlight?: string
+  /** DOM id so the conversation can scroll this bubble into view (search). */
+  domId?: string
+  /** The currently-focused search result — gets a ring. */
+  isSearchActive?: boolean
   onReply?: (m: Message) => void
   onEdit?: (m: Message) => void
   onForward?: (m: Message) => void
@@ -27,7 +37,8 @@ interface Props {
 }
 
 export default function MessageBubble({
-  message, conversationId, onReply, onEdit, onForward, onReport,
+  message, conversationId, isLastOwn = false, highlight, domId, isSearchActive = false,
+  onReply, onEdit, onForward, onReport,
 }: Props) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -43,6 +54,14 @@ export default function MessageBubble({
   const idStr = message.id != null ? String(message.id) : ''
   const canAct = !!uuid && !idStr.startsWith('temp-')
   const deleted = !!message.is_deleted_for_all
+  const isPending = idStr.startsWith('temp-')  // optimistic, not yet server-acked
+
+  // Detailed delivery/seen receipt — fetched only for the latest own message.
+  const receipt = useMessageReceipt(
+    uuid,
+    isMine && isLastOwn && canAct && !message.failed && !deleted,
+    !!message.is_read,
+  )
 
   const closeMenus = () => { setMenuOpen(false); setPickerOpen(false) }
 
@@ -137,7 +156,8 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} mb-1`}
+      id={domId}
+      className={`group relative flex ${isMine ? 'justify-end' : 'justify-start'} mb-1 scroll-mt-24`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -181,7 +201,8 @@ export default function MessageBubble({
           className={`relative cursor-context-menu px-3.5 py-2 rounded-2xl text-sm leading-relaxed
           ${isMine
             ? 'bg-indigo-600 text-white rounded-br-sm'
-            : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}`}>
+            : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}
+          ${isSearchActive ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}>
 
           {/* Attachments */}
           {(message.attachments ?? []).map((a) => (
@@ -206,15 +227,21 @@ export default function MessageBubble({
           {deleted ? (
             <p className="italic opacity-70">This message was deleted</p>
           ) : (
-            message.content && <p className="break-words whitespace-pre-wrap">{message.content}</p>
+            message.content && (
+              <p className="break-words whitespace-pre-wrap">
+                {highlightText(message.content, highlight)}
+              </p>
+            )
           )}
 
           <div className={`flex items-center justify-end gap-1 mt-0.5
             ${isMine ? 'text-indigo-200' : 'text-[#746767]'}`}>
             {message.is_edited && !deleted && <span className="text-[10px]">edited</span>}
             <span className="text-[10px]">{formatTime(message.created_at)}</span>
-            {isMine && !message.failed && (
-              <span className="text-[10px]">{message.is_read ? '✓✓' : '✓'}</span>
+            {isMine && !message.failed && !deleted && (
+              <MessageTicks
+                status={isPending ? 'pending' : isLastOwn ? receipt.status : (message.is_read ? 'read' : 'sent')}
+              />
             )}
           </div>
 
@@ -237,6 +264,17 @@ export default function MessageBubble({
               </button>
             ))}
           </div>
+        )}
+
+        {/* Detailed delivery/seen status — only under the latest own message. */}
+        {isMine && isLastOwn && !message.failed && !deleted && !isPending && (
+          <p className="mt-0.5 self-end text-[10px] font-medium text-[#746767]">
+            {receipt.status === 'read'
+              ? (receipt.seenAt ? `Seen ${formatTime(receipt.seenAt)}` : 'Seen')
+              : receipt.status === 'delivered'
+                ? 'Delivered'
+                : 'Sent'}
+          </p>
         )}
       </div>
 
@@ -315,5 +353,33 @@ function MenuItem({
     >
       {icon}{label}
     </button>
+  )
+}
+
+// WhatsApp-style delivery ticks for own messages. Read is the only coloured
+// state so it reads at a glance against the indigo bubble.
+function MessageTicks({ status }: { status: 'pending' | ReceiptStatus }) {
+  if (status === 'pending') {
+    return <Clock className="h-3 w-3 text-indigo-200" aria-label="Sending" />
+  }
+  if (status === 'read') {
+    return <CheckCheck className="h-3.5 w-3.5 text-[#5fe0ff]" aria-label="Read" />
+  }
+  if (status === 'delivered') {
+    return <CheckCheck className="h-3.5 w-3.5 text-indigo-200" aria-label="Delivered" />
+  }
+  return <Check className="h-3.5 w-3.5 text-indigo-200" aria-label="Sent" />
+}
+
+// Wrap case-insensitive matches of `term` in <mark> for in-conversation search.
+function highlightText(text: string, term?: string): React.ReactNode {
+  const t = term?.trim()
+  if (!t) return text
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  return parts.map((part, i) =>
+    part.toLowerCase() === t.toLowerCase()
+      ? <mark key={i} className="rounded bg-amber-300 px-0.5 text-[#1a1a2e]">{part}</mark>
+      : part
   )
 }

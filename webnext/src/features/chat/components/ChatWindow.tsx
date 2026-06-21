@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, MoreVertical, Flag, Ban } from 'lucide-react'
-import { getConversations, editMessage, forwardMessage, reportMessage, uploadAttachment, sendChatMessage } from '@/shared/api/chat.api'
+import { ChevronLeft, MoreVertical, Flag, Ban, Search, X, ChevronUp, ChevronDown } from 'lucide-react'
+import { getConversations, editMessage, forwardMessage, reportMessage, uploadAttachment, sendChatMessage, searchMessages } from '@/shared/api/chat.api'
 import { blockProfile, unblockProfile, getBlockedUsers, reportProfile } from '@/shared/api/mvp.api'
 import { useAuth } from '@/features/auth'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
@@ -45,6 +45,7 @@ export default function ChatWindow({ conversationId }: Props) {
   const [editing, setEditing]     = useState<Message | null>(null)
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null)
   const [reportMsg, setReportMsg]   = useState<Message | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const { data: conversations } = useQuery({
     queryKey: ['conversations'],
@@ -53,8 +54,9 @@ export default function ChatWindow({ conversationId }: Props) {
 
   const conversation = conversations?.results?.find?.((c) => String(c.id) === conversationId)
 
+  const myId = Number(user?.id)
   const other: ConversationParticipant | undefined =
-    conversation?.participants?.find((p) => p.id !== user?.id)
+    conversation?.participants?.find((p) => Number(p.id) !== myId)
 
   const isOtherOnline: boolean = other
     ? onlineUsers.has(other.id) || other.is_online
@@ -107,10 +109,87 @@ export default function ChatWindow({ conversationId }: Props) {
   })
 
   useEffect(() => {
+    // Don't yank the view to the bottom while the user is navigating search hits.
+    if (searchOpen) return
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, searchOpen])
+
+  // The most recent own message carries the detailed seen/delivered receipt.
+  const lastOwnKey = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (Number(messages[i].sender.id) === Number(user?.id)) {
+        return messages[i].uuid ?? String(messages[i].id)
+      }
+    }
+    return null
+  }, [messages, user?.id])
 
   const isTyping = typingUsers.size > 0
+
+  // ── In-conversation search ───────────────────────────
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debounced, setDebounced]   = useState('')
+  const [activeMatch, setActiveMatch] = useState(0)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(searchTerm.trim()), 250)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+
+  // Authoritative match count for THIS conversation (server-side, includes
+  // history not currently loaded in the thread).
+  const { data: searchData, isFetching: searchFetching } = useQuery({
+    queryKey: ['msg-search', conversation?.uuid, debounced],
+    queryFn: () => searchMessages({ conversation: conversation!.uuid!, q: debounced }),
+    enabled: searchOpen && debounced.length >= 1 && !!conversation?.uuid,
+    staleTime: 10_000,
+  })
+
+  // Navigable matches = loaded messages we can actually scroll to.
+  const matchIds = useMemo(() => {
+    const t = debounced.toLowerCase()
+    if (!t) return [] as string[]
+    return messages
+      .filter((m) => !m.is_deleted_for_all && (m.content ?? '').toLowerCase().includes(t))
+      .map((m) => m.uuid ?? String(m.id))
+  }, [messages, debounced])
+
+  const apiTotal = searchData?.count ?? matchIds.length
+
+  // Jump to the most recent match whenever the match set changes. Adjusting
+  // state during render (keyed on the match signature) avoids an effect-driven
+  // cascading render — the recommended pattern over setState-in-effect.
+  const matchSignature = `${debounced}:${matchIds.length}`
+  const [matchKey, setMatchKey] = useState('')
+  if (matchKey !== matchSignature) {
+    setMatchKey(matchSignature)
+    setActiveMatch(matchIds.length > 0 ? matchIds.length - 1 : 0)
+  }
+
+  // Scroll the focused match into view.
+  useEffect(() => {
+    const id = matchIds[activeMatch]
+    if (!id) return
+    document.getElementById(`msg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [activeMatch, matchIds])
+
+  const goPrev = () =>
+    setActiveMatch((i) => (matchIds.length ? (i - 1 + matchIds.length) % matchIds.length : 0))
+  const goNext = () =>
+    setActiveMatch((i) => (matchIds.length ? (i + 1) % matchIds.length : 0))
+
+  const openSearch = () => {
+    setSearchOpen(true)
+    setTimeout(() => searchInputRef.current?.focus(), 50)
+  }
+  const closeSearch = () => {
+    setSearchOpen(false)
+    setSearchTerm('')
+    setDebounced('')
+  }
+
+  const activeMatchId = searchOpen ? matchIds[activeMatch] : undefined
 
   // ── Action handlers ──────────────────────────────────
   const handleSend = (text: string) => {
@@ -189,7 +268,7 @@ export default function ChatWindow({ conversationId }: Props) {
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             aria-label={`View ${other.display_name ?? other.full_name ?? "member"}'s profile`}
           >
-            <Avatar name={other.display_name ?? other.full_name ?? "Member"} size="md" isOnline={isOtherOnline} />
+            <Avatar name={other.display_name ?? other.full_name ?? "Member"} src={other.profile_image ?? other.profile_picture} size="md" isOnline={isOtherOnline} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-[#1a1a2e]">
                 {other.display_name ?? other.full_name ?? "Member"}
@@ -198,6 +277,16 @@ export default function ChatWindow({ conversationId }: Props) {
             </div>
           </button>
         )}
+
+        {/* Search within this conversation */}
+        <button
+          type="button"
+          onClick={openSearch}
+          aria-label="Search in conversation"
+          className="glass-btn grid h-9 w-9 shrink-0 place-items-center rounded-full"
+        >
+          <Search className="h-4.5 w-4.5" />
+        </button>
 
         {/* Compact WS connection status */}
         <span className="shrink-0" title={wsStatus} aria-label={`Connection: ${wsStatus}`}>
@@ -247,6 +336,62 @@ export default function ChatWindow({ conversationId }: Props) {
         </div>
       </div>
 
+      {/* ── In-conversation search bar ─────────────────── */}
+      {searchOpen && (
+        <div className="relative z-20 flex items-center gap-2 border-b border-white/50 bg-white/70 px-3 py-2 backdrop-blur-md">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') closeSearch()
+                if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) goPrev(); else goNext() }
+              }}
+              placeholder="Search in conversation"
+              aria-label="Search in conversation"
+              className="w-full rounded-full border border-white/60 bg-white/80 py-2 pl-9 pr-3 text-sm text-[#1a1a2e] placeholder-gray-400 outline-none focus:border-[#4cc9f0] focus:ring-2 focus:ring-[#4cc9f0]/20"
+            />
+          </div>
+
+          {/* Result counter */}
+          <span className="min-w-[3.5rem] shrink-0 text-center text-xs font-medium text-[#746767]" aria-live="polite">
+            {debounced.length === 0
+              ? ''
+              : searchFetching && matchIds.length === 0
+                ? '…'
+                : matchIds.length === 0
+                  ? '0 results'
+                  : `${activeMatch + 1}/${matchIds.length}${apiTotal > matchIds.length ? ` (${apiTotal})` : ''}`}
+          </span>
+
+          {/* Prev / next */}
+          <button
+            type="button" onClick={goPrev} disabled={matchIds.length === 0}
+            aria-label="Previous match"
+            className="glass-btn grid h-8 w-8 shrink-0 place-items-center rounded-full disabled:opacity-40"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button
+            type="button" onClick={goNext} disabled={matchIds.length === 0}
+            aria-label="Next match"
+            className="glass-btn grid h-8 w-8 shrink-0 place-items-center rounded-full disabled:opacity-40"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          <button
+            type="button" onClick={closeSearch}
+            aria-label="Close search"
+            className="glass-btn grid h-8 w-8 shrink-0 place-items-center rounded-full"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* ── Messages ───────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0.5">
         {isLoading && (
@@ -260,6 +405,10 @@ export default function ChatWindow({ conversationId }: Props) {
             key={msg.uuid ?? msg.id}
             message={msg}
             conversationId={conversationId}
+            isLastOwn={(msg.uuid ?? String(msg.id)) === lastOwnKey}
+            domId={`msg-${msg.uuid ?? msg.id}`}
+            highlight={searchOpen ? debounced : undefined}
+            isSearchActive={(msg.uuid ?? String(msg.id)) === activeMatchId}
             onReply={(m) => { setReplyTo(m); setEditing(null) }}
             onEdit={(m) => { setEditing(m); setReplyTo(null) }}
             onForward={(m) => setForwardMsg(m)}
@@ -312,14 +461,14 @@ export default function ChatWindow({ conversationId }: Props) {
               {conversations?.results
                 ?.filter((c) => String(c.id) !== conversationId && c.uuid)
                 .map((c) => {
-                  const p = c.participants?.find((x) => x.id !== user?.id)
+                  const p = c.participants?.find((x) => Number(x.id) !== myId)
                   return (
                     <button
                       key={c.id}
                       onClick={() => doForward([c.uuid!])}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
                     >
-                      <Avatar name={p?.display_name ?? p?.full_name ?? '?'} size="sm" />
+                      <Avatar name={p?.display_name ?? p?.full_name ?? '?'} src={p?.profile_image ?? p?.profile_picture} size="sm" />
                       <span className="truncate">{p?.display_name ?? p?.full_name ?? 'Chat'}</span>
                     </button>
                   )

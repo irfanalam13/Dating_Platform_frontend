@@ -4,15 +4,21 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useCallback,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationWebSocket } from "@/shared/lib/websocket";
 import { useAuth } from "@/features/auth";
 import { notificationKeys } from "@/features/notification/hooks/useNotifications";
-import type { UnreadCounts } from "@/shared/types/chat.types";
+import { getConversations, markConversationReadApi } from "@/shared/api/chat.api";
+import type {
+  UnreadCounts,
+  Conversation,
+  PaginatedResponse,
+} from "@/shared/types/chat.types";
 import type {
   Notification,
   NotificationContextValue,
@@ -36,7 +42,6 @@ import {
   isUnreadCountEvent,
   isMessageReadEvent,
 } from "@/shared/types/notification.types";
-import api, {  setAccessToken } from '@/shared/api/client';
 import { getFreshToken } from "@/shared/utils/wsToken";
 
 // ─────────────────────────────────────────────────────────
@@ -136,6 +141,51 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [totalUnread, setTotalUnread]       = useState(0);
   const [onlineUsers, setOnlineUsers]       = useState<Set<number>>(new Set());
   const [wsStatus, setWsStatus]             = useState<NotificationContextValue["wsStatus"]>("disconnected");
+
+  // Latest unread map for use inside stable callbacks without stale closures.
+  const unreadRef = useRef<UnreadCounts>({});
+  useEffect(() => { unreadRef.current = unreadCounts; }, [unreadCounts]);
+
+  // ── Seed unread counts from the REST conversation list ─
+  // The WS only *increments/syncs* counts as events arrive; without this seed the
+  // badge would read 0 on first paint (and after a hard refresh) until a WS event
+  // landed. Shares the ['conversations'] query with the inbox (React Query dedups).
+  const { data: convData } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: () => getConversations(),
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  // Seed during render (not in an effect) keyed on a signature of the list, so a
+  // live WS increment/read isn't clobbered and we avoid a setState-in-effect
+  // cascading render. The guard (sig !== seededSig) prevents an update loop.
+  const [seededSig, setSeededSig] = useState("");
+  const convSig = convData?.results
+    ? convData.results.map((c) => `${c.id}:${c.unread_count ?? 0}`).join(",")
+    : "";
+  if (convData?.results && convSig !== seededSig) {
+    setSeededSig(convSig);
+    setUnreadCounts((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const c of convData.results) {
+        // Only seed conversations we aren't already tracking — live WS
+        // increments / reads own the value once it exists in the map.
+        if (!(c.id in next)) {
+          next[c.id] = c.unread_count ?? 0;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
+
+  // Single source of truth for the chat badge (inbox header, matches row, nav).
+  const totalChatUnread = useMemo(
+    () => Object.values(unreadCounts).reduce((sum, n) => sum + n, 0),
+    [unreadCounts]
+  );
 
   // ── Event handler ─────────────────────────────────────
 
@@ -259,8 +309,36 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // ── markConversationRead ──────────────────────────────
 
   const markConversationRead = useCallback((conversationId: string) => {
+    // Optimistically clear the badge so every surface (inbox, matches row, nav
+    // badge, chat window) updates the instant the chat opens — don't wait for the
+    // WS read round-trip. The server WS read still reconciles the truth.
+    setUnreadCounts((prev) => {
+      if (!prev[conversationId]) return prev;
+      const next = { ...prev };
+      next[conversationId] = 0;
+      return next;
+    });
     wsRef.current?.markRead(conversationId);
   }, []);
+
+  // ── markAllRead ───────────────────────────────────────
+
+  const markAllRead = useCallback(async () => {
+    // Optimistically clear every chat badge immediately.
+    setUnreadCounts((prev) => {
+      const next: UnreadCounts = {};
+      for (const id of Object.keys(prev)) next[id] = 0;
+      return next;
+    });
+    // Persist per conversation (REST endpoint is keyed by uuid and also sets the
+    // server read pointer + broadcasts "seen"). Best-effort; a refetch reconciles.
+    const cached = queryClient.getQueryData<PaginatedResponse<Conversation>>(["conversations"]);
+    const targets = (cached?.results ?? []).filter(
+      (c) => !!c.uuid && (unreadRef.current[c.id] ?? c.unread_count ?? 0) > 0
+    );
+    await Promise.allSettled(targets.map((c) => markConversationReadApi(c.uuid!)));
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+  }, [queryClient]);
 
   // ── Render ────────────────────────────────────────────
 
@@ -270,9 +348,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         notifications,
         unreadCounts,
         totalUnread,
+        totalChatUnread,
         onlineUsers,
         wsStatus,
         markConversationRead,
+        markAllRead,
       }}
     >
       {children}

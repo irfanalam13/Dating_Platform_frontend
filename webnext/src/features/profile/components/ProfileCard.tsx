@@ -76,6 +76,7 @@ function CompletionBar({ score }: { score: number }) {
   );
 }
 
+
 // ─── Info Card ────────────────────────────────────────────────────────────────
 function InfoCard({ icon: Icon, label, value }: {
   icon: React.ElementType;

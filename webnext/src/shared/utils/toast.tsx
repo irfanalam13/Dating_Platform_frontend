@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "react-hot-toast";
-import { AlertCircle, CheckCircle2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, RotateCcw, Trash2, X } from "lucide-react";
 
 type ToastSource = string | Error | unknown;
 
@@ -232,6 +232,52 @@ export const extractErrorMessage = (
 
 export const showSuccess = (msg: string): void => {
 	showToast("success", msg, msg);
+};
+
+/**
+ * Undo snackbar. Shows `msg` with an "Undo" button for `durationMs` (default 5s).
+ * Clicking Undo runs `onUndo` and dismisses the toast. If it auto-dismisses, the
+ * caller's own timer is responsible for committing the action — this toast is
+ * purely the visual countdown. Uses a single shared id so only the most recent
+ * undo is shown at a time (avoids overlapping full-screen toasts).
+ */
+export const showUndo = (
+	msg: string,
+	onUndo: () => void,
+	durationMs = 5000,
+): void => {
+	toast.custom(
+		(t) => (
+			<div className="fixed inset-x-0 bottom-6 z-[9999] flex justify-center px-4 pointer-events-none">
+				<div className="pointer-events-auto relative flex w-full max-w-md items-center gap-3 overflow-hidden rounded-2xl bg-white/40 px-4 py-3 text-slate-900 shadow-[0_20px_60px_rgba(15,23,42,0.25)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
+					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.85),rgba(255,255,255,0.25)_45%,rgba(148,163,184,0.14)_100%)]" />
+					<div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-500/15 text-slate-700">
+						<Trash2 className="h-4 w-4" />
+					</div>
+					<p className="relative min-w-0 flex-1 break-words text-sm leading-5 text-slate-800">
+						{msg}
+					</p>
+					<button
+						type="button"
+						onClick={(e) => {
+							e.stopPropagation();
+							onUndo();
+							toast.remove(t.id);
+						}}
+						className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm font-semibold text-[#7A2432] transition hover:bg-white"
+					>
+						<RotateCcw className="h-3.5 w-3.5" />
+						Undo
+					</button>
+				</div>
+			</div>
+		),
+		{
+			id: "undo-toast",
+			duration: durationMs,
+			style: { background: "transparent", boxShadow: "none", padding: 0 },
+		},
+	);
 };
 
 export const showError = (

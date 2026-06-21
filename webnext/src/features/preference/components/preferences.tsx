@@ -469,7 +469,6 @@ export default function PreferencesPage() {
             <NumberField label="Max height (cm)" value={filters.preferred_max_height_cm} onChange={(v) => setFilter("preferred_max_height_cm", v)} />
             <SelectField label="Alcohol" value={filters.preferred_alcohol} onChange={(v) => setFilter("preferred_alcohol", v)} options={ANY_FREQUENCY} />
             <SelectField label="Smoking" value={filters.preferred_smoking} onChange={(v) => setFilter("preferred_smoking", v)} options={ANY_FREQUENCY} />
-            <SelectField label="Gotra rule" value={filters.gotra_rule} onChange={(v) => setFilter("gotra_rule", v)} options={ANY_GOTRA_RULE} />
           </div>
 
           <RangeField label="Min age" value={filters.min_age} min={18} max={60} onChange={(v) => setFilter("min_age", Math.min(v, filters.max_age))} />

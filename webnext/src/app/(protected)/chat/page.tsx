@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { MessageInbox } from '@/features/chat/components/MessageInbox'
 import ConversationList from '@/features/chat/components/ConversationList'
+import StoryBar from '@/features/chat/components/StoryBar'
 
 export default function ChatPage() {
   const router = useRouter()
@@ -31,6 +32,11 @@ export default function ChatPage() {
               <ArrowLeft className="h-4 w-4" />
             </button>
             <h2 className="text-base font-semibold text-[#B78A3B]">Messages</h2>
+          </div>
+
+          {/* Stories: only matches with an active 24h story + "Your story". */}
+          <div className="px-3 pt-3">
+            <StoryBar />
           </div>
 
           {/* Clicking a conversation drives the URL → the right panel updates */}

@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, CheckCheck } from "lucide-react";
 import { Inter } from "next/font/google";
 import { getConversations } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
-import { formatTime } from "@/shared/utils/time";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
 import ProfileImage from "@/shared/components/ProfileImage";
 import { filterHidden } from "@/features/chat/lib/hiddenConversations";
+import StoryBar from "@/features/chat/components/StoryBar";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -39,8 +39,26 @@ function getLastMessageText(conversation: Conversation): string {
 export function MessageInbox() {
   const router                      = useRouter();
   const { user }                    = useAuth();
-  const { unreadCounts, onlineUsers } = useNotificationContext();
+  const { unreadCounts, onlineUsers, totalChatUnread, markConversationRead, markAllRead } =
+    useNotificationContext();
   const [query, setQuery]           = useState("");
+  const [markingAll, setMarkingAll] = useState(false);
+
+  // Open a conversation, clearing its unread badge instantly on the way in.
+  const openConversation = (conversationId: string) => {
+    markConversationRead(conversationId);
+    router.push(`/chat/${conversationId}`);
+  };
+
+  const handleMarkAllRead = async () => {
+    if (markingAll || totalChatUnread === 0) return;
+    setMarkingAll(true);
+    try {
+      await markAllRead();
+    } finally {
+      setMarkingAll(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
@@ -68,24 +86,16 @@ export function MessageInbox() {
     return participants.find((p) => Number(p.id) !== myId);
   };
 
-  // Filter by the other participant's name/username (case-insensitive)
+  // Filter by the other participant's name (or the last message text), case-insensitive.
   const q = query.trim().toLowerCase();
   const filtered = q
     ? sorted.filter((conv) => {
         const person = getOtherParticipant(conv.participants);
-        return person ? getDisplayName(person).toLowerCase().includes(q) : false;
+        const nameHit = person ? getDisplayName(person).toLowerCase().includes(q) : false;
+        const msgHit = getLastMessageText(conv).toLowerCase().includes(q);
+        return nameHit || msgHit;
       })
     : sorted;
-
-  // Get all participants for the horizontal match bar
-  const matchParticipants = filtered
-    .map((conv) => {
-      const person = getOtherParticipant(conv.participants);
-      if (!person) return null;
-      const isOnline = onlineUsers.has(person.id) || person.is_online;
-      return { person, isOnline, conversationId: conv.id };
-    })
-    .filter(Boolean) as { person: ConversationParticipant; isOnline: boolean; conversationId: string }[];
 
   return (
     <main
@@ -107,9 +117,28 @@ export function MessageInbox() {
             >
               <ArrowLeft className="h-4.5 w-4.5" />
             </button>
-            <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <h1 className="truncate text-[18px] font-semibold leading-tight text-[#B78A3B]">Message inbox</h1>
+              {totalChatUnread > 0 && (
+                <span
+                  className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-[#63d6f6] px-1.5 text-[11px] font-bold text-white shadow-sm"
+                  aria-label={`${totalChatUnread} unread`}
+                >
+                  {totalChatUnread > 99 ? "99+" : totalChatUnread}
+                </span>
+              )}
             </div>
+            {totalChatUnread > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+                className="flex shrink-0 items-center gap-1 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)] transition-colors hover:bg-white disabled:opacity-50"
+              >
+                <CheckCheck className="h-3.5 w-3.5 text-[#63d6f6]" />
+                {markingAll ? "Marking…" : "Mark all read"}
+              </button>
+            )}
           </div>
         </header>
 
@@ -127,69 +156,9 @@ export function MessageInbox() {
           </div>
         </div>
 
-        {/* Horizontal match avatars */}
-        {matchParticipants.length > 0 && (
-          <div className="mb-4 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-3 pb-3">
-              {matchParticipants.map(({ person, isOnline }) => {
-                // Ring is shown ONLY when the person has an active story (the
-                // reddish gradient). No story → no ring at all, just the plain
-                // avatar. Online/offline lives entirely in the small messenger-
-                // style status dot at the bottom-right. (No stories backend yet,
-                // so `has_story` is always falsy for now — the ring lights up
-                // automatically once stories ship.)
-                const hasStory = Boolean(
-                  (person as { has_story?: boolean }).has_story
-                );
-                return (
-                <button
-                  key={person.id}
-                  // TODO(stories): if this person has an active story, open the
-                  // story viewer instead. No stories backend exists yet, so for
-                  // now tapping the avatar opens their profile page.
-                  onClick={() => router.push(`/profile/${person.id}`)}
-                  className="flex shrink-0 flex-col items-center gap-1"
-                >
-                  <div className="relative">
-                    {hasStory ? (
-                      <div
-                        className="rounded-full p-[2px]"
-                        style={{ background: "linear-gradient(135deg, #ff3b30, #ff5e57)" }}
-                      >
-                        <div className="rounded-full bg-white p-[2px] shadow-[0_4px_12px_rgba(16,24,40,0.08)]">
-                          <ProfileImage
-                            src={getProfileImage(person)}
-                            name={getDisplayName(person)}
-                            alt={getDisplayName(person)}
-                            className="h-14 w-14 rounded-full"
-                            textClassName="text-lg"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <ProfileImage
-                        src={getProfileImage(person)}
-                        name={getDisplayName(person)}
-                        alt={getDisplayName(person)}
-                        className="h-14 w-14 rounded-full"
-                        textClassName="text-lg"
-                      />
-                    )}
-                    {/* Messenger-style active/offline dot. */}
-                    <span
-                      className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${
-                        isOnline ? "bg-[#00D46A] shadow-[0_0_4px_rgba(0,212,106,0.5)]" : "bg-gray-300"
-                      }`}
-                    />
-                  </div>
-                </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-2 h-px w-full bg-gray-300" />
-          </div>
-        )}
+        {/* Stories — only people (matches) who posted an active 24h story,
+            plus "Your story" for posting. Not an avatar-per-match strip. */}
+        <StoryBar />
 
         {/* Loading skeleton */}
         {isLoading && (
@@ -245,7 +214,7 @@ export function MessageInbox() {
               return (
                 <button
                   key={conversation.id}
-                  onClick={() => router.push(`/chat/${conversation.id}`)}
+                  onClick={() => openConversation(conversation.id)}
                   className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-white/40 active:scale-[0.99]"
                 >
                   {/* Avatar with online dot */}

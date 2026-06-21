@@ -168,9 +168,14 @@ export interface NotificationContextValue {
   notifications: Notification[];
   unreadCounts: UnreadCounts;
   totalUnread: number;
+  /** Sum of all per-conversation chat unread counts (drives the chat badge). */
+  totalChatUnread: number;
   onlineUsers: Set<number>;
   wsStatus: "connecting" | "connected" | "disconnected" | "error";
+  /** Mark one conversation read: optimistically clears its badge + notifies the server (WS). */
   markConversationRead: (conversationId: string) => void;
+  /** Clear every conversation's unread badge and persist it server-side. */
+  markAllRead: () => Promise<void>;
 }
 
 // ─────────────────────────────────────────────────────────

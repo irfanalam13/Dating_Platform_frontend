@@ -11,16 +11,9 @@ import {
   Settings,
   Eye,
   Lock,
-  Heart,
   BookOpen,
   Briefcase,
-  Star,
-  Globe,
   Sparkles,
-  ChevronRight,
-  Link,
-  Music,
-  ExternalLink,
   HeartHandshake,
   MoreVertical,
   Ban,
@@ -31,164 +24,24 @@ import {
   X,
   UserX,
 } from "lucide-react";
-import type { Profile, PublicProfile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
 import { blockProfile, reportProfile, type ReportReasonValue } from "@/shared/api/mvp.api";
 import { showSuccess, showError } from "@/shared/utils/toast";
+import type { ProfileClientProps } from "./profile-client/types";
+import {
+  CompletionBar,
+  InfoCard,
+  ProfileSkeleton,
+  ReportModal,
+  Section,
+  SOCIAL_META,
+  TagPill,
+  completionScore,
+} from "./profile-client/parts";
 // FUTURE FEATURE: FOLLOWERS / FOLLOWING (disabled). Re-enable this import
 // together with the <FollowButton> usages and the "Followers & Following"
 // button further down in this file.
 // import FollowButton from "@/features/follow/components/FollowButton";
-
-// Values MUST match the backend ReportReason choices
-// (dating_backend/django/apps/report/models.py). Mismatched values 400.
-const PROFILE_REPORT_REASONS: { value: ReportReasonValue; label: string }[] = [
-  { value: "harassment", label: "Harassment / Abuse" },
-  { value: "fake_identity", label: "Fake profile" },
-  { value: "sexual_content", label: "Sexual content" },
-  { value: "scam", label: "Scam" },
-  { value: "spam", label: "Spam" },
-  { value: "other", label: "Other" },
-];
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-/** "own" = logged-in user viewing their own profile (edit mode)
- *  "public" = someone else viewing another person's profile */
-type ProfileMode = "own" | "public";
-
-interface ProfileClientProps {
-  mode: ProfileMode;
-  // For own profile — pass Profile from useUserProfile()
-  data?: Profile;
-  // For public profile — pass PublicProfile from usePublicProfile()
-  publicData?: PublicProfile;
-  isLoading?: boolean;
-  // Only used in "public" mode
-  onLike?: () => void;
-  onPass?: () => void;
-  isPending?: boolean;
-  // Relationship with the viewed user — drives which actions are shown.
-  relationship?: "matched" | "requested" | "none";
-  onMessage?: () => void;
-  isMessaging?: boolean;
-  // Matched state only — remove/undo the mutual match.
-  onRemoveMatch?: () => void;
-  isRemoving?: boolean;
-}
-
-// ─── Social link meta ─────────────────────────────────────────────────────────
-const SOCIAL_META: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  instagram: { icon: Link,         color: "text-pink-500",    label: "Instagram" },
-  linkedin:  { icon: Link,         color: "text-blue-600",    label: "LinkedIn"  },
-  twitter:   { icon: Link,         color: "text-sky-500",     label: "Twitter"   },
-  spotify:   { icon: Music,        color: "text-green-500",   label: "Spotify"   },
-  tiktok:    { icon: Music,        color: "text-neutral-800", label: "TikTok"    },
-  other:     { icon: ExternalLink, color: "text-gray-500",    label: "Link"      },
-};
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-function ProfileSkeleton() {
-  return (
-    <main className="min-h-[100dvh] px-4 py-5">
-      <div className="mx-auto max-w-md animate-pulse space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-3 w-20 rounded bg-[#EADDD2]" />
-            <div className="h-6 w-36 rounded bg-[#EADDD2]" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#EADDD2]" />
-        </div>
-        <div className="overflow-hidden rounded-3xl">
-          <div className="h-72 w-full bg-[#EADDD2]" />
-          <div className="space-y-4 p-5">
-            <div className="h-6 w-1/2 rounded bg-[#EADDD2]" />
-            <div className="h-4 w-1/3 rounded bg-[#EADDD2]" />
-            <div className="space-y-2">
-              <div className="h-3 w-full rounded bg-[#EADDD2]" />
-              <div className="h-3 w-5/6 rounded bg-[#EADDD2]" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-16 rounded-3xl bg-[#EADDD2]" />
-              ))}
-            </div>
-            <div className="h-12 w-full rounded-3xl bg-[#EADDD2]" />
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-// ─── Completion bar (own profile only) ───────────────────────────────────────
-function completionScore(data: Profile): number {
-  const fields: (keyof Profile)[] = [
-    "full_name", "bio", "city", "age", "gender",
-    "education", "career",
-    "profile_image", "hobbies", "values",
-  ];
-  const filled = fields.filter((f) => {
-    const val = data[f];
-    return val !== null && val !== undefined && val !== "";
-  }).length;
-  return Math.round((filled / fields.length) * 100);
-}
-
-function CompletionBar({ score }: { score: number }) {
-  const color = "#22ff43ff";
-  return (
-    <div className="rounded-3xl p-4">
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#2D2424]">Profile strength</span>
-        <span className="font-bold text-black">{score}%</span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-[#EADDD2]">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${score}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Info Card ────────────────────────────────────────────────────────────────
-function InfoCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  const isEmpty = !value || value === "Not added";
-  return (
-    <div className="flex items-start gap-3 rounded-3xl p-3">
-      <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-3xl">
-        <Icon className="h-4 w-4 text-black" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-[#746767]">{label}</p>
-        <p className={`truncate text-sm font-medium ${isEmpty ? "italic text-[#BFBFBF]" : "text-[#2D2424]"}`}>
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function TagPill({ label }: { label: string }) {
-  return (
-    <span className="rounded-full px-3 py-1 text-xs font-medium text-[#2D2424]">
-      {label}
-    </span>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#B78A3B]">
-        {title}
-      </h3>
-      {children}
-    </section>
-  );
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProfileClient({
@@ -530,13 +383,6 @@ export default function ProfileClient({
         <div className="mb-6 space-y-3">
           {isOwn ? (
             <>
-              <button
-                onClick={() => router.push("/profile/edit")}
-                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
-              >
-                <PenLine className="h-4 w-4" />
-                Edit profile
-              </button>
               {/* ───── FUTURE FEATURE: FOLLOWERS / FOLLOWING (disabled) ─────
                   To re-enable, uncomment this button.
               <button
@@ -666,6 +512,13 @@ export default function ProfileClient({
           <Section title="Career">
             <InfoCard icon={Briefcase} label="Career" value={career || "Not added"} />
           </Section>
+          <button
+                onClick={() => router.push("/profile/edit")}
+                className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
+              >
+                <PenLine className="h-4 w-4" />
+                Edit profile
+          </button>
 
           {!isOwn && socialLinks.length > 0 && (
             <Section title="Social Media">
@@ -708,30 +561,11 @@ export default function ProfileClient({
 
         {/* ── Report user modal ── */}
         {showReport && targetProfileId && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4" onClick={() => setShowReport(false)}>
-            <div className="w-full max-w-sm rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
-              <Flag className="mx-auto mb-2 h-7 w-7 text-[#7A2432]" />
-              <h2 className="text-center text-base font-semibold text-[#2D2424]">Report this user</h2>
-              <p className="mb-3 mt-1 text-center text-xs text-[#746767]">
-                Your report goes to the safety team. They won’t be notified.
-              </p>
-              <div className="space-y-1">
-                {PROFILE_REPORT_REASONS.map((r) => (
-                  <button
-                    key={r.value}
-                    onClick={() => reportMutation.mutate({ pid: targetProfileId, reason: r.value })}
-                    disabled={reportMutation.isPending}
-                    className="w-full rounded-lg border border-white/60 bg-white/60 px-3 py-2 text-left text-sm hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setShowReport(false)} className="mt-3 w-full text-sm font-semibold text-[#746767]">
-                Cancel
-              </button>
-            </div>
-          </div>
+          <ReportModal
+            onClose={() => setShowReport(false)}
+            onSelect={(reason) => reportMutation.mutate({ pid: targetProfileId, reason })}
+            isPending={reportMutation.isPending}
+          />
         )}
 
       </div>
