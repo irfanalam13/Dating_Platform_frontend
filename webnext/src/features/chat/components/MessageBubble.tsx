@@ -46,6 +46,16 @@ export default function MessageBubble({
 
   const closeMenus = () => { setMenuOpen(false); setPickerOpen(false) }
 
+  // After a long-press opens the menu, the finger lifting fires a trailing
+  // tap/click. Without this guard that tap lands on the full-screen click-away
+  // backdrop and closes the menu instantly (so it looks like nothing happened).
+  // We swallow exactly that first tap.
+  const swallowNextBackdropTap = useRef(false)
+  const handleBackdropClose = () => {
+    if (swallowNextBackdropTap.current) { swallowNextBackdropTap.current = false; return }
+    closeMenus()
+  }
+
   // ── WhatsApp-style swipe-to-reply ──────────────────────────────────────────
   // Drag the bubble to the right; release past the threshold to reply. A Reply
   // icon fades in behind the bubble as you drag. Reuses the same onReply path
@@ -85,6 +95,9 @@ export default function MessageBubble({
         setPickerOpen(false)
         setMenuOpenedAt(Date.now())
         setMenuOpen(true)
+        swallowNextBackdropTap.current = true
+        // Safety: if no trailing tap arrives, re-enable tap-away after a beat.
+        setTimeout(() => { swallowNextBackdropTap.current = false }, 600)
         if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10)
       }, LONG_PRESS_MS)
     }
@@ -313,7 +326,7 @@ export default function MessageBubble({
       {/* Context menu */}
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={closeMenus} />
+          <div className="fixed inset-0 z-10" onClick={handleBackdropClose} />
           <div className={`absolute z-20 top-7 ${isMine ? 'right-6' : 'left-6'}
             w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm`}>
             <MenuItem icon={<SmilePlus className="h-4 w-4" />} label="React"
