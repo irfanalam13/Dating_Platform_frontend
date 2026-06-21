@@ -89,7 +89,7 @@ export default function NotificationHome() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
@@ -102,7 +102,7 @@ export default function NotificationHome() {
               <button
                 onClick={() => markAllRead()}
                 disabled={isMarkingAll}
-                className="ml-auto shrink-0 rounded-full border border-[#EADDD2] px-3 py-1.5 text-xs font-medium text-[#7A2432] disabled:opacity-50"
+                className="ml-auto shrink-0 rounded-full border border-[#EADDD2] px-3 py-1.5 text-xs font-medium text-[#F87171] disabled:opacity-50"
               >
                 {isMarkingAll ? "Marking..." : "Mark all read"}
               </button>
@@ -121,11 +121,8 @@ export default function NotificationHome() {
         {!isLoading && data.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
-              <Bell className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+              <Bell className="mx-auto mb-4 h-10 w-10 text-[#FFBF00] fill-current" />
               <h2 className="font-semibold">No notifications yet</h2>
-              <p className="mt-2 text-sm leading-6 text-[#746767]">
-                Important match, message, and safety updates will appear here.
-              </p>
             </div>
           </div>
         )}

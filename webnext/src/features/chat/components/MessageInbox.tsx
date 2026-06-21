@@ -101,7 +101,7 @@ export function MessageInbox() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
@@ -221,11 +221,6 @@ export function MessageInbox() {
               <h2 className="text-lg font-bold text-[#1a1a2e]">
                 {q ? "No matches found" : "No conversations yet"}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                {q
-                  ? `No one matching “${query}”.`
-                  : "When both people show interest, a conversation will open here."}
-              </p>
             </div>
           </div>
         )}

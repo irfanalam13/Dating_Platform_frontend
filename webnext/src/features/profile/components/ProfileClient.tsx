@@ -254,7 +254,7 @@ export default function ProfileClient({
           <p className="text-3xl font-semibold text-[#2D2424]">Profile not found</p>
           <p className="mt-1 text-sm text-[#746767]">This profile may no longer exist.</p>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/home")}
             className="glass-btn mt-4 rounded-3xl px-5 py-2.5 text-sm font-semibold"
           >
             Go back
@@ -354,40 +354,41 @@ export default function ProfileClient({
       <div className="mx-auto max-w-md space-y-4 px-4 py-5">
 
         {/* ── Header ── */}
-        <header className="relative">
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            className="glass-btn mb-3 grid h-10 w-10 place-items-center rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            {isOwn ? (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">My profile</p>
-                <br />
-                <h1 className="text-3xl font-semibold">
-                {data?.full_name || "My Profile"}
-                </h1>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile</p>
-                <h1 className="text-3xl font-semibold">{name || "View profile"}</h1>
-              </>
-            )}
-          </div>
+        {isOwn ? (
+          <header className="flex items-center gap-4">
+            <button
+              onClick={() => router.push("/home")}
+              aria-label="Go back"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="min-w-0 flex-1 truncate text-2xl font-semibold">
+              {data?.full_name || "My Profile"}
+            </h1>
+            <button
+              onClick={() => router.push("/settings")}
+              aria-label="Settings"
+              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+          </header>
+        ) : (
+          <header className="relative">
+            <button
+              onClick={() => router.push("/home")}
+              aria-label="Go back"
+              className="glass-btn mb-3 grid h-10 w-10 place-items-center rounded-full"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B78A3B]">Profile</p>
+              <h1 className="text-3xl font-semibold">{name || "View profile"}</h1>
+            </div>
 
-          <div className="absolute right-0 top-0 h-4 flex items-center">
-            {isOwn ? (
-              <button
-                onClick={() => router.push("/settings")}
-                className="glass-btn grid h-10 w-10 place-items-center rounded-full"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
-            ) : (
+            <div className="absolute right-0 top-0 h-4 flex items-center">
               <div className="relative">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
@@ -410,7 +411,7 @@ export default function ProfileClient({
                       <button
                         onClick={() => { setMenuOpen(false); if (targetProfileId) blockMutation.mutate(targetProfileId); }}
                         disabled={!targetProfileId || blockMutation.isPending}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[#7A2432] hover:bg-gray-50 disabled:opacity-40"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[#F87171] hover:bg-gray-50 disabled:opacity-40"
                       >
                         <Ban className="h-4 w-4" /> Block user
                       </button>
@@ -418,9 +419,9 @@ export default function ProfileClient({
                   </>
                 )}
               </div>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         {/* ── Completion bar (own only) ── */}
         {isOwn && <CompletionBar score={score} />}
@@ -573,7 +574,7 @@ export default function ProfileClient({
                     }
                   }}
                   disabled={isRemoving}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-3xl border border-[#EADDD2] text-sm font-semibold text-[#7A2432] disabled:opacity-50"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-3xl border border-[#EADDD2] text-sm font-semibold text-[#F87171] disabled:opacity-50"
                 >
                   {isRemoving ? (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -710,7 +711,7 @@ export default function ProfileClient({
         {showReport && targetProfileId && (
           <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4" onClick={() => setShowReport(false)}>
             <div className="w-full max-w-sm rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
-              <Flag className="mx-auto mb-2 h-7 w-7 text-[#7A2432]" />
+              <Flag className="mx-auto mb-2 h-7 w-7 text-[#F87171]" />
               <h2 className="text-center text-base font-semibold text-[#2D2424]">Report this user</h2>
               <p className="mb-3 mt-1 text-center text-xs text-[#746767]">
                 Your report goes to the safety team. They won’t be notified.

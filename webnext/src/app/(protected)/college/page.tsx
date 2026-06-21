@@ -38,7 +38,7 @@ export default function CollegeModePage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
             >
@@ -54,17 +54,17 @@ export default function CollegeModePage() {
 
         {!verified && (
           <form onSubmit={submit} className="mb-5 space-y-3 rounded-lg border border-[#EADDD2] p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[#7A2432]">
+            <div className="flex items-center gap-2 text-sm font-semibold text-[#F87171]">
               <ShieldCheck className="h-4 w-4" />
               Verification status: {status.replace("_", " ")}
             </div>
-            <input value={collegeName} onChange={(event) => setCollegeName(event.target.value)} placeholder="College name" className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]" />
-            <input value={collegeEmail} onChange={(event) => setCollegeEmail(event.target.value)} placeholder="College email" className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]" />
+            <input value={collegeName} onChange={(event) => setCollegeName(event.target.value)} placeholder="College name" className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#F87171]" />
+            <input value={collegeEmail} onChange={(event) => setCollegeEmail(event.target.value)} placeholder="College email" className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#F87171]" />
             <label className="block rounded-md border border-dashed border-[#EADDD2] p-4 text-sm text-[#746767]">
               {studentId ? studentId.name : "Upload student ID"}
               <input type="file" accept="image/*" className="hidden" onChange={(event) => setStudentId(event.target.files?.[0] ?? null)} />
             </label>
-            <button className="h-12 w-full rounded-md bg-[#7A2432] font-semibold text-white disabled:opacity-60" disabled={mutation.isPending}>
+            <button className="glass-btn-rose h-12 w-full rounded-md font-semibold disabled:opacity-60" disabled={mutation.isPending}>
               {mutation.isPending ? "Submitting..." : "Submit verification"}
             </button>
           </form>

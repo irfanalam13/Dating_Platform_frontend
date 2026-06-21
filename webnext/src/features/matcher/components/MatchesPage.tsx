@@ -48,7 +48,7 @@ export default function MatchesPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
@@ -83,10 +83,9 @@ export default function MatchesPage() {
         {!isLoading && matches.length === 0 && pending.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
-              <UserX className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
               <h2 className="font-semibold">No mutual matches yet</h2>
               <p className="mt-2 text-sm leading-6 text-[#746767]">
-                Show interest from Discover. When both people agree, they appear here.
+                Try matching with more people
               </p>
               <button
                 onClick={() => router.push("/home")}
@@ -97,7 +96,7 @@ export default function MatchesPage() {
             </div>
           </div>
         )}
-
+        
         {/* ── Accepted matches list ── */}
         <div className="space-y-3">
           {matches.map((match) => (
@@ -150,7 +149,7 @@ export default function MatchesPage() {
                     disabled={removeMutation.isPending}
                     aria-label={`Remove match with ${match.name || match.email}`}
                     title="Remove match"
-                    className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#7A2432] disabled:opacity-50"
+                    className="grid h-10 w-10 place-items-center rounded-full border border-[#EADDD2] text-[#F87171] disabled:opacity-50"
                   >
                     <HeartCrack className="h-5 w-5" />
                   </button>
@@ -164,7 +163,7 @@ export default function MatchesPage() {
         {!isLoading && pending.length > 0 && (
           <section className="mt-6 rounded-lg border border-[#EADDD2] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-[#7A2432]" />
+              <UserCheck className="h-5 w-5 text-[#F87171]" />
               <h2 className="font-semibold">Pending interests</h2>
             </div>
             <div className="space-y-3">
@@ -228,7 +227,7 @@ export default function MatchesPage() {
         {!isLoading && pendingSent.length > 0 && (
           <section className="mt-6 rounded-lg border border-[#EADDD2] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Send className="h-5 w-5 text-[#7A2432]" />
+              <Send className="h-5 w-5 text-[#a9a9a9]" />
               <h2 className="font-semibold">Sent requests</h2>
             </div>
             <div className="space-y-3">

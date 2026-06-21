@@ -18,13 +18,13 @@ import {
   HeartHandshake,
   MapPin,
   RefreshCw,
-  Star,
   Undo2,
   X,
   Sparkles,
 } from "lucide-react";
 import { getDiscoverProfiles, getMyTypeProfiles, sendInterest } from "@/shared/api/profile.api";
 import { getConversation } from "@/shared/api/chat.api";
+import { cancelMatch } from "@/shared/api/matcher.api";
 import type { Profile } from "@/shared/types/profile.types";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth";
@@ -226,7 +226,7 @@ function ViewProfileModal({
               {(profile.compatibility_tags ?? []).map((tag) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-[#7A2432]"
+                  className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-[#F87171]"
                 >
                   <Sparkles className="h-3 w-3" />
                   {tag}
@@ -266,7 +266,7 @@ function ViewProfileModal({
                       {/* View Full Profile */}
             <button
               onClick={onViewFull}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#7A2432] text-sm font-semibold text-[#7A2432]"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F87171] text-sm font-semibold text-[#F87171]"
             >
               <Eye className="h-4 w-4" />
               View Full Profile
@@ -333,8 +333,10 @@ export default function HomePage() {
   const prevHintOpacity = useTransform(dragY, [-90, -40], [1, 0]);
   const nextHintOpacity = useTransform(dragY, [40, 90], [0, 1]);
 
-  // Double-tap-to-superstar (TikTok/Instagram style)
+  // Double-tap-to-like heart pop (Instagram style). `burstKey` changes on every
+  // double-tap so the animation remounts and replays each time.
   const [heartBurst, setHeartBurst] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
   const lastTapRef = useRef(0);
 
   // Profiles the user has liked via the heart button — drives the heart fill
@@ -386,26 +388,26 @@ export default function HomePage() {
     dragY.set(0);
   }, [dragY]);
 
-  // Express interest. kind === "superstar" (double-tap) vs "like" (heart button)
-  // changes only the toast — the backend action is the same.
+  // Maps a liked profile's id → the match-request id the server returns, so the
+  // heart button can later WITHDRAW (cancel) that exact request.
+  const sentRequestsRef = useRef<Map<number, number>>(new Map());
+
+  // Express interest by sending a like (the heart button and the double-tap
+  // gesture both route through here).
   const interestMutation = useMutation({
-    mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass"; kind?: "like" | "superstar" }) =>
+    mutationFn: ({ profileId, action }: { profileId: number; action: "like" | "pass" }) =>
       sendInterest(profileId, action),
     onSuccess: (res, variables) => {
-      // Only the heart button lights up the "liked" state. A superstar
-      // (double-tap) must NOT fill the like button.
-      if (variables.kind === "like") {
+      // A like lights up the heart button's "liked" state.
+      if (variables.action === "like") {
         setLiked((prev) => new Set(prev).add(variables.profileId));
+        if (res.match_id != null) sentRequestsRef.current.set(variables.profileId, res.match_id);
       }
       if (res.matched && currentRef.current) {
         setMatchProfile(currentRef.current);
       } else {
         const username = currentRef.current?.full_name || "this person";
-        showSuccess(
-          variables.kind === "superstar"
-            ? `you gave ${username} superstar`
-            : `you liked ${username}`
-        );
+        showSuccess(`Match request sent to ${username}`);
       }
       setViewProfile(null);
       dragY.set(0);
@@ -433,15 +435,26 @@ export default function HomePage() {
     onError: (err) => showError(err, "Could not open conversation. Please try again."),
   });
 
-  // Express interest — "like" (heart button) or "superstar" (double-tap)
+  // Withdraw a previously-sent like (heart button only — never the double-tap).
+  const { mutate: cancelRequest } = useMutation({
+    mutationFn: ({ matchId }: { matchId: number; profileId: number }) => cancelMatch(matchId),
+    onSuccess: () => showSuccess("Match request withdrawn."),
+    onError: (err, { profileId }) => {
+      // Roll back the optimistic un-like so the UI matches the server.
+      setLiked((prev) => new Set(prev).add(profileId));
+      showError(err, "Could not withdraw request.");
+    },
+  });
+
+  // Express interest — send a like for the current profile.
   const { mutate: mutateInterest } = interestMutation;
-  const giveInterest = useCallback((kind: "like" | "superstar") => {
+  const giveInterest = useCallback(() => {
     if (!currentRef.current || isPendingRef.current) return;
-    mutateInterest({ profileId: currentRef.current.id, action: "like", kind });
+    mutateInterest({ profileId: currentRef.current.id, action: "like" });
   }, [mutateInterest]);
 
-  // Heart button: toggles. Tap to like, tap again to unlike, again to like…
-  // When un-liking we only clear it locally (there is no un-send endpoint).
+  // Heart button: tap to like (sends a match request), tap again to WITHDRAW
+  // that request. (Double-tap never withdraws — withdrawing is button-only.)
   const toggleLike = useCallback(() => {
     const cur = currentRef.current;
     if (!cur || isPendingRef.current) return;
@@ -451,18 +464,26 @@ export default function HomePage() {
         next.delete(cur.id);
         return next;
       });
+      const matchId = sentRequestsRef.current.get(cur.id);
+      if (matchId != null) {
+        sentRequestsRef.current.delete(cur.id);
+        cancelRequest({ matchId, profileId: cur.id });
+      }
     } else {
-      giveInterest("like");
+      giveInterest();
     }
-  }, [giveInterest]);
+  }, [giveInterest, cancelRequest]);
 
-  // Double-tap the photo → star burst + superstar (TikTok/Instagram style)
+  // Double-tap the photo → pop a heart on EVERY double-tap, but only ever LIKE
+  // (double-tapping again never removes the like — only the heart button toggles).
   const handlePhotoTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       lastTapRef.current = 0;
       setHeartBurst(true);
-      giveInterest("superstar");
+      setBurstKey((k) => k + 1);
+      const cur = currentRef.current;
+      if (cur && !likedRef.current.has(cur.id)) giveInterest();
     } else {
       lastTapRef.current = now;
     }
@@ -575,9 +596,6 @@ export default function HomePage() {
               <div>
                 <Sparkles className="mx-auto mb-4 h-10 w-10 text-[#B78A3B]" />
                 <h2 className="text-lg font-semibold">No one matches your type yet</h2>
-                <p className="mt-2 text-sm text-[#746767]">
-                  Try widening your preferences — we&apos;ll show matching accounts here as they join.
-                </p>
                 <button
                   onClick={() => router.push("/preferences")}
                   className="glass-btn mt-5 inline-flex h-11 items-center justify-center rounded-full px-7 text-sm font-semibold text-[#2D2424]"
@@ -587,7 +605,7 @@ export default function HomePage() {
               </div>
             ) : (
               <div>
-                <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+                <HeartHandshake className="mx-auto mb-4 h-10 w-10 text-[#F87171]" />
                 <h2 className="text-lg font-semibold">You&apos;ve seen everyone</h2>
                 <p className="mt-2 text-sm text-[#746767]">
                   Check back later or refresh for new profiles.
@@ -680,19 +698,19 @@ export default function HomePage() {
                 onClick={handlePhotoTap}
               />
 
-              {/* Star burst on double-tap → "super interested" */}
+              {/* Heart burst on double-tap → like */}
               {heartBurst && (
                 <motion.div
-                  key="star-burst"
+                  key={burstKey}
                   className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0] }}
                   transition={{ duration: 0.9, times: [0, 0.3, 1] }}
                   onAnimationComplete={() => setHeartBurst(false)}
                 >
-                  <Star
-                    className="h-28 w-28 text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
-                    fill="#FFC94D"
+                  <Heart
+                    className="h-28 w-28 text-[#FF3B5C] drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
+                    fill="#FF3B5C"
                   />
                 </motion.div>
               )}
@@ -843,7 +861,7 @@ export default function HomePage() {
             <ViewProfileModal
               profile={viewProfile}
               onClose={() => setViewProfile(null)}
-              onLike={() => giveInterest("like")}
+              onLike={() => giveInterest()}
               onPass={() => {
                 setViewProfile(null);
                 goNext();
@@ -857,7 +875,7 @@ export default function HomePage() {
       {!isLoading && !isRefetching && isError && (
         <div className="grid flex-1 place-items-center rounded-2xl border border-[#EADDD2] p-8 text-center">
           <div>
-            <RefreshCw className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+            <RefreshCw className="mx-auto mb-4 h-10 w-10 text-[#F87171]" />
             <h2 className="text-lg font-semibold">Something went wrong</h2>
             <p className="mt-2 text-sm text-[#746767]">
               Could not load profiles. Please try again.

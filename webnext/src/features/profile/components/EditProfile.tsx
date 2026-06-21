@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronDown, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, UserRound, Camera } from "lucide-react";
 import { useMyProfile, useUpdateProfile } from "@/features/profile/hooks/useProfile";
 import {
   useReligions,
@@ -93,6 +93,25 @@ export default function EditProfile() {
   });
   const [languages, setLanguages] = useState<string[]>([]);
   const [photo, setPhoto] = useState<File | null>(null);
+  // Object URL for the chosen photo's preview. Created/revoked in the handlers
+  // (event time, not render) so there's no leak and no impure call in render.
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(file);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  const removePhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
+
   const [showDiscard, setShowDiscard] = useState(false);
   // Inline DoB validation: the very first step requires a valid date of birth
   // before the user can advance, so they never reach "Save" only to be told
@@ -263,7 +282,7 @@ export default function EditProfile() {
           </div>
           <div className="mt-4 grid grid-cols-4 gap-2">
             {steps.map((_, i) => (
-              <div key={i} className={`h-1.5 rounded-full ${i <= step ? "bg-[#7A2432]" : "bg-[#EADDD2]"}`} />
+              <div key={i} className={`h-1.5 rounded-full ${i <= step ? "bg-[#5FD08A]" : "bg-[#EADDD2]"}`} />
             ))}
           </div>
         </header>
@@ -273,6 +292,37 @@ export default function EditProfile() {
             <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-4">
               {step === 0 && (
                 <>
+                  <div className="mx-auto mb-2 flex flex-col items-center gap-2">
+                    {/* Click the photo to choose / change it */}
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      aria-label={photo ? "Change profile photo" : "Upload a profile photo"}
+                      className="relative h-24 w-24"
+                    >
+                      <span className="grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-white text-[#9A8C82]">
+                        {photoPreview ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={photoPreview} alt="Profile preview" className="h-24 w-24 object-cover" />
+                        ) : (
+                          <UserRound className="h-12 w-12" />
+                        )}
+                      </span>
+                      <span className="absolute -bottom-0.5 -right-0.5 grid h-8 w-8 place-items-center rounded-full bg-white/70 text-[#A9A9A9] shadow ring-1 ring-black/5">
+                        <Camera className="h-4 w-4" />
+                      </span>
+                    </button>
+                    {photo ? (
+                      <button type="button" onClick={removePhoto} className="text-xs font-semibold text-[#EF4444]">
+                        Remove profile photo
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => photoInputRef.current?.click()} className="text-xs text-[#746767]">
+                        Upload a profile photo
+                      </button>
+                    )}
+                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                  </div>
                   <Field label="Full name" value={form.full_name} onChange={(v) => update("full_name", v)} />
                   <DobPicker
                     value={form.date_of_birth}
@@ -282,17 +332,12 @@ export default function EditProfile() {
                   <Select label="Gender" value={form.gender} onChange={(v) => update("gender", v)} options={["male", "female", "other"]} />
                   <Field label="City" value={form.city} onChange={(v) => update("city", v)} placeholder="Kathmandu, Pokhara..." />
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Height (cm)" type="number" value={form.height_cm} onChange={(v) => update("height_cm", v)} optional />
+                    <HeightField valueCm={form.height_cm} onChangeCm={(v) => update("height_cm", v)} />
                     <Field label="Weight (kg)" type="number" value={form.weight_kg} onChange={(v) => update("weight_kg", v)} optional />
                   </div>
                   <ChoiceSelect label="Nationality" value={form.nationality} onChange={(v) => update("nationality", v)} options={NATIONALITY_OPTIONS} optional />
                   <ChoiceSelect label="Citizenship" value={form.citizenship} onChange={(v) => update("citizenship", v)} options={CITIZENSHIP_OPTIONS} optional />
                   <MultiSelectChips label="Languages spoken" options={LANGUAGE_OPTIONS} selected={languages} onToggle={toggleLanguage} />
-                  <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-[#EADDD2] p-4 text-sm text-[#746767]">
-                    <Upload className="h-5 w-5 text-[#7A2432]" />
-                    <span>{photo ? photo.name : "Upload profile photo"}</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={(event) => setPhoto(event.target.files?.[0] ?? null)} />
-                  </label>
                 </>
               )}
 
@@ -391,7 +436,7 @@ export default function EditProfile() {
           </AnimatePresence>
 
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-md border border-[#EADDD2] font-semibold disabled:opacity-40">
+            <button disabled={step === 0} onClick={() => setStep((value) => value - 1)} className="h-12 rounded-full border border-[#EADDD2] font-semibold disabled:opacity-40">
               Back
             </button>
             {step < steps.length - 1 ? (
@@ -405,12 +450,12 @@ export default function EditProfile() {
                   }
                   setStep((value) => value + 1);
                 }}
-                className="flex h-12 items-center justify-center gap-2 rounded-md bg-[#7A2432] font-semibold text-white"
+                className="glass-btn-rose flex h-12 items-center justify-center gap-2 rounded-md font-semibold"
               >
                 Next <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button onClick={submit} disabled={mutation.isPending} className="h-12 rounded-md bg-[#7A2432] font-semibold text-white disabled:opacity-60">
+              <button onClick={submit} disabled={mutation.isPending} className="glass-btn-rose h-12 rounded-md font-semibold disabled:opacity-60">
                 {mutation.isPending ? "Saving..." : "Save profile"}
               </button>
             )}
@@ -437,7 +482,7 @@ export default function EditProfile() {
                 <button
                   type="button"
                   onClick={() => setShowDiscard(false)}
-                  className="h-11 rounded-xl border border-[#EADDD2] text-sm font-semibold text-[#746767]"
+                  className="h-11 rounded-full border border-[#EADDD2] text-sm font-semibold text-[#746767]"
                 >
                   No
                 </button>
@@ -447,7 +492,7 @@ export default function EditProfile() {
                     setShowDiscard(false);
                     router.push("/profile");
                   }}
-                  className="h-11 rounded-xl bg-[#7A2432] text-sm font-semibold text-white"
+                  className="glass-btn-rose h-11 rounded-xl text-sm font-semibold"
                 >
                   Yes, discard
                 </button>
@@ -464,7 +509,69 @@ function Field({ label, value, onChange, type = "text", placeholder, optional }:
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label} {optional && <span className="text-[#746767]">(optional)</span>}</span>
-      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]" />
+      <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-lg border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#F87171]" />
+    </label>
+  );
+}
+
+// Height is captured as feet + inches (two boxes) but stored as `height_cm`
+// for the backend. The two boxes keep their own local state so each edits
+// independently; we only re-hydrate from the parent when it supplies a cm that
+// differs from what our own boxes produce (e.g. when the profile data loads).
+function HeightField({ valueCm, onChangeCm }: { valueCm: string; onChangeCm: (cm: string) => void }) {
+  const toParts = (cm: string) => {
+    if (!cm) return { ft: "", inch: "" };
+    const total = Math.round(Number(cm) / 2.54);
+    return { ft: String(Math.floor(total / 12)), inch: String(total % 12) };
+  };
+
+  const [ft, setFt] = useState(() => toParts(valueCm).ft);
+  const [inch, setInch] = useState(() => toParts(valueCm).inch);
+
+  const partsToCm = (f: string, i: string) =>
+    f === "" && i === "" ? "" : String(Math.round(((Number(f) || 0) * 12 + (Number(i) || 0)) * 2.54));
+
+  const [prevCm, setPrevCm] = useState(valueCm);
+  if (valueCm !== prevCm) {
+    setPrevCm(valueCm);
+    // Only resync if the incoming value isn't the one our own boxes just sent,
+    // so typing in one box never clobbers the other.
+    if (valueCm !== partsToCm(ft, inch)) {
+      const p = toParts(valueCm);
+      setFt(p.ft);
+      setInch(p.inch);
+    }
+  }
+
+  const onFt = (raw: string) => {
+    let v = raw.replace(/\D/g, "").slice(-1); // single digit (0–7), last wins
+    if (v !== "" && Number(v) > 7) v = "7";
+    setFt(v);
+    onChangeCm(partsToCm(v, inch));
+  };
+
+  const onInch = (raw: string) => {
+    let v = raw.replace(/\D/g, "").slice(0, 2);
+    if (v !== "" && Number(v) > 11) v = "11";
+    setInch(v);
+    onChangeCm(partsToCm(ft, v));
+  };
+
+  const boxClass = "h-12 w-full rounded-lg border border-[#EADDD2] pl-3 pr-7 text-sm outline-none focus:border-[#F87171]";
+
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-medium">Height <span className="text-[#746767]">(optional)</span></span>
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="relative">
+          <input type="text" inputMode="numeric" value={ft} onChange={(e) => onFt(e.target.value)} placeholder="ft" className={boxClass} />
+          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#746767]">ft</span>
+        </div>
+        <div className="relative">
+          <input type="text" inputMode="numeric" value={inch} onChange={(e) => onInch(e.target.value)} placeholder="in" className={boxClass} />
+          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#746767]">in</span>
+        </div>
+      </div>
     </label>
   );
 }
@@ -540,7 +647,7 @@ function DobPicker({ value, onChange, error }: { value: string; onChange: (value
     onChange(`${yn}-${String(mn).padStart(2, "0")}-${String(cd).padStart(2, "0")}`);
   };
 
-  const fieldClass = `h-12 w-full rounded-md border px-3 text-sm outline-none focus:border-[#7A2432] ${error ? "border-red-500" : "border-[#EADDD2]"}`;
+  const fieldClass = `h-12 w-full rounded-lg border px-3 text-sm outline-none focus:border-[#F87171] ${error ? "border-red-500" : "border-[#EADDD2]"}`;
 
   return (
     <div className="block">
@@ -555,23 +662,29 @@ function DobPicker({ value, onChange, error }: { value: string; onChange: (value
           className={fieldClass}
         />
 
-        <select
-          value={month}
-          onChange={(e) => commit({ ...parts, month: e.target.value })}
-          className={fieldClass}
-        >
-          <option value="">Month</option>
-          {DOB_MONTHS.map((name) => <option key={name} value={name}>{name}</option>)}
-        </select>
+        <div className="relative">
+          <select
+            value={month}
+            onChange={(e) => commit({ ...parts, month: e.target.value })}
+            className={`${fieldClass} appearance-none pr-9`}
+          >
+            <option value="">Month</option>
+            {DOB_MONTHS.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+        </div>
 
-        <select
-          value={year}
-          onChange={(e) => commit({ ...parts, year: e.target.value })}
-          className={fieldClass}
-        >
-          <option value="">Year</option>
-          {DOB_YEARS.map((yy) => <option key={yy} value={yy}>{yy}</option>)}
-        </select>
+        <div className="relative">
+          <select
+            value={year}
+            onChange={(e) => commit({ ...parts, year: e.target.value })}
+            className={`${fieldClass} appearance-none pr-9`}
+          >
+            <option value="">Year</option>
+            {DOB_YEARS.map((yy) => <option key={yy} value={yy}>{yy}</option>)}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+        </div>
       </div>
       {error && <span className="mt-1.5 block text-xs font-medium text-red-600">Please add your date of birth to continue.</span>}
     </div>
@@ -582,7 +695,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-md border border-[#EADDD2] p-3 text-sm outline-none focus:border-[#7A2432]" />
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-lg border border-[#EADDD2] p-3 text-sm outline-none focus:border-[#F87171]" />
     </label>
   );
 }
@@ -612,7 +725,7 @@ function CultureSelect({
           value={value ?? ""}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)}
-          className="h-12 w-full appearance-none rounded-md border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#7A2432] disabled:opacity-50"
+          className="h-12 w-full appearance-none rounded-lg border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#F87171] disabled:opacity-50"
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (
@@ -629,12 +742,15 @@ function Select({ label, value, onChange, options, labels }: { label: string; va
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-md border border-[#EADDD2] px-3 text-sm outline-none focus:border-[#7A2432]">
-        <option value="">Select</option>
-        {options.map((option) => (
-          <option key={option} value={option}>{labels?.[option] ?? option}</option>
-        ))}
-      </select>
+      <div className="relative">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full appearance-none rounded-lg border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#F87171]">
+          <option value="">Select</option>
+          {options.map((option) => (
+            <option key={option} value={option}>{labels?.[option] ?? option}</option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#746767]" />
+      </div>
     </label>
   );
 }
@@ -645,7 +761,7 @@ function ChoiceSelect({ label, value, onChange, options, optional }: { label: st
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label} {optional && <span className="text-[#746767]">(optional)</span>}</span>
       <div className="relative">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full appearance-none rounded-md border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#7A2432]">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full appearance-none rounded-lg border border-[#EADDD2] px-3 pr-10 text-sm outline-none focus:border-[#F87171]">
           <option value="">Select</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
@@ -669,7 +785,7 @@ function MultiSelectChips({ label, options, selected, onToggle }: { label: strin
               key={option}
               type="button"
               onClick={() => onToggle(option)}
-              style={active ? { backgroundColor: "#7A2432", color: "#fff", borderColor: "#7A2432" } : undefined}
+              style={active ? { backgroundColor: "#ffffff", color: "#2D2424", borderColor: "rgba(45,36,36,0.35)", boxShadow: "0 2px 8px rgba(16,24,40,0.10)" } : undefined}
               className="rounded-full border border-[#EADDD2] px-3 py-1.5 text-sm font-medium transition"
             >
               {option}

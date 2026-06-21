@@ -145,7 +145,7 @@ export default function MessageBubble({
       {/* Swipe-to-reply icon, revealed as the bubble is dragged right */}
       {canReply && dragX > 0 && (
         <div
-          className="absolute left-1 top-1/2 -translate-y-1/2 text-[#7A2432]"
+          className="absolute left-1 top-1/2 -translate-y-1/2 text-[#F87171]"
           style={{ opacity: Math.min(1, dragX / SWIPE_THRESHOLD) }}
         >
           <Reply className="h-5 w-5" />
@@ -311,7 +311,7 @@ function MenuItem({
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50
-        ${danger ? 'text-[#7A2432]' : 'text-[#2D2424]'}`}
+        ${danger ? 'text-[#F87171]' : 'text-[#2D2424]'}`}
     >
       {icon}{label}
     </button>

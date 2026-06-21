@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
           {/* Icon */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="h-16 w-16 rounded-full flex items-center justify-center">
-              <LockKeyhole className="h-8 w-8 text-[#7A2432]" />
+              <LockKeyhole className="h-8 w-8 text-[#F87171]" />
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Reset your password</h1>
             <p className="text-sm text-[#746767]">
@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
               </div>
               <button
                 onClick={() => router.push("/login")}
-                className="w-full h-12 rounded-2xl bg-[#7A2432] text-white font-semibold text-sm shadow-lg shadow-[#7A2432]/25 active:scale-[0.98] transition-transform"
+                className="glass-btn-rose w-full h-12 rounded-2xl font-semibold text-sm shadow-lg active:scale-[0.98] transition-transform"
               >
                 Go to Login
               </button>
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition text-sm"
                   />
                 </div>
               )}
@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
                     placeholder="Enter new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm pr-10"
+                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition text-sm pr-10"
                   />
                   <button
                     type="button"
@@ -191,7 +191,7 @@ export default function ResetPasswordPage() {
                     placeholder="Confirm new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm pr-10"
+                    className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition text-sm pr-10"
                   />
                   <button
                     type="button"
@@ -215,7 +215,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={resetMutation.isPending}
-                className="w-full h-12 rounded-2xl bg-[#7A2432] text-white font-semibold text-sm shadow-lg shadow-[#7A2432]/25 disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="glass-btn-rose w-full h-12 rounded-2xl font-semibold text-sm shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {resetMutation.isPending ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

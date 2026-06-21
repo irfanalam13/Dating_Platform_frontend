@@ -356,7 +356,7 @@ export default function ChatWindow({ conversationId }: Props) {
       {showReportUser && otherProfileId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4" onClick={() => setShowReportUser(false)}>
           <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
-            <Flag className="mx-auto mb-3 h-8 w-8 text-[#7A2432]" />
+            <Flag className="mx-auto mb-3 h-8 w-8 text-[#F87171]" />
             <h2 className="text-lg font-semibold text-[#2D2424]">Report this person?</h2>
             <p className="mt-2 text-sm leading-6 text-[#746767]">
               Your report goes to the safety team. The other person will not be notified.
@@ -364,7 +364,7 @@ export default function ChatWindow({ conversationId }: Props) {
             <button
               onClick={() => reportUserMutation.mutate(otherProfileId)}
               disabled={reportUserMutation.isPending}
-              className="mt-5 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-60"
+              className="glass-btn-rose mt-5 h-11 w-full rounded-md text-sm font-semibold disabled:opacity-60"
             >
               Submit report
             </button>

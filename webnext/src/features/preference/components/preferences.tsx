@@ -431,7 +431,7 @@ export default function PreferencesPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/settings")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
@@ -766,7 +766,7 @@ function RangeField({
     <div>
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-[#2D2424]">{label}</span>
-        <span className="glass-btn rounded-full px-3 py-1 text-xs font-semibold text-[#7A2432]">
+        <span className="glass-btn rounded-full px-3 py-1 text-xs font-semibold text-[#F87171]">
           {value}
         </span>
       </div>
@@ -779,10 +779,10 @@ function RangeField({
         onChange={(event) => onChange(Number(event.target.value))}
         style={{
           background: reverseFill
-            ? `linear-gradient(to right, rgba(255, 255, 255, 0.55) ${percentage}%, #7A2432 ${percentage}%)`
-            : `linear-gradient(to right, #7A2432 ${percentage}%, rgba(255, 255, 255, 0.55) ${percentage}%)`
+            ? `linear-gradient(to right, rgba(255, 255, 255, 0.55) ${percentage}%, #F87171 ${percentage}%)`
+            : `linear-gradient(to right, #F87171 ${percentage}%, rgba(255, 255, 255, 0.55) ${percentage}%)`
         }}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full accent-[#7A2432] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full accent-[#F87171] shadow-[inset_0_1px_2px_rgba(16,24,40,0.12)]"
       />
     </div>
   );

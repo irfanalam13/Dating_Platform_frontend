@@ -85,7 +85,7 @@ export default function ConnectionsPage() {
     <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
         <header className="mb-4 flex items-center gap-3">
-          <button onClick={() => router.back()} className="glass-btn grid h-9 w-9 place-items-center rounded-full" aria-label="Back">
+          <button onClick={() => router.push("/home")} className="glass-btn grid h-9 w-9 place-items-center rounded-full" aria-label="Back">
             <ArrowLeft className="h-4 w-4" />
           </button>
           <h1 className="text-xl font-semibold">Connections</h1>

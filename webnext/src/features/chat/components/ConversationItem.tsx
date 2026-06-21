@@ -155,7 +155,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
                     Cancel
                   </button>
                   <button onClick={del}
-                    className="flex-1 rounded-lg bg-[#7A2432] px-2 py-1.5 text-xs font-medium text-white">
+                    className="glass-btn-rose flex-1 rounded-lg px-2 py-1.5 text-xs font-medium">
                     Delete
                   </button>
                 </div>
@@ -182,7 +182,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
 function Item({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button onClick={onClick}
-      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 ${danger ? 'text-[#7A2432]' : 'text-[#2D2424]'}`}>
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 ${danger ? 'text-[#F87171]' : 'text-[#2D2424]'}`}>
       {icon}{label}
     </button>
   )

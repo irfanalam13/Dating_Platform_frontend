@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
           {/* Icon */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="h-16 w-16 rounded-full flex items-center justify-center">
-              <KeyRound className="h-8 w-8 text-[#7A2432]" />
+              <KeyRound className="h-8 w-8 text-[#F87171]" />
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Forgot password?</h1>
             <p className="text-sm text-[#746767] leading-relaxed">
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
               </div>
               <button
                 onClick={() => forgotMutation.reset()}
-                className="text-sm text-[#7A2432] font-medium hover:underline"
+                className="text-sm text-[#F87171] font-medium hover:underline"
               >
                 Try a different email
               </button>
@@ -71,14 +71,14 @@ export default function ForgotPasswordPage() {
                   placeholder="your@mail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition text-sm"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={forgotMutation.isPending}
-                className="w-full h-12 rounded-2xl bg-[#7A2432] text-white font-semibold text-sm shadow-lg shadow-[#7A2432]/25 disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="glass-btn-rose w-full h-12 rounded-2xl font-semibold text-sm shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {forgotMutation.isPending ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
