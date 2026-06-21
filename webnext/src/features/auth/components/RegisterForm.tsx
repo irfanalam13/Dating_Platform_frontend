@@ -45,6 +45,9 @@ export default function RegisterForm() {
     if (!form.full_name || !form.email) {
       return showError("Full name and email are required");
     }
+    if (form.phone.length !== 10) {
+      return showError("Phone number must be exactly 10 digits");
+    }
     if (!isLengthValid) {
       return showError("Password must be at least 10 characters");
     }
@@ -72,7 +75,7 @@ export default function RegisterForm() {
           className="w-full max-w-md p-8 rounded-3xl shadow-xl text-center space-y-4"
         >
           <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto">
-            <Mail className="h-8 w-8 text-[#7A2432]" />
+            <Mail className="h-8 w-8 text-[#F87171]" />
           </div>
           <h2 className="text-2xl font-bold text-[#2D2424]">Check your email</h2>
           <p className="text-sm text-[#746767] leading-relaxed">

@@ -1,6 +1,7 @@
 "use client";
 
-import { toast } from "react-hot-toast";
+import { useEffect, useRef, useState } from "react";
+import { toast, type Toast } from "react-hot-toast";
 import { AlertCircle, CheckCircle2, RotateCcw, Trash2, X } from "lucide-react";
 
 type ToastSource = string | Error | unknown;
@@ -163,6 +164,98 @@ function extractMessage(source: ToastSource, fallback: string): string {
 	return statusFallback(status) ?? fallback;
 }
 
+// Glass toast card. Swipe it UP (touch or pointer drag) to dismiss — the card
+// follows your finger and, once dragged past the threshold or flicked, is
+// removed. Tapping the X also dismisses it.
+function ToastCard({
+	t,
+	variant,
+	message,
+}: {
+	t: Toast;
+	variant: "success" | "error";
+	message: string;
+}) {
+	const [dragY, setDragY] = useState(0);
+	const startY = useRef<number | null>(null);
+	const dragging = useRef(false);
+
+	const DISMISS_AT = 60; // px dragged up before release dismisses
+
+	const onPointerDown = (e: React.PointerEvent) => {
+		startY.current = e.clientY;
+		dragging.current = true;
+		(e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+	};
+	const onPointerMove = (e: React.PointerEvent) => {
+		if (!dragging.current || startY.current === null) return;
+		// Only track upward movement (negative offset); ignore downward.
+		setDragY(Math.min(0, e.clientY - startY.current));
+	};
+	const endDrag = () => {
+		if (!dragging.current) return;
+		dragging.current = false;
+		startY.current = null;
+		if (dragY < -DISMISS_AT) toast.remove(t.id);
+		else setDragY(0);
+	};
+
+	return (
+		<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+			<div
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={endDrag}
+				onPointerCancel={endDrag}
+				style={{
+					transform: `translateY(${dragY}px)`,
+					opacity: 1 + dragY / 160, // fade as it slides up
+					transition: dragging.current ? "none" : "transform 0.2s ease, opacity 0.2s ease",
+					touchAction: "none",
+				}}
+				className="pointer-events-auto relative w-full max-w-md cursor-grab touch-none select-none overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl active:cursor-grabbing"
+			>
+				<div className="absolute inset-x-0 top-1.5 mx-auto h-1 w-10 rounded-full bg-slate-400/40" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.28)_40%,rgba(248,113,113,0.16)_100%)]" style={{ border: "1px solid rgba(255,255,255,0.5)", borderRadius: "28px" }} />
+				<div className="relative flex items-start gap-4 pr-10 pt-1">
+					<div
+						className={
+							variant === "success"
+								? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700"
+								: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700"
+						}
+					>
+						{variant === "success" ? (
+							<CheckCircle2 className="h-5 w-5" />
+						) : (
+							<AlertCircle className="h-5 w-5" />
+						)}
+					</div>
+
+					<div className="min-w-0 flex-1">
+						<p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
+							{variant === "success" ? "Success" : "Error"}
+						</p>
+						<p className="mt-1 break-words text-sm leading-6 text-slate-800">
+							{message}
+						</p>
+					</div>
+				</div>
+
+				<button
+					type="button"
+					onClick={(e) => { e.stopPropagation(); toast.remove(t.id); }}
+					style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+					className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-slate-900"
+					aria-label="Dismiss toast"
+				>
+					<X className="h-4 w-4" />
+				</button>
+			</div>
+		</div>
+	);
+}
+
 function showToast(
 	variant: "success" | "error",
 	source: ToastSource,
@@ -172,47 +265,7 @@ function showToast(
 	const id = `${variant}:${message}`;
 
 	toast.custom(
-		(t) => (
-			<div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-				<div className="pointer-events-auto relative w-full max-w-md overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
-					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.28)_40%,rgba(248,113,113,0.16)_100%)]" />
-					<div className="relative flex items-start gap-4 pr-10">
-						<div
-							className={
-								variant === "success"
-									? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700"
-									: "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700"
-							}
-						>
-							{variant === "success" ? (
-								<CheckCircle2 className="h-5 w-5" />
-							) : (
-								<AlertCircle className="h-5 w-5" />
-							)}
-						</div>
-
-						<div className="min-w-0 flex-1">
-							<p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
-								{variant === "success" ? "Success" : "Error"}
-							</p>
-							<p className="mt-1 break-words text-sm leading-6 text-slate-800">
-								{message}
-							</p>
-						</div>
-					</div>
-
-					<button
-						type="button"
-						onClick={(e) => { e.stopPropagation(); toast.remove(t.id); }}
-						style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
-						className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-slate-900"
-						aria-label="Dismiss toast"
-					>
-						<X className="h-4 w-4" />
-					</button>
-				</div>
-			</div>
-		),
+		(t) => <ToastCard t={t} variant={variant} message={message} />,
 		{
 			id,
 			duration: variant === "success" ? 3200 : 5200,
@@ -234,47 +287,106 @@ export const showSuccess = (msg: string): void => {
 	showToast("success", msg, msg);
 };
 
+// Bumped on every showUndo() call so the countdown remounts (and restarts at
+// full duration) even though all undo toasts share one id.
+let undoSeq = 0;
+
 /**
- * Undo snackbar. Shows `msg` with an "Undo" button for `durationMs` (default 5s).
- * Clicking Undo runs `onUndo` and dismisses the toast. If it auto-dismisses, the
- * caller's own timer is responsible for committing the action — this toast is
- * purely the visual countdown. Uses a single shared id so only the most recent
- * undo is shown at a time (avoids overlapping full-screen toasts).
+ * Undo snackbar with three controls (the "undo phase"):
+ *   1. Undo button   → runs `onUndo` (restore) and dismisses.
+ *   2. Live countdown → ticks down each second; when it (and the toast's own
+ *      duration) reach 0 the caller's timer commits the deletion.
+ *   3. ✕ button      → runs `onDeleteNow` (commit immediately) and dismisses.
+ * A single shared id keeps only the most recent undo visible (no stacking).
  */
+function UndoToast({
+	t,
+	msg,
+	seconds,
+	onUndo,
+	onDeleteNow,
+}: {
+	t: Toast;
+	msg: string;
+	seconds: number;
+	onUndo: () => void;
+	onDeleteNow: () => void;
+}) {
+	const [left, setLeft] = useState(seconds);
+
+	useEffect(() => {
+		const iv = setInterval(() => setLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+		return () => clearInterval(iv);
+	}, []);
+
+	return (
+		<div className="fixed inset-x-0 bottom-6 z-[9999] flex justify-center px-4 pointer-events-none">
+			<div className="pointer-events-auto relative flex w-full max-w-md items-center gap-3 overflow-hidden rounded-2xl bg-white/40 px-4 py-3 text-slate-900 shadow-[0_20px_60px_rgba(15,23,42,0.25)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.85),rgba(255,255,255,0.25)_45%,rgba(148,163,184,0.14)_100%)]" />
+
+				{/* (2) Live countdown badge */}
+				<div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-500/15 text-slate-700">
+					<span className="text-sm font-bold tabular-nums">{left}</span>
+				</div>
+
+				<p className="relative min-w-0 flex-1 break-words text-sm leading-5 text-slate-800">
+					{msg}
+					<span className="block text-xs text-slate-500">Deleting in {left}s</span>
+				</p>
+
+				{/* (1) Undo → restore */}
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onUndo();
+						toast.remove(t.id);
+					}}
+					className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm font-semibold text-[#7A2432] transition hover:bg-white"
+				>
+					<RotateCcw className="h-3.5 w-3.5" />
+					Undo
+				</button>
+
+				{/* (3) ✕ → delete instantly */}
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDeleteNow();
+						toast.remove(t.id);
+					}}
+					className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/70 text-slate-600 transition hover:bg-white hover:text-[#7A2432]"
+					aria-label="Delete now"
+				>
+					<X className="h-4 w-4" />
+				</button>
+			</div>
+		</div>
+	);
+}
+
 export const showUndo = (
 	msg: string,
-	onUndo: () => void,
-	durationMs = 5000,
+	opts: { onUndo: () => void; onDeleteNow: () => void; durationMs?: number },
 ): void => {
+	const duration = opts.durationMs ?? 5000;
+	undoSeq += 1;
+	const seq = undoSeq;
 	toast.custom(
 		(t) => (
-			<div className="fixed inset-x-0 bottom-6 z-[9999] flex justify-center px-4 pointer-events-none">
-				<div className="pointer-events-auto relative flex w-full max-w-md items-center gap-3 overflow-hidden rounded-2xl bg-white/40 px-4 py-3 text-slate-900 shadow-[0_20px_60px_rgba(15,23,42,0.25)] backdrop-blur-2xl" style={{ border: "1px solid rgba(255,255,255,0.5)" }}>
-					<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.85),rgba(255,255,255,0.25)_45%,rgba(148,163,184,0.14)_100%)]" />
-					<div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-500/15 text-slate-700">
-						<Trash2 className="h-4 w-4" />
-					</div>
-					<p className="relative min-w-0 flex-1 break-words text-sm leading-5 text-slate-800">
-						{msg}
-					</p>
-					<button
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							onUndo();
-							toast.remove(t.id);
-						}}
-						className="relative inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm font-semibold text-[#7A2432] transition hover:bg-white"
-					>
-						<RotateCcw className="h-3.5 w-3.5" />
-						Undo
-					</button>
-				</div>
-			</div>
+			<UndoToast
+				key={seq}
+				t={t}
+				msg={msg}
+				seconds={Math.round(duration / 1000)}
+				onUndo={opts.onUndo}
+				onDeleteNow={opts.onDeleteNow}
+			/>
 		),
 		{
 			id: "undo-toast",
-			duration: durationMs,
+			duration,
 			style: { background: "transparent", boxShadow: "none", padding: 0 },
 		},
 	);

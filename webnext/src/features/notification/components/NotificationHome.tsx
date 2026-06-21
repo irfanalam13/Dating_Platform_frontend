@@ -14,7 +14,6 @@ import {
   UserPlus,
   Phone,
   Megaphone,
-  X,
 } from "lucide-react";
 import type { Notification, NotificationType } from "@/shared/types/notification.types";
 import {
@@ -155,29 +154,20 @@ function NotificationRow({
         </span>
       </button>
 
-      {/* Action cluster: unread dot · instant-delete (X) · three-dot menu */}
+      {/* Action cluster: unread dot · three-dot menu */}
       <div className="flex shrink-0 items-center gap-1">
         {!item.is_read && (
           <span className="mr-0.5 h-2 w-2 shrink-0 rounded-full bg-[#B78A3B]" />
         )}
 
-        {/* Instant delete (cross) — removes now, 5s undo */}
-        <button
-          type="button"
-          onClick={() => onDelete(item)}
-          className="grid h-7 w-7 place-items-center rounded-full text-[#A89090] transition hover:bg-[#FBEEE8] hover:text-[#7A2432]"
-          aria-label="Delete notification"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        {/* Three-dot actions menu */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="glass-btn grid h-7 w-7 place-items-center rounded-full"
             aria-label="Notification actions"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            className="glass-btn grid h-7 w-7 place-items-center rounded-full"
           >
             <MoreVertical className="h-4 w-4" />
           </button>
@@ -185,7 +175,10 @@ function NotificationRow({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={closeMenu} />
-              <div className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl bg-white text-sm shadow-xl ring-1 ring-black/5">
+              <div
+                role="menu"
+                className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-xl bg-white text-sm shadow-xl ring-1 ring-black/5"
+              >
                 {!item.is_read && (
                   <MenuItem
                     icon={<Check className="h-4 w-4" />}
@@ -250,16 +243,27 @@ export default function NotificationHome() {
       });
   };
 
+  // Opens the "undo phase" with three controls: Undo (restore), a 5s countdown
+  // that auto-commits, and ✕ (commit immediately) — all driven from the toast.
   const requestDelete = (item: Notification) => {
     if (timers.current.has(item.id)) return; // already pending
     setPendingIds((prev) => new Set(prev).add(item.id));
     const timer = setTimeout(() => commitDelete(item), UNDO_WINDOW_MS);
     timers.current.set(item.id, timer);
-    showUndo("Notification deleted", () => {
-      const t = timers.current.get(item.id);
-      if (t) clearTimeout(t);
-      timers.current.delete(item.id);
-      unhide(item.id);
+
+    showUndo("Notification deleted", {
+      durationMs: UNDO_WINDOW_MS,
+      onUndo: () => {
+        const t = timers.current.get(item.id);
+        if (t) clearTimeout(t);
+        timers.current.delete(item.id);
+        unhide(item.id);
+      },
+      onDeleteNow: () => {
+        const t = timers.current.get(item.id);
+        if (t) clearTimeout(t);
+        commitDelete(item);
+      },
     });
   };
 
@@ -302,7 +306,7 @@ export default function NotificationHome() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >

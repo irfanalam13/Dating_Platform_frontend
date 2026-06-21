@@ -40,11 +40,12 @@ textarea {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
               0 2px 4px -1px rgba(0, 0, 0, 0.03),
               inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   color: #2D2424;
+  border-radius: 9999px;
 }
 
 .glass-btn:hover {
@@ -82,7 +83,7 @@ textarea {
               inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-/* Glossy frosted glass — replaces solid dark-red (#7A2432) backgrounds */
+/* Glossy frosted glass — replaces former solid dark-red backgrounds */
 .glass-glossy {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.18) 42%, rgba(255, 255, 255, 0.06) 100%),
@@ -92,7 +93,8 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12),
               inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  color: #7A2432;
+  color: #2D2424;
+  border-radius: 9999px;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
@@ -110,28 +112,32 @@ textarea {
   box-shadow: 0 4px 12px rgba(16, 24, 40, 0.10);
 }
 
-/* Rose-tinted frosted glass — for primary/like CTAs that used to be red */
+/* Neutral frosted glass — former rose CTAs, now pure iOS-style glass (pill) */
 .glass-btn-rose {
-  background: linear-gradient(135deg, rgba(255, 68, 88, 0.30), rgba(255, 107, 129, 0.22));
+  background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 8px 24px rgba(255, 68, 88, 0.20),
-              inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+              0 2px 4px -1px rgba(0, 0, 0, 0.03),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  color: #2D2424;
+  border-radius: 9999px;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .glass-btn-rose:hover {
-  background: linear-gradient(135deg, rgba(255, 68, 88, 0.42), rgba(255, 107, 129, 0.32));
-  box-shadow: 0 10px 30px rgba(255, 68, 88, 0.28),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 6px 8px -2px rgba(0, 0, 0, 0.1),
+              0 3px 6px -2px rgba(0, 0, 0, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 1);
   transform: translateY(-1px);
 }
 
 .glass-btn-rose:active {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
   transform: translateY(1px);
-  box-shadow: 0 4px 12px rgba(255, 68, 88, 0.18);
 }
 
 /* Red-tinted frosted glass — for destructive (danger) actions */
@@ -201,4 +207,84 @@ textarea {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Global smoothness & performance polish
+   ───────────────────────────────────────────────────────── */
+
+/* Smooth, momentum scrolling + crisp text rendering. */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-overflow-scrolling: touch;
+  /* Stop the whole page from rubber-banding past its content on mobile. */
+  overscroll-behavior-y: none;
+}
+
+/* Remove the grey tap flash on mobile so presses feel instant & native. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Snappy, consistent easing for interactive elements that don't already
+   declare their own transition (Tailwind's transition utilities, being
+   class selectors, still win over this element-level default). */
+a,
+button,
+[role="button"],
+summary,
+label {
+  transition: transform 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
+              opacity 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
+              background-color 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
+              box-shadow 0.18s cubic-bezier(0.25, 0.8, 0.25, 1),
+              color 0.18s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Buttons get a subtle, instant press feedback everywhere. */
+button:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Back buttons get a smoother, springy press — the slight overshoot on the
+   easing makes the release settle softly instead of snapping back. */
+[aria-label="Go back"],
+[aria-label="Back"] {
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
+[aria-label="Go back"]:active,
+[aria-label="Back"]:active {
+  transform: scale(0.88);
+}
+
+/* Keep the persistent bottom nav on its own GPU layer so its blur stays
+   jank-free while the page scrolls behind it. (Deliberately NOT applied to
+   list cards — too many promoted layers would hurt more than help.) */
+.bottom-nav-glass {
+  transform: translateZ(0);
+}
+
+/* Accessibility + low-end perf: honour the OS "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

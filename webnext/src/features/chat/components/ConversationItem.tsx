@@ -7,6 +7,7 @@ import { MoreVertical, Pin, PinOff, Bell, BellOff, Archive, ArchiveRestore, Tras
 import { Conversation } from '@/shared/types/chat.types'
 import { useAuth } from '@/features/auth'
 import ProfileImage from '@/shared/components/ProfileImage'
+import { useMatchAvatars, pickAvatar } from '../hooks/useMatchAvatars'
 import { formatTime } from '@/shared/lib/utils'
 import { useNotificationContext } from '@/features/notification/context/NotificationContext'
 import { patchConversationState, deleteConversation, type ConversationStatePatch } from '@/shared/api/chat.api'
@@ -23,6 +24,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
   const { user } = useAuth()
   const router = useRouter()
   const { unreadCounts, onlineUsers, markConversationRead } = useNotificationContext()
+  const matchAvatars = useMatchAvatars()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -102,7 +104,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
           className="relative flex-shrink-0 cursor-pointer"
         >
           <ProfileImage
-            src={other?.profile_picture ?? other?.profile_image}
+            src={pickAvatar(other?.profile_picture ?? other?.profile_image, other?.id, matchAvatars)}
             name={other?.display_name ?? other?.full_name ?? '?'}
             className="w-10 h-10 rounded-full"
             textClassName="text-sm"
@@ -159,7 +161,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
                     Cancel
                   </button>
                   <button onClick={del}
-                    className="flex-1 rounded-lg bg-[#7A2432] px-2 py-1.5 text-xs font-medium text-white">
+                    className="glass-btn-rose flex-1 rounded-lg px-2 py-1.5 text-xs font-medium">
                     Delete
                   </button>
                 </div>
@@ -186,7 +188,7 @@ export default function ConversationItem({ conversation, isActive, onClick }: Pr
 function Item({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button onClick={onClick}
-      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 ${danger ? 'text-[#7A2432]' : 'text-[#2D2424]'}`}>
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 ${danger ? 'text-[#F87171]' : 'text-[#2D2424]'}`}>
       {icon}{label}
     </button>
   )

@@ -10,6 +10,7 @@ import { useAuth } from "@/features/auth";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
 import type { Conversation, ConversationParticipant } from "@/shared/types/chat.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { useMatchAvatars, pickAvatar } from "@/features/chat/hooks/useMatchAvatars";
 import { filterHidden } from "@/features/chat/lib/hiddenConversations";
 import StoryBar from "@/features/chat/components/StoryBar";
 
@@ -23,8 +24,11 @@ function getDisplayName(person: ConversationParticipant): string {
   return person.name ?? person.display_name ?? person.full_name ?? "Matched user";
 }
 
-function getProfileImage(person: ConversationParticipant): string {
-  return person.profile_image ?? person.profile_picture ?? "/default.png";
+function getProfileImage(
+  person: ConversationParticipant,
+  matchAvatars: Map<number, string>,
+): string {
+  return pickAvatar(person.profile_image ?? person.profile_picture, person.id, matchAvatars) ?? "/default.png";
 }
 
 function getLastMessageText(conversation: Conversation): string {
@@ -41,6 +45,7 @@ export function MessageInbox() {
   const { user }                    = useAuth();
   const { unreadCounts, onlineUsers, totalChatUnread, markConversationRead, markAllRead } =
     useNotificationContext();
+  const matchAvatars                  = useMatchAvatars();
   const [query, setQuery]           = useState("");
   const [markingAll, setMarkingAll] = useState(false);
 
@@ -111,7 +116,7 @@ export function MessageInbox() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
@@ -190,11 +195,6 @@ export function MessageInbox() {
               <h2 className="text-lg font-bold text-[#1a1a2e]">
                 {q ? "No matches found" : "No conversations yet"}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                {q
-                  ? `No one matching “${query}”.`
-                  : "When both people show interest, a conversation will open here."}
-              </p>
             </div>
           </div>
         )}
@@ -207,7 +207,7 @@ export function MessageInbox() {
               if (!person) return null;
 
               const displayName  = getDisplayName(person);
-              const profileImage = getProfileImage(person);
+              const profileImage = getProfileImage(person, matchAvatars);
               const isOnline     = onlineUsers.has(person.id) || person.is_online;
               const unread       = unreadCounts[conversation.id] ?? conversation.unread_count ?? 0;
 

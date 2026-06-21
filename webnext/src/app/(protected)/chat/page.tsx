@@ -25,7 +25,7 @@ export default function ChatPage() {
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/40">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/home")}
               aria-label="Go back"
               className="glass-btn grid h-9 w-9 shrink-0 place-items-center rounded-full"
             >

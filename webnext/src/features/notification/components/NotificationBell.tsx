@@ -35,7 +35,7 @@ export default function NotificationBell() {
 
         {/* Red dot badge */}
         {totalUnread > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#7A2432] text-[9px] font-bold text-white">
+          <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#F87171] text-[9px] font-bold text-white">
             {totalUnread > 9 ? "9+" : totalUnread}
           </span>
         )}
@@ -51,7 +51,7 @@ export default function NotificationBell() {
               Notifications
             </h3>
             {totalUnread > 0 && (
-              <span className="rounded-full bg-[#7A2432] px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-full bg-[#F87171] px-2 py-0.5 text-[10px] font-bold text-white">
                 {totalUnread} new
               </span>
             )}
@@ -97,7 +97,7 @@ export default function NotificationBell() {
               setOpen(false);
               router.push("/notification");
             }}
-            className="flex w-full items-center justify-center border-t border-[#EADDD2] py-3 text-sm font-medium text-[#7A2432] hover:bg-[#FFF8F1] transition-colors"
+            className="flex w-full items-center justify-center border-t border-[#EADDD2] py-3 text-sm font-medium text-[#F87171] hover:bg-[#FFF8F1] transition-colors"
           >
             See all notifications
           </button>

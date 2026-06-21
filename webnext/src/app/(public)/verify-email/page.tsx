@@ -61,19 +61,19 @@ export default function VerifyEmailPage() {
           {/* Icon */}
           <div className="flex flex-col items-center text-center space-y-3">
             <div className="h-16 w-16 rounded-full flex items-center justify-center">
-              <Mail className="h-8 w-8 text-[#7A2432]" />
+              <Mail className="h-8 w-8 text-[#A9A9A9]" />
             </div>
             <h1 className="text-2xl font-bold text-[#2D2424]">Verify your email</h1>
             <p className="text-sm text-[#746767] leading-relaxed">
-              We sent a 6-digit verification code to{" "}
+              Type the 6-digit verification code sent to{" "}
               {emailFromQuery ? (
                 <span className="font-semibold text-[#2D2424]">{emailFromQuery}</span>
               ) : (
                 "your email"
               )}
-              . Enter it below to verify your account.
             </p>
           </div>
+          <br />
 
           {/* Success state */}
           {verifyMutation.isSuccess && (
@@ -102,16 +102,17 @@ export default function VerifyEmailPage() {
               <button
                 type="submit"
                 disabled={verifyMutation.isPending || code.length !== CODE_LENGTH}
-                className="w-full h-12 rounded-2xl bg-[#7A2432] text-white font-semibold text-sm shadow-lg shadow-[#7A2432]/25 disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="glass-btn w-full h-12 rounded-2xl font-semibold text-sm disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {verifyMutation.isPending ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#2D2424] border-t-transparent" />
                 ) : (
                   "Verify Email"
                 )}
               </button>
             </form>
           )}
+          <br />
 
           {/* Divider */}
           {!verifyMutation.isSuccess && (
@@ -120,7 +121,7 @@ export default function VerifyEmailPage() {
                 <div className="w-full border-t border-[#EADDD2]" />
               </div>
               <div className="relative flex justify-center">
-                <span className="px-3 text-xs text-[#BFAAA0]">Didn&apos;t get the email?</span>
+                <span className="px-3 text-xs text-[#BFAAA0]">Typed wrong email?</span>
               </div>
             </div>
           )}
@@ -133,20 +134,20 @@ export default function VerifyEmailPage() {
                 placeholder="Enter your email to resend"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#7A2432] focus:ring-2 focus:ring-[#7A2432]/20 transition text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-[#EADDD2] bg-[#FDFAF7] text-[#2D2424] placeholder-[#BFAAA0] outline-none focus:border-[#F87171] focus:ring-2 focus:ring-[#F87171]/20 transition text-sm"
               />
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={resendMutation.isPending}
-                className="w-full h-12 rounded-2xl border-2 border-[#EADDD2] text-[#7A2432] font-semibold text-sm disabled:opacity-60 hover:bg-[#FFF0F2] transition-colors flex items-center justify-center gap-2"
+                className="w-full h-12 rounded-2xl border-2 border-[#EADDD2] text-[green] font-semibold text-sm disabled:opacity-60 hover:bg-[#FFF0F2] transition-colors flex items-center justify-center gap-2"
               >
                 {resendMutation.isPending ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#7A2432] border-t-transparent" />
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#F87171] border-t-transparent" />
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4" />
-                    Resend Verification Email
+                    Resend Verification Code
                   </>
                 )}
               </button>
@@ -157,7 +158,7 @@ export default function VerifyEmailPage() {
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="w-full flex items-center justify-center gap-2 text-sm text-[#746767] hover:text-[#2D2424] transition-colors"
+            className="w-full flex items-center justify-center gap-2 text-sm text-[#000000] hover:text-[#2D2424] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to login

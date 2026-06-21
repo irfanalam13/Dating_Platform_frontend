@@ -59,7 +59,7 @@ function completionScore(data: Profile): number {
 }
 
 function CompletionBar({ score }: { score: number }) {
-  const color = score >= 80 ? "#3F7D63" : score >= 50 ? "#B78A3B" : "#7A2432";
+  const color = score >= 80 ? "#3F7D63" : score >= 50 ? "#B78A3B" : "#F87171";
   return (
     <div className="rounded-xl border border-[#EADDD2] p-4">
       <div className="mb-2 flex items-center justify-between text-sm">
@@ -87,7 +87,7 @@ function InfoCard({ icon: Icon, label, value }: {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-[#EADDD2] p-3">
       <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg">
-        <Icon className="h-4 w-4 text-[#7A2432]" />
+        <Icon className="h-4 w-4 text-[#F87171]" />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-[#746767]">{label}</p>
@@ -135,7 +135,7 @@ export default function ProfileCard() {
           <p className="mt-1 text-sm text-[#746767]">Something went wrong loading your profile.</p>
           <button
             onClick={() => router.refresh()}
-            className="mt-4 rounded-lg bg-[#7A2432] px-5 py-2.5 text-sm font-semibold text-white"
+            className="glass-btn-rose mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold"
           >
             Try again
           </button>
@@ -241,7 +241,7 @@ export default function ProfileCard() {
           <div className="p-4">
             <button
               onClick={() => router.push("/profile/edit")}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7A2432] font-semibold text-white transition-opacity hover:opacity-90 active:opacity-80"
+              className="glass-btn-rose flex h-12 w-full items-center justify-center gap-2 rounded-xl font-semibold transition-opacity"
             >
               <PenLine className="h-4 w-4" />
               Edit profile
@@ -313,7 +313,7 @@ export default function ProfileCard() {
             <div className="rounded-xl border border-[#EADDD2] p-4">
               <div className="flex flex-wrap gap-2">
                 {compatibilityTags.map((tag: string) => (
-                  <span key={tag} className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-[#7A2432]">
+                  <span key={tag} className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-[#F87171]">
                     <Sparkles className="h-3 w-3" />
                     {tag}
                   </span>

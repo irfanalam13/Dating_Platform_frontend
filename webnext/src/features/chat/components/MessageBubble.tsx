@@ -65,6 +65,16 @@ export default function MessageBubble({
 
   const closeMenus = () => { setMenuOpen(false); setPickerOpen(false) }
 
+  // After a long-press opens the menu, the finger lifting fires a trailing
+  // tap/click. Without this guard that tap lands on the full-screen click-away
+  // backdrop and closes the menu instantly (so it looks like nothing happened).
+  // We swallow exactly that first tap.
+  const swallowNextBackdropTap = useRef(false)
+  const handleBackdropClose = () => {
+    if (swallowNextBackdropTap.current) { swallowNextBackdropTap.current = false; return }
+    closeMenus()
+  }
+
   // ── WhatsApp-style swipe-to-reply ──────────────────────────────────────────
   // Drag the bubble to the right; release past the threshold to reply. A Reply
   // icon fades in behind the bubble as you drag. Reuses the same onReply path
@@ -72,19 +82,58 @@ export default function MessageBubble({
   const SWIPE_THRESHOLD = 52   // px to drag before a release triggers reply
   const SWIPE_MAX = 72         // px the bubble can travel
   const canReply = canAct && !deleted && !!onReply
+  const canMenu = canAct && !deleted   // same gate as the desktop 3-dot button
   const [dragX, setDragX] = useState(0)
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
   const swiping = useRef(false)
 
+  // ── Press-and-hold to open the actions menu (mobile) ───────────────────────
+  // Phones don't fire a reliable `contextmenu` on long-press (iOS shows the
+  // text-callout instead), so we time the touch ourselves: hold ~450ms without
+  // moving and the same menu the desktop 3-dot button opens pops up. Any drag
+  // (scroll or swipe-to-reply) cancels it.
+  const LONG_PRESS_MS = 450
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressed = useRef(false)
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const clearLongPress = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
   const onTouchStart = (e: React.TouchEvent) => {
-    if (!canReply) return
     const t = e.touches[0]
-    swipeStart.current = { x: t.clientX, y: t.clientY }
-    swiping.current = false
+    touchStart.current = { x: t.clientX, y: t.clientY }
+    longPressed.current = false
+    if (canMenu) {
+      longPressTimer.current = setTimeout(() => {
+        longPressed.current = true
+        // Abort any swipe-in-progress and open the menu.
+        swipeStart.current = null
+        swiping.current = false
+        setDragX(0)
+        setPickerOpen(false)
+        setMenuOpenedAt(Date.now())
+        setMenuOpen(true)
+        swallowNextBackdropTap.current = true
+        // Safety: if no trailing tap arrives, re-enable tap-away after a beat.
+        setTimeout(() => { swallowNextBackdropTap.current = false }, 600)
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10)
+      }, LONG_PRESS_MS)
+    }
+    if (canReply) {
+      swipeStart.current = { x: t.clientX, y: t.clientY }
+      swiping.current = false
+    }
   }
   const onTouchMove = (e: React.TouchEvent) => {
-    if (!swipeStart.current) return
     const t = e.touches[0]
+    // Any meaningful movement means this is a scroll/swipe, not a hold.
+    if (touchStart.current) {
+      const mdx = Math.abs(t.clientX - touchStart.current.x)
+      const mdy = Math.abs(t.clientY - touchStart.current.y)
+      if (mdx > 8 || mdy > 8) clearLongPress()
+    }
+    if (!swipeStart.current) return
     const dx = t.clientX - swipeStart.current.x
     const dy = t.clientY - swipeStart.current.y
     if (!swiping.current) {
@@ -96,6 +145,16 @@ export default function MessageBubble({
     setDragX(Math.max(0, Math.min(dx, SWIPE_MAX)))  // right-swipe only
   }
   const onTouchEnd = () => {
+    clearLongPress()
+    touchStart.current = null
+    // A long-press already opened the menu — don't also fire a reply.
+    if (longPressed.current) {
+      longPressed.current = false
+      swipeStart.current = null
+      swiping.current = false
+      setDragX(0)
+      return
+    }
     if (dragX >= SWIPE_THRESHOLD) onReply?.(message)
     swipeStart.current = null
     swiping.current = false
@@ -161,11 +220,12 @@ export default function MessageBubble({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       {/* Swipe-to-reply icon, revealed as the bubble is dragged right */}
       {canReply && dragX > 0 && (
         <div
-          className="absolute left-1 top-1/2 -translate-y-1/2 text-[#7A2432]"
+          className="absolute left-1 top-1/2 -translate-y-1/2 text-[#F87171]"
           style={{ opacity: Math.min(1, dragX / SWIPE_THRESHOLD) }}
         >
           <Reply className="h-5 w-5" />
@@ -198,7 +258,7 @@ export default function MessageBubble({
             setMenuOpenedAt(Date.now())
             setMenuOpen(true)
           }}
-          className={`relative cursor-context-menu px-3.5 py-2 rounded-2xl text-sm leading-relaxed
+          className={`relative cursor-context-menu select-none px-3.5 py-2 rounded-2xl text-sm leading-relaxed [-webkit-touch-callout:none] [-webkit-user-select:none]
           ${isMine
             ? 'bg-indigo-600 text-white rounded-br-sm'
             : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}
@@ -304,7 +364,7 @@ export default function MessageBubble({
       {/* Context menu */}
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={closeMenus} />
+          <div className="fixed inset-0 z-10" onClick={handleBackdropClose} />
           <div className={`absolute z-20 top-7 ${isMine ? 'right-6' : 'left-6'}
             w-44 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5 text-sm`}>
             <MenuItem icon={<SmilePlus className="h-4 w-4" />} label="React"
@@ -349,7 +409,7 @@ function MenuItem({
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50
-        ${danger ? 'text-[#7A2432]' : 'text-[#2D2424]'}`}
+        ${danger ? 'text-[#F87171]' : 'text-[#2D2424]'}`}
     >
       {icon}{label}
     </button>

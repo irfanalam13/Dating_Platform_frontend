@@ -14,6 +14,8 @@ import TypingIndicator from './TypingIndicator'
 import { showSuccess, showError } from '@/shared/utils/toast'
 
 import Avatar from '@/features/profile/components/Avatar'
+import ProfileImage from '@/shared/components/ProfileImage'
+import { useMatchAvatars, pickAvatar } from '../hooks/useMatchAvatars'
 import OnlineIndicator from './OnlineIndicator'
 import type { ConversationParticipant, Message } from '@/shared/types/chat.types'
 
@@ -36,7 +38,8 @@ export default function ChatWindow({ conversationId }: Props) {
   const router          = useRouter()
   const queryClient     = useQueryClient()
   const { onlineUsers } = useNotificationContext()
-  const bottomRef       = useRef<HTMLDivElement>(null)
+  const matchAvatars    = useMatchAvatars()
+  const listRef         = useRef<HTMLDivElement>(null)
 
   const { messages, isLoading, typingUsers, send, sendTyping, wsStatus } =
     useChat(conversationId)
@@ -108,10 +111,15 @@ export default function ChatWindow({ conversationId }: Props) {
     onError: (err) => { setShowReportUser(false); showError(err, 'Could not submit report.') },
   })
 
+  // Auto-scroll to the newest message by scrolling the MESSAGE LIST itself —
+  // never `scrollIntoView`, which also scrolls every scrollable ancestor (incl.
+  // the window). That ancestor scroll was dragging the whole chat — and the
+  // input bar — up off the screen when a conversation opened.
   useEffect(() => {
     // Don't yank the view to the bottom while the user is navigating search hits.
     if (searchOpen) return
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = listRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [messages, searchOpen])
 
   // The most recent own message carries the detailed seen/delivered receipt.
@@ -243,14 +251,14 @@ export default function ChatWindow({ conversationId }: Props) {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full min-h-0 overflow-hidden"
       style={{ background: "linear-gradient(180deg, #ffffff 0%, #eef8ff 40%, #d7ebfb 100%)" }}
     >
       {/* ── Header (single combined bar) ───────────────── */}
       {/* relative z-30 lifts the whole header (a backdrop-blur stacking context)
           above the messages list so the dropdown menu overflowing below it is
           actually clickable instead of being painted under the message area. */}
-      <div className="relative z-30 flex items-center gap-2 px-3 py-3 border-b border-white/50 bg-white/60 backdrop-blur-md">
+      <div className="relative z-30 flex shrink-0 items-center gap-2 px-3 py-3 border-b border-white/50 bg-white/60 backdrop-blur-md">
         {/* Mobile back — desktop keeps the conversation list visible */}
         <button
           type="button"
@@ -268,7 +276,15 @@ export default function ChatWindow({ conversationId }: Props) {
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             aria-label={`View ${other.display_name ?? other.full_name ?? "member"}'s profile`}
           >
-            <Avatar name={other.display_name ?? other.full_name ?? "Member"} src={other.profile_image ?? other.profile_picture} size="md" isOnline={isOtherOnline} />
+            <span className="relative flex-shrink-0">
+              <ProfileImage
+                src={pickAvatar(other.profile_picture ?? other.profile_image, other.id, matchAvatars)}
+                name={other.display_name ?? other.full_name ?? "Member"}
+                className="h-10 w-10 rounded-full"
+                textClassName="text-sm"
+              />
+              <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full border-2 border-white ${isOtherOnline ? "bg-green-500" : "bg-gray-400"}`} />
+            </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-[#1a1a2e]">
                 {other.display_name ?? other.full_name ?? "Member"}
@@ -295,8 +311,10 @@ export default function ChatWindow({ conversationId }: Props) {
           {(wsStatus === "disconnected" || wsStatus === "error") && <span className="block h-2 w-2 rounded-full bg-red-500" />}
         </span>
 
-        {/* 3-dot overflow menu */}
-        <div className="relative shrink-0">
+        {/* 3-dot overflow menu (the dropdown itself is rendered at the root,
+            outside this backdrop-blurred header — see below — so its full-screen
+            click-away layer is anchored to the viewport, not the header box). */}
+        <div className="shrink-0">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -307,34 +325,40 @@ export default function ChatWindow({ conversationId }: Props) {
           >
             <MoreVertical className="h-5 w-5" />
           </button>
-          {menuOpen && (
-            <>
-              {/* click-away backdrop */}
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div role="menu" className="absolute right-0 z-50 mt-2 w-48 space-y-1 rounded-2xl border border-white/60 bg-white/40 p-1.5 shadow-[0_10px_30px_rgba(16,24,40,0.18)] backdrop-blur-md">
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={!otherProfileId}
-                  onClick={() => { setMenuOpen(false); setShowReportUser(true) }}
-                  className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
-                >
-                  <Flag className="h-4 w-4 text-[#746767]" /> Report user
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={!otherProfileId || blockUserMutation.isPending}
-                  onClick={() => { setMenuOpen(false); if (otherProfileId) blockUserMutation.mutate(otherProfileId) }}
-                  className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
-                >
-                  <Ban className="h-4 w-4 text-red-600" /> <span className="text-red-600">Block user</span>
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
+
+      {/* ── 3-dot dropdown + click-away ─────────────────────
+          Rendered here (NOT inside the header) on purpose: the header has a
+          `backdrop-filter`, which would re-anchor `position: fixed` children to
+          the header box, so a full-screen click-away placed there only covered
+          the header bar. At the root the fixed layer is viewport-relative, so a
+          tap ANYWHERE dismisses the menu. */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+          <div role="menu" className="fixed right-3 top-16 z-50 w-48 space-y-1 rounded-2xl border border-white/60 bg-white/70 p-1.5 shadow-[0_10px_30px_rgba(16,24,40,0.18)] backdrop-blur-md">
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!otherProfileId}
+              onClick={() => { setMenuOpen(false); setShowReportUser(true) }}
+              className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
+            >
+              <Flag className="h-4 w-4 text-[#746767]" /> Report user
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={!otherProfileId || blockUserMutation.isPending}
+              onClick={() => { setMenuOpen(false); if (otherProfileId) blockUserMutation.mutate(otherProfileId) }}
+              className="glass-btn flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium disabled:opacity-40"
+            >
+              <Ban className="h-4 w-4 text-red-600" /> <span className="text-red-600">Block user</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── In-conversation search bar ─────────────────── */}
       {searchOpen && (
@@ -393,7 +417,7 @@ export default function ChatWindow({ conversationId }: Props) {
       )}
 
       {/* ── Messages ───────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0.5">
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-0.5">
         {isLoading && (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
@@ -417,12 +441,11 @@ export default function ChatWindow({ conversationId }: Props) {
         ))}
 
         {isTyping && <TypingIndicator />}
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Input (or "Unblock chat" prompt when blocked) ─ */}
       {isBlocked ? (
-        <div className="border-t border-white/50 bg-white/60 px-4 py-4 backdrop-blur-md">
+        <div className="shrink-0 border-t border-white/50 bg-white/60 px-4 py-4 backdrop-blur-md [padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-md flex-col items-center gap-2 text-center">
             <p className="text-sm text-[#746767]">
               You blocked this person. Neither of you can send messages.
@@ -505,7 +528,7 @@ export default function ChatWindow({ conversationId }: Props) {
       {showReportUser && otherProfileId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#2D2424]/50 px-4" onClick={() => setShowReportUser(false)}>
           <div className="w-full max-w-sm rounded-lg bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
-            <Flag className="mx-auto mb-3 h-8 w-8 text-[#7A2432]" />
+            <Flag className="mx-auto mb-3 h-8 w-8 text-[#F87171]" />
             <h2 className="text-lg font-semibold text-[#2D2424]">Report this person?</h2>
             <p className="mt-2 text-sm leading-6 text-[#746767]">
               Your report goes to the safety team. The other person will not be notified.
@@ -513,7 +536,7 @@ export default function ChatWindow({ conversationId }: Props) {
             <button
               onClick={() => reportUserMutation.mutate(otherProfileId)}
               disabled={reportUserMutation.isPending}
-              className="mt-5 h-11 w-full rounded-md bg-[#7A2432] text-sm font-semibold text-white disabled:opacity-60"
+              className="glass-btn-rose mt-5 h-11 w-full rounded-md text-sm font-semibold disabled:opacity-60"
             >
               Submit report
             </button>

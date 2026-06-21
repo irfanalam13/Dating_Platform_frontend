@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { UserRound } from "lucide-react";
+import { ArrowLeft, UserRound } from "lucide-react";
 import { getBlockedUsers, unblockProfile } from "@/shared/api/mvp.api";
 import { showError, showSuccess } from "@/shared/utils/toast";
 import Avatar from "@/features/profile/components/Avatar";
@@ -36,15 +36,14 @@ export default function BlockedContactsPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/settings")}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <span className="text-lg leading-none">←</span>
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
             <div>
               <h1 className="text-2xl font-semibold">Blocked</h1>
-              <p className="text-sm text-[#746767]">People you’ve blocked can’t message or find you.</p>
             </div>
           </div>
         </header>
@@ -61,10 +60,10 @@ export default function BlockedContactsPage() {
           {!isLoading && blocked.length === 0 && (
             <div className="grid min-h-[300px] place-items-center p-8 text-center">
               <div>
-                <UserRound className="mx-auto mb-3 h-10 w-10 text-[#7A2432]" />
+                <UserRound className="mx-auto mb-3 h-10 w-10 text-[#ED2939]" />
                 <h2 className="font-semibold">No blocked users</h2>
                 <p className="mt-2 text-sm leading-6 text-[#746767]">
-                  When you block someone, they’ll show up here.
+                  Your blocked contacts will appear here
                 </p>
               </div>
             </div>
@@ -80,7 +79,7 @@ export default function BlockedContactsPage() {
                     type="button"
                     onClick={() => unblockMutation.mutate(item.blocked_profile_id)}
                     disabled={unblockMutation.isPending}
-                    className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-[#7A2432] disabled:opacity-50"
+                    className="glass-btn shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-[#F87171] disabled:opacity-50"
                   >
                     Unblock
                   </button>

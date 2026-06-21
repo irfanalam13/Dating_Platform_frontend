@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // the College Mode / Subscription / Followers links below are temporarily
 // disabled (see "FUTURE FEATURE" blocks). Re-add them to this import when you
 // uncomment those sections.
-import { Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, Sparkles, GraduationCap, Crown, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bell, Lock, LogOut, SlidersHorizontal, UserRound, MessageCircle, ShieldCheck, Sparkles, GraduationCap, Crown, type LucideIcon } from "lucide-react";
 import {
   getBlockedUsers,
   getPrivacySettings,
@@ -43,19 +43,19 @@ export default function SettingsPage() {
   return (
     <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
-        <header className="mb-5 rounded-full border border-white/55 bg-white/55 px-4 py-3 shadow-[0_8px_24px_rgba(16,24,40,0.10)] backdrop-blur-md">
+        <header className="mb-5 rounded-[28px] border border-white/70 bg-white/65 px-4 py-3 shadow-[0_10px_28px_rgba(16,24,40,0.10)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={() => router.push("/profile")}
               aria-label="Go back"
-              className="glass-btn grid h-10 w-10 shrink-0 place-items-center rounded-full"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/80 bg-white/85 text-[#1a1a2e] shadow-[0_4px_12px_rgba(16,24,40,0.08)]"
             >
-              <span className="text-lg leading-none">←</span>
+              <ArrowLeft className="h-4.5 w-4.5" />
             </button>
-            <div>
-              <h1 className="text-2xl font-semibold">Settings</h1>
-              <p className="text-sm text-[#746767]">Privacy, Preferences, & Safety</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[18px] font-semibold leading-tight text-[#B78A3B]">Settings</h1>
+              <p className="truncate text-sm text-[#746767]">Privacy, Preferences, & Safety</p>
             </div>
           </div>
         </header>
@@ -199,7 +199,7 @@ export default function SettingsPage() {
           <button
             onClick={() => logout.mutate()}
             disabled={logout.isPending}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-red-200 text-sm font-semibold text-[#ff3e3e] disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-red-200 text-sm font-semibold text-[#ff3e3e] disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
             {logout.isPending ? "Logging out..." : "Log out"}
