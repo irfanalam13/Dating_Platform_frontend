@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
+import { useReceivedMatches } from "@/features/matcher/hooks/useMatches";
 
 // ─────────────────────────────────────────────────────────
 // Nav config
@@ -60,6 +61,27 @@ function BellWithBadge({ color }: { color?: string }) {
       {totalUnread > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#F87171] text-[9px] font-bold text-white">
           {totalUnread > 9 ? "9+" : totalUnread}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// Matches with incoming-request count
+// ─────────────────────────────────────────────────────────
+
+function MatchesWithBadge({ color }: { color?: string }) {
+  const { data: received } = useReceivedMatches();
+  // Incoming requests still awaiting a response — drops as they're accepted/rejected.
+  const pending = (received ?? []).filter((m) => m.status === "pending").length;
+
+  return (
+    <div className="relative">
+      <Heart className="h-5 w-5" color={color} fill={color} />
+      {pending > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF0000] text-[9px] font-bold text-white">
+          {pending > 9 ? "9+" : pending}
         </span>
       )}
     </div>
@@ -127,6 +149,8 @@ export function MvpShell({ children }: { children: React.ReactNode }) {
                         <BellWithBadge color={color} />
                       ) : href === "/chat" ? (
                         <ChatWithBadge color={color} />
+                      ) : href === "/matches" ? (
+                        <MatchesWithBadge color={color} />
                       ) : (
                         <Icon className="h-5 w-5" color={color} fill={filled ? color : "none"} />
                       )}
