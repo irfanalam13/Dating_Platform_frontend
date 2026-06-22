@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Eye } from "lucide-react";
 import type { StoryGroup } from "@/shared/types/story.types";
-import { useDeleteStory, useViewStory } from "@/features/chat/hooks/useStories";
+import {
+  useDeleteStory,
+  useStoryViewers,
+  useViewStory,
+} from "@/features/chat/hooks/useStories";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { formatTime } from "@/shared/utils/time";
 
 const STORY_DURATION_MS = 5000;
 
@@ -29,12 +34,22 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   const seenRef = useRef<Set<string>>(new Set());
   // Shows the glass confirm sheet; while open we freeze the auto-advance.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Shows the "viewed by" sheet for your own story; also freezes auto-advance.
+  const [showViewers, setShowViewers] = useState(false);
 
   const viewStory = useViewStory();
   const deleteStory = useDeleteStory();
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
+
+  // Viewers of the *current* story — only fetched for your own stories, so the
+  // eye button can show the count and the sheet can list who saw it.
+  const viewersQuery = useStoryViewers(
+    story?.uuid ?? null,
+    Boolean(group?.is_self),
+  );
+  const viewersCount = viewersQuery.data?.count ?? 0;
 
   const goNext = useCallback(() => {
     setPos((p) => {
@@ -66,22 +81,35 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
       seenRef.current.add(story.uuid);
       viewStory.mutate(story.uuid);
     }
-    if (confirmDelete) return;
+    if (confirmDelete || showViewers) return;
     const t = setTimeout(goNext, STORY_DURATION_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story?.uuid, groupIndex, storyIndex, confirmDelete]);
+  }, [story?.uuid, groupIndex, storyIndex, confirmDelete, showViewers]);
+
+  // Close the viewers sheet whenever we move to a different story.
+  useEffect(() => {
+    setShowViewers(false);
+  }, [story?.uuid]);
 
   // Esc to close.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // While a sheet is open it owns the keyboard: Esc closes it, nav is frozen.
+      if (showViewers || confirmDelete) {
+        if (e.key === "Escape") {
+          setShowViewers(false);
+          setConfirmDelete(false);
+        }
+        return;
+      }
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight") goNext();
       else if (e.key === "ArrowLeft") goPrev();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, onClose]);
+  }, [goNext, goPrev, onClose, showViewers, confirmDelete]);
 
   if (!group || !story) return null;
 
@@ -168,10 +196,30 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         )
       )}
 
-      {/* Caption (image stories) */}
-      {story.kind !== "text" && story.caption && (
+      {/* Caption (image stories) — other people's stories. */}
+      {!group.is_self && story.kind !== "text" && story.caption && (
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-12">
           <p className="text-center text-sm font-medium text-white drop-shadow">{story.caption}</p>
+        </div>
+      )}
+
+      {/* Footer for your own story — optional caption + "viewed by" button. */}
+      {group.is_self && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent px-5 pb-7 pt-12">
+          {story.kind !== "text" && story.caption && (
+            <p className="mb-3 text-center text-sm font-medium text-white drop-shadow">
+              {story.caption}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowViewers(true)}
+            aria-label="See who viewed your story"
+            className="mx-auto flex items-center gap-1.5 rounded-full bg-black/40 px-3.5 py-1.5 text-sm font-semibold text-white backdrop-blur-md transition active:scale-95"
+          >
+            <Eye className="h-4.5 w-4.5" />
+            <span>{viewersCount}</span>
+          </button>
         </div>
       )}
 
@@ -235,6 +283,80 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
                 >
                   {deleteStory.isPending ? "Deleting…" : "Delete"}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── "Viewed by" — iOS-style liquid glass bottom sheet ── */}
+      {showViewers && (
+        <div
+          className="absolute inset-0 z-30 flex flex-col justify-end"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowViewers(false)}
+        >
+          {/* dimming + frost behind the sheet */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-h-[70%] overflow-hidden rounded-t-[28px] border-t border-white/30 bg-white/10 shadow-[0_-8px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-[1.8]"
+          >
+            {/* Glossy top sheen + inner ring — the liquid-glass highlight */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/25 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 rounded-t-[28px] ring-1 ring-inset ring-white/20" />
+
+            <div className="relative flex max-h-[70vh] flex-col">
+              {/* grabber + header */}
+              <div className="px-5 pb-2 pt-3">
+                <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-white/40" />
+                <div className="flex items-center gap-2 text-white">
+                  <Eye className="h-5 w-5" />
+                  <h2 className="text-[15px] font-semibold drop-shadow">
+                    {viewersCount === 0
+                      ? "Viewers"
+                      : `Viewed by ${viewersCount}`}
+                  </h2>
+                </div>
+              </div>
+
+              {/* list */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-2">
+                {viewersQuery.isLoading ? (
+                  <p className="py-8 text-center text-sm text-white/70">Loading…</p>
+                ) : viewersCount === 0 ? (
+                  <p className="py-8 text-center text-sm text-white/70">
+                    No views yet. Once your matches open this story, they&apos;ll
+                    show up here.
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {viewersQuery.data?.viewers.map((v) => {
+                      const vName = v.display_name || v.full_name || "Member";
+                      return (
+                        <li key={v.id} className="flex items-center gap-3">
+                          <div className="h-10 w-10 overflow-hidden rounded-full ring-1 ring-white/30">
+                            <ProfileImage
+                              src={v.profile_image}
+                              name={vName}
+                              alt={vName}
+                              className="h-10 w-10 rounded-full"
+                              textClassName="text-sm"
+                            />
+                          </div>
+                          <span className="flex-1 truncate text-sm font-medium text-white">
+                            {vName}
+                          </span>
+                          <span className="text-xs text-white/60">
+                            {formatTime(v.viewed_at)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

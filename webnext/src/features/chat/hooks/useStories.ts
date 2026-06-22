@@ -5,6 +5,7 @@ import {
   createStory,
   deleteStory,
   getStories,
+  getStoryViewers,
   viewStory,
   type CreateStoryPayload,
 } from "@/shared/api/story.api";
@@ -39,6 +40,18 @@ export function useViewStory() {
     mutationFn: (storyUuid: string) => viewStory(storyUuid),
     // Refresh so the ring flips from unseen → seen once the viewer closes.
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stories"] }),
+  });
+}
+
+/** Viewers of one of your own stories. Disabled until `enabled` (e.g. the
+ *  viewer sheet is open) so we don't fetch on every story shown. */
+export function useStoryViewers(storyUuid: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ["story-viewers", storyUuid],
+    queryFn: () => getStoryViewers(storyUuid as string),
+    enabled: enabled && !!storyUuid,
+    staleTime: 15_000,
+    retry: false,
   });
 }
 

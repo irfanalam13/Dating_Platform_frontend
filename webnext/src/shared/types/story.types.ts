@@ -28,6 +28,23 @@ export interface StoryAuthor {
   profile_image: string | null;
 }
 
+/** Someone who has seen the author's own story (from the viewers endpoint). */
+export interface StoryViewerEntry {
+  id: number;
+  profile_id: number | null;
+  display_name: string | null;
+  full_name: string | null;
+  profile_image: string | null;
+  /** When this viewer first opened the story. */
+  viewed_at: string;
+}
+
+/** Response of GET /chat/stories/:uuid/viewers/ — author-only. */
+export interface StoryViewers {
+  count: number;
+  viewers: StoryViewerEntry[];
+}
+
 /** One author's active stories, as returned grouped by the story-bar endpoint. */
 export interface StoryGroup {
   user: StoryAuthor;

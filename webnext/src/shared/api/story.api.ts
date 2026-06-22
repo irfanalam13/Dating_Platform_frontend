@@ -1,5 +1,5 @@
 import api from "@/shared/api/client";
-import type { Story, StoryGroup } from "@/shared/types/story.types";
+import type { Story, StoryGroup, StoryViewers } from "@/shared/types/story.types";
 
 function data<T>(config: Parameters<typeof api.request>[0]): Promise<T> {
   return api.request<T>(config).then((res) => res.data);
@@ -37,6 +37,11 @@ export function createStory(payload: CreateStoryPayload): Promise<Story> {
 /** POST /chat/stories/:uuid/view/ — mark a story seen (idempotent). */
 export function viewStory(storyUuid: string): Promise<void> {
   return data({ method: "POST", url: `/chat/stories/${storyUuid}/view/` });
+}
+
+/** GET /chat/stories/:uuid/viewers/ — who has seen your own story. */
+export function getStoryViewers(storyUuid: string): Promise<StoryViewers> {
+  return data({ method: "GET", url: `/chat/stories/${storyUuid}/viewers/` });
 }
 
 /** DELETE /chat/stories/:uuid/ — remove your own story early. */
