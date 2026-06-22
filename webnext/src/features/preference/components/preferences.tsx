@@ -457,7 +457,6 @@ export default function PreferencesPage() {
         <section className="mb-4 space-y-5 rounded-3xl border border-white/60 bg-white/40 p-4 shadow-[0_10px_30px_rgba(16,24,40,0.08)] backdrop-blur-md">
           <div>
             <h2 className="text-[22px] font-semibold leading-none">Match filters</h2>
-            <p className="mt-1 text-xs text-[#746767]">Applies to everyone we recommend.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

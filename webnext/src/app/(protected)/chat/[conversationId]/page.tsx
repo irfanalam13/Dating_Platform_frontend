@@ -37,6 +37,22 @@ export default function ConversationPage() {
     };
   }, []);
 
+  // Press Escape to leave the open conversation and return to the
+  // "Select a conversation to start chatting" view (/chat). Skip when a text
+  // field is focused, so Escape there still cancels a reply/edit or closes the
+  // in-chat search instead of navigating away.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
+      router.push("/chat");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
+
   return (
     <div
       ref={rootRef}

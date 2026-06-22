@@ -263,6 +263,13 @@ export default function EditProfile() {
     });
   };
 
+  // Photo shown in the editor: a freshly-picked file's preview if there is one,
+  // otherwise the image already saved on the profile. The saved image is always
+  // the fallback, so it stays visible and is never lost unless the user actually
+  // uploads a replacement — picking "Remove" only discards the new selection.
+  const savedImageUrl = data?.profile_image_url || data?.profile_image || null;
+  const shownPhoto = photoPreview ?? savedImageUrl;
+
   return (
     <main className="min-h-[100dvh] px-4 py-5 text-[#2D2424]">
       <div className="mx-auto max-w-md">
@@ -297,13 +304,13 @@ export default function EditProfile() {
                     <button
                       type="button"
                       onClick={() => photoInputRef.current?.click()}
-                      aria-label={photo ? "Change profile photo" : "Upload a profile photo"}
+                      aria-label={shownPhoto ? "Change profile photo" : "Upload a profile photo"}
                       className="relative h-24 w-24"
                     >
                       <span className="grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-white text-[#9A8C82]">
-                        {photoPreview ? (
+                        {shownPhoto ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={photoPreview} alt="Profile preview" className="h-24 w-24 object-cover" />
+                          <img src={shownPhoto} alt="Profile photo" className="h-24 w-24 object-cover" />
                         ) : (
                           <UserRound className="h-12 w-12" />
                         )}
@@ -313,12 +320,14 @@ export default function EditProfile() {
                       </span>
                     </button>
                     {photo ? (
+                      // A new photo is selected — "Remove" just discards the new
+                      // pick and reverts to the saved image (never deletes it).
                       <button type="button" onClick={removePhoto} className="text-xs font-semibold text-[#EF4444]">
-                        Remove profile photo
+                        Remove selected photo
                       </button>
                     ) : (
                       <button type="button" onClick={() => photoInputRef.current?.click()} className="text-xs text-[#746767]">
-                        Upload a profile photo
+                        {shownPhoto ? "Change profile photo" : "Upload a profile photo"}
                       </button>
                     )}
                     <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />

@@ -177,6 +177,9 @@ function ToastCard({
 	message: string;
 }) {
 	const [dragY, setDragY] = useState(0);
+	// `isDragging` drives the render (transition on/off); the ref keeps the
+	// handlers correct without reading a ref during render (React forbids that).
+	const [isDragging, setIsDragging] = useState(false);
 	const startY = useRef<number | null>(null);
 	const dragging = useRef(false);
 
@@ -185,6 +188,7 @@ function ToastCard({
 	const onPointerDown = (e: React.PointerEvent) => {
 		startY.current = e.clientY;
 		dragging.current = true;
+		setIsDragging(true);
 		(e.target as HTMLElement).setPointerCapture?.(e.pointerId);
 	};
 	const onPointerMove = (e: React.PointerEvent) => {
@@ -195,6 +199,7 @@ function ToastCard({
 	const endDrag = () => {
 		if (!dragging.current) return;
 		dragging.current = false;
+		setIsDragging(false);
 		startY.current = null;
 		if (dragY < -DISMISS_AT) toast.remove(t.id);
 		else setDragY(0);
@@ -210,7 +215,7 @@ function ToastCard({
 				style={{
 					transform: `translateY(${dragY}px)`,
 					opacity: 1 + dragY / 160, // fade as it slides up
-					transition: dragging.current ? "none" : "transform 0.2s ease, opacity 0.2s ease",
+					transition: isDragging ? "none" : "transform 0.2s ease, opacity 0.2s ease",
 					touchAction: "none",
 				}}
 				className="pointer-events-auto relative w-full max-w-md cursor-grab touch-none select-none overflow-hidden rounded-[28px] bg-white/35 px-5 py-4 text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.28)] backdrop-blur-2xl active:cursor-grabbing"

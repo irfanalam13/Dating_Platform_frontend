@@ -1,5 +1,5 @@
 import { motion, type MotionValue } from "framer-motion";
-import { BadgeCheck, Heart, MapPin, Sparkles, Star, Undo2 } from "lucide-react";
+import { BadgeCheck, Heart, MapPin, Sparkles, Undo2 } from "lucide-react";
 import type { Profile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
 import { displayImage } from "./helpers";
@@ -114,19 +114,19 @@ export default function DiscoverCard({
         onClick={onPhotoTap}
       />
 
-      {/* Star burst on double-tap → "super interested" */}
+      {/* Heart burst on double-tap → "super interested" */}
       {heartBurst && (
         <motion.div
-          key="star-burst"
+          key="heart-burst"
           className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 0] }}
           transition={{ duration: 0.9, times: [0, 0.3, 1] }}
           onAnimationComplete={onHeartBurstComplete}
         >
-          <Star
-            className="h-28 w-28 text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
-            fill="#FFC94D"
+          <Heart
+            className="h-28 w-28 text-[#FF3B5C] drop-shadow-[0_4px_16px_rgba(0,0,0,0.45)]"
+            fill="#FF3B5C"
           />
         </motion.div>
       )}
