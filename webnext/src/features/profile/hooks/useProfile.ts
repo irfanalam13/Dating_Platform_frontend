@@ -24,6 +24,14 @@ export const useMyProfile = () => {
     queryFn: getMyProfile,
     staleTime: 0,
     refetchOnWindowFocus: false,
+    // The backend runs on a free-tier dyno that cold-starts (~30–60s) after
+    // idling. The first call after a sleep can fail at the proxy/gateway while
+    // the dyno wakes (Render logs a 200 a beat later, but the browser already
+    // got a timeout). Retry across that window so the page self-recovers instead
+    // of stranding the user on "Profile unavailable". Cap the backoff at 5s so we
+    // keep probing the waking dyno rather than waiting minutes between attempts.
+    retry: 4,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
   });
 };
 
