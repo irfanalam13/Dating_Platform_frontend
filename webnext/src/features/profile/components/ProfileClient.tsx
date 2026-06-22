@@ -513,13 +513,15 @@ export default function ProfileClient({
           <Section title="Career">
             <InfoCard icon={Briefcase} label="Career" value={career || "Not added"} />
           </Section>
-          <button
+          {isOwn && (
+            <button
                 onClick={() => router.push("/profile/edit")}
                 className="glass-btn flex h-12 w-full items-center justify-center gap-2 rounded-3xl font-semibold transition-opacity active:opacity-80"
               >
                 <PenLine className="h-4 w-4" />
                 Edit profile
-          </button>
+            </button>
+          )}
 
           {!isOwn && socialLinks.length > 0 && (
             <Section title="Social Media">

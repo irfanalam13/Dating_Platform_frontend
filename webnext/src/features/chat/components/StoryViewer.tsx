@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Eye } from "lucide-react";
 import type { StoryGroup } from "@/shared/types/story.types";
-import { useDeleteStory, useViewStory } from "@/features/chat/hooks/useStories";
+import { useDeleteStory, useStoryViews, useViewStory } from "@/features/chat/hooks/useStories";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { resolveImageUrl } from "@/shared/lib/mediaUrl";
 
 const STORY_DURATION_MS = 5000;
 
@@ -29,12 +30,21 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   const seenRef = useRef<Set<string>>(new Set());
   // Shows the glass confirm sheet; while open we freeze the auto-advance.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Shows the "who viewed this story" sheet (own stories only); also pauses.
+  const [showViewers, setShowViewers] = useState(false);
 
   const viewStory = useViewStory();
   const deleteStory = useDeleteStory();
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
+
+  // Viewers of the current own-story — fetched for your own stories so the eye
+  // pill can show the count; the list itself opens in the sheet below.
+  const { data: viewers = [], isLoading: viewersLoading } = useStoryViews(
+    story?.uuid,
+    !!group?.is_self,
+  );
 
   const goNext = useCallback(() => {
     setPos((p) => {
@@ -66,11 +76,11 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
       seenRef.current.add(story.uuid);
       viewStory.mutate(story.uuid);
     }
-    if (confirmDelete) return;
+    if (confirmDelete || showViewers) return;
     const t = setTimeout(goNext, STORY_DURATION_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story?.uuid, groupIndex, storyIndex, confirmDelete]);
+  }, [story?.uuid, groupIndex, storyIndex, confirmDelete, showViewers]);
 
   // Esc to close.
   useEffect(() => {
@@ -175,6 +185,19 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         </div>
       )}
 
+      {/* Viewers pill (own stories) — tap to see who viewed this story. */}
+      {group.is_self && (
+        <button
+          type="button"
+          onClick={() => setShowViewers(true)}
+          aria-label="See who viewed this story"
+          className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/45 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md"
+        >
+          <Eye className="h-4 w-4" />
+          {viewers.length > 0 ? viewers.length : "Viewers"}
+        </button>
+      )}
+
       {/* Tap zones (below the header/footer controls) */}
       <button
         type="button"
@@ -236,6 +259,69 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
                   {deleteStory.isPending ? "Deleting…" : "Delete"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── "Viewed by" sheet — slides up from the bottom (own stories) ── */}
+      {showViewers && (
+        <div
+          className="absolute inset-0 z-30 flex items-end"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowViewers(false)}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-h-[70%] w-full overflow-hidden rounded-t-[28px] border-t border-white/20 bg-[#1c1c1e]/80 backdrop-blur-2xl backdrop-saturate-[1.6]"
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/15 to-transparent" />
+
+            {/* Grab handle + header */}
+            <div className="relative px-5 pt-3">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/30" />
+              <div className="mb-2 flex items-center gap-2 text-white">
+                <Eye className="h-4.5 w-4.5" />
+                <h2 className="text-[15px] font-semibold">
+                  Viewed by {viewers.length > 0 ? viewers.length : ""}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowViewers(false)}
+                  aria-label="Close"
+                  className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="relative max-h-[calc(70vh-72px)] overflow-y-auto px-3 pb-6">
+              {viewersLoading ? (
+                <p className="py-8 text-center text-sm text-white/60">Loading…</p>
+              ) : viewers.length === 0 ? (
+                <p className="py-8 text-center text-sm text-white/60">No views yet.</p>
+              ) : (
+                viewers.map((v) => {
+                  const vName = v.display_name || v.full_name || "Someone";
+                  return (
+                    <div key={v.id} className="flex items-center gap-3 rounded-2xl px-2 py-2">
+                      <ProfileImage
+                        src={resolveImageUrl(v.profile_image)}
+                        name={vName}
+                        alt={vName}
+                        className="h-10 w-10 rounded-full"
+                        textClassName="text-sm"
+                      />
+                      <span className="truncate text-sm font-medium text-white">{vName}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

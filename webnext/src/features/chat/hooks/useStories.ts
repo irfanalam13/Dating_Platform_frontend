@@ -5,6 +5,7 @@ import {
   createStory,
   deleteStory,
   getStories,
+  getStoryViews,
   viewStory,
   type CreateStoryPayload,
 } from "@/shared/api/story.api";
@@ -47,5 +48,16 @@ export function useDeleteStory() {
   return useMutation({
     mutationFn: (storyUuid: string) => deleteStory(storyUuid),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stories"] }),
+  });
+}
+
+/** Viewers of one of your own stories. Fetched only when the list is opened. */
+export function useStoryViews(storyUuid: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["story-views", storyUuid],
+    queryFn: () => getStoryViews(storyUuid!),
+    enabled: enabled && !!storyUuid,
+    staleTime: 15_000,
+    retry: false,
   });
 }
