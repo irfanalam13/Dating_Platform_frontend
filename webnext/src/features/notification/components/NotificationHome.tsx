@@ -347,11 +347,8 @@ export default function NotificationHome() {
         {!isLoading && visible.length === 0 && (
           <div className="grid min-h-[420px] place-items-center rounded-lg border border-[#EADDD2] p-8 text-center">
             <div>
-              <Bell className="mx-auto mb-4 h-10 w-10 text-[#7A2432]" />
+              <Bell className="mx-auto mb-4 h-10 w-10 text-[#FFBF00] fill-current" />
               <h2 className="font-semibold">No notifications yet</h2>
-              <p className="mt-2 text-sm leading-6 text-[#746767]">
-                Important match, message, and safety updates will appear here.
-              </p>
             </div>
           </div>
         )}
