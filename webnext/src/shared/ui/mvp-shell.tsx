@@ -10,7 +10,9 @@ import {
   UserRound,
 } from "lucide-react";
 import { useNotificationContext } from "@/features/notification/context/NotificationContext";
+import { useNotificationList } from "@/features/notification/hooks/useNotifications";
 import { useReceivedMatches } from "@/features/matcher/hooks/useMatches";
+import type { Notification } from "@/shared/types/notification.types";
 
 // ─────────────────────────────────────────────────────────
 // Nav config
@@ -73,15 +75,29 @@ function BellWithBadge({ color }: { color?: string }) {
 
 function MatchesWithBadge({ color }: { color?: string }) {
   const { data: received } = useReceivedMatches();
-  // Incoming requests still awaiting a response — drops as they're accepted/rejected.
-  const pending = (received ?? []).filter((m) => m.status === "pending").length;
+  const { data: notifications } = useNotificationList();
+
+  // Two independent signals for "someone wants to match me", whichever the
+  // backend populates:
+  //  1) Pending incoming match requests from /matcher/received/.
+  //  2) Unread match-type notifications from the live notification feed (the
+  //     same WS-driven source that makes the Chat/Alerts badges pop).
+  const pendingRequests = (received ?? []).filter((m) => m.status === "pending").length;
+  const unreadMatchNotifs = (notifications ?? []).filter(
+    (n: Notification) =>
+      !n.is_read &&
+      (n.notification_type === "friend_request" ||
+        n.notification_type === "interest_claimed"),
+  ).length;
+
+  const count = Math.max(pendingRequests, unreadMatchNotifs);
 
   return (
     <div className="relative">
       <Heart className="h-5 w-5" color={color} fill={color} />
-      {pending > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF0000] text-[9px] font-bold text-white">
-          {pending > 9 ? "9+" : pending}
+      {count > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF0000] px-1 text-[9px] font-bold text-white">
+          {count > 9 ? "9+" : count}
         </span>
       )}
     </div>

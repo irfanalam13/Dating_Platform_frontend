@@ -244,7 +244,7 @@ export default function ProfileCard() {
             <p className="text-sm leading-6 text-[#746767]">
               {data.bio || (
                 <span className="italic text-[#BFBFBF]">
-                  Add a short, respectful introduction about yourself.
+                  Add a bio
                 </span>
               )}
             </p>

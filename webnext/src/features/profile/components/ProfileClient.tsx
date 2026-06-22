@@ -170,9 +170,11 @@ export default function ProfileClient({
     const socialLinks: { platform: string; url: string }[] = [];
 
     // Build a label/value list of details, dropping anything empty/hidden.
+    // The age is shown here next to the DOB, e.g. "Jan 1, 2000 (25)".
     const dobLabel = dob ? new Date(dob).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+    const dobWithAge = dobLabel && age ? `${dobLabel} (${age})` : dobLabel;
     const detailItems: { label: string; value: string }[] = [
-      { label: "Date of birth", value: dobLabel },
+      { label: "Date of birth", value: dobWithAge },
       { label: "Gender", value: gender ? String(gender) : "" },
       { label: "Height", value: height ? `${height} cm` : "" },
       { label: "Weight", value: weight ? `${weight} kg` : "" },
@@ -494,7 +496,7 @@ export default function ProfileClient({
           <div className="mt-8 flex items-center gap-2">
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">
-            {[age, city].filter(Boolean).join(" · ") || "Location not added"}
+            {city || "Location not added"}
             {!isOwn && distanceKm != null && ` · ${distanceKm} km away`}
           </span></div>
 
