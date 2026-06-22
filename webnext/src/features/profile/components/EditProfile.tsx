@@ -330,13 +330,14 @@ export default function EditProfile() {
                     error={dobError}
                   />
                   <Select label="Gender" value={form.gender} onChange={(v) => update("gender", v)} options={["male", "female", "other"]} />
-                  <Field label="City" value={form.city} onChange={(v) => update("city", v)} placeholder="Kathmandu, Pokhara..." />
+                  <Field label="City" value={form.city} onChange={(v) => update("city", v)} placeholder="Kathmandu, Maitidevi" />
+                  <TextArea label="Add a bio" value={form.bio} onChange={(v) => update("bio", v)} />
                   <div className="grid grid-cols-2 gap-3">
                     <HeightField valueCm={form.height_cm} onChangeCm={(v) => update("height_cm", v)} />
                     <Field label="Weight (kg)" type="number" value={form.weight_kg} onChange={(v) => update("weight_kg", v)} optional />
                   </div>
-                  <ChoiceSelect label="Nationality" value={form.nationality} onChange={(v) => update("nationality", v)} options={NATIONALITY_OPTIONS} optional />
-                  <ChoiceSelect label="Citizenship" value={form.citizenship} onChange={(v) => update("citizenship", v)} options={CITIZENSHIP_OPTIONS} optional />
+                  {/* <ChoiceSelect label="Nationality" value={form.nationality} onChange={(v) => update("nationality", v)} options={NATIONALITY_OPTIONS} optional />
+                  <ChoiceSelect label="Citizenship" value={form.citizenship} onChange={(v) => update("citizenship", v)} options={CITIZENSHIP_OPTIONS} optional /> */}
                   <MultiSelectChips label="Languages spoken" options={LANGUAGE_OPTIONS} selected={languages} onToggle={toggleLanguage} />
                 </>
               )}
@@ -354,7 +355,6 @@ export default function EditProfile() {
                     <ChoiceSelect label="Smoking" value={form.smoking} onChange={(v) => update("smoking", v)} options={FREQUENCY_OPTIONS} optional />
                   </div>
                   <Field label="Values and mindset" value={form.values} onChange={(v) => update("values", v)} placeholder="Family, honesty, growth" />
-                  <TextArea label="Short bio" value={form.bio} onChange={(v) => update("bio", v)} />
                 </>
               )}
 

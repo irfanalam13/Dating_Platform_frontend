@@ -27,6 +27,8 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   const [pos, setPos] = useState({ g: startGroupIndex, s: 0 });
   const { g: groupIndex, s: storyIndex } = pos;
   const seenRef = useRef<Set<string>>(new Set());
+  // Shows the glass confirm sheet; while open we freeze the auto-advance.
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const viewStory = useViewStory();
   const deleteStory = useDeleteStory();
@@ -57,16 +59,18 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   }, [groups]);
 
   // Mark the visible story seen (once) + auto-advance after the duration.
+  // Paused while the delete-confirmation sheet is open.
   useEffect(() => {
     if (!story) return;
     if (!group.is_self && !seenRef.current.has(story.uuid)) {
       seenRef.current.add(story.uuid);
       viewStory.mutate(story.uuid);
     }
+    if (confirmDelete) return;
     const t = setTimeout(goNext, STORY_DURATION_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story?.uuid, groupIndex, storyIndex]);
+  }, [story?.uuid, groupIndex, storyIndex, confirmDelete]);
 
   // Esc to close.
   useEffect(() => {
@@ -126,7 +130,7 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         {group.is_self && (
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmDelete(true)}
             aria-label="Delete story"
             className="grid h-9 w-9 place-items-center rounded-full bg-black/30 text-white"
           >
@@ -184,6 +188,58 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         onClick={goNext}
         className="absolute bottom-0 right-0 top-20 z-10 w-2/3"
       />
+
+      {/* ── Delete confirmation — iOS-style liquid glass sheet ── */}
+      {confirmDelete && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center px-8"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setConfirmDelete(false)}
+        >
+          {/* dimming + frost behind the sheet */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-xs overflow-hidden rounded-[28px] border border-white/30 bg-white/10 p-5 text-center shadow-[0_8px_50px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-[1.8]"
+          >
+            {/* Glossy top sheen + inner ring — the liquid-glass highlight */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 rounded-[28px] ring-1 ring-inset ring-white/20" />
+
+            <div className="relative">
+              <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-white/15 ring-1 ring-white/30 backdrop-blur-md">
+                <Trash2 className="h-6 w-6 text-white" />
+              </div>
+              <h2 className="text-[17px] font-semibold text-white drop-shadow">
+                Delete this story?
+              </h2>
+              <p className="mt-1 text-sm leading-5 text-white/75">
+                Do you want to delete your story?
+              </p>
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="flex-1 rounded-2xl border border-white/30 bg-white/10 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition active:scale-[0.97]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteStory.isPending}
+                  className="flex-1 rounded-2xl border border-white/20 bg-red-500/80 py-2.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(239,68,68,0.45)] backdrop-blur-md transition active:scale-[0.97] disabled:opacity-60"
+                >
+                  {deleteStory.isPending ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes story-fill {
