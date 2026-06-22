@@ -123,21 +123,33 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProfileCard() {
   const router = useRouter();
-  const { data, isLoading } = useMyProfile();
+  const { data, isLoading, isError, refetch, isFetching } = useMyProfile();
 
-  if (isLoading) return <ProfileSkeleton />;
+  // `isLoading` is only true on the FIRST load with no cached data. Keep showing
+  // the skeleton while a manual refetch is in flight so "Try again" gives visible
+  // feedback instead of flashing the error screen again.
+  if (isLoading || (isFetching && !data)) return <ProfileSkeleton />;
 
-  if (!data) {
+  // Distinguish a genuine fetch failure (network/proxy/cold-start timeout — the
+  // request never came back, even if the origin logged a 200) from an empty body.
+  // `router.refresh()` only re-renders server components; it does NOT refetch a
+  // client React Query, so the old "Try again" was a no-op. Use refetch().
+  if (isError || !data) {
     return (
       <main className="grid min-h-[100dvh] place-items-center px-4 text-center">
         <div>
           <p className="text-lg font-semibold text-[#2D2424]">Profile unavailable</p>
-          <p className="mt-1 text-sm text-[#746767]">Something went wrong loading your profile.</p>
+          <p className="mt-1 text-sm text-[#746767]">
+            {isError
+              ? "We couldn't reach the server. This can happen on the first load after a period of inactivity — please try again."
+              : "Something went wrong loading your profile."}
+          </p>
           <button
-            onClick={() => router.refresh()}
-            className="glass-btn-rose mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="glass-btn-rose mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
           >
-            Try again
+            {isFetching ? "Retrying…" : "Try again"}
           </button>
         </div>
       </main>
