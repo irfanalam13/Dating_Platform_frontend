@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { refreshOnce } from "@/shared/api/client";
+import { authLogger } from "@/shared/utils/authLogger";
 
 //   Helper to check hint cookie.
 // The backend (set_auth_cookies) and the login flow (setLoggedInCookie) both
@@ -25,8 +26,14 @@ export function useCurrentUser() {
 
     queryFn: async () => {
       try {
+        const hinted = hasRefreshTokenHint();
+        authLogger.log("bootstrap", {
+          loggedInHint: hinted,
+          cookies: authLogger.cookieState(),
+        });
+
         //   Skip refresh entirely if no hint cookie
-        if (!hasRefreshTokenHint()) {
+        if (!hinted) {
           return null;
         }
 
