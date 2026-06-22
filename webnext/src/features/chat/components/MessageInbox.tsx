@@ -32,7 +32,7 @@ function getProfileImage(
 }
 
 function getLastMessageText(conversation: Conversation): string {
-  if (!conversation.last_message) return "Start a thoughtful conversation";
+  if (!conversation.last_message) return "Start a conversation";
   return conversation.last_message.content;
 }
 
