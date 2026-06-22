@@ -28,17 +28,6 @@ export interface StoryAuthor {
   profile_image: string | null;
 }
 
-/** A single viewer of one of your own stories. */
-export interface StoryView {
-  id: number;
-  user_id: number;
-  display_name: string | null;
-  full_name: string | null;
-  profile_image: string | null;
-  /** When this viewer saw the story. */
-  viewed_at: string;
-}
-
 /** One author's active stories, as returned grouped by the story-bar endpoint. */
 export interface StoryGroup {
   user: StoryAuthor;
