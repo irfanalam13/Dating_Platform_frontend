@@ -4,6 +4,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import Cookies from "js-cookie";
 import { showError } from "@/shared/utils/toast";
 import { logger } from "@/shared/utils/logger";
+import { authLogger } from "@/shared/utils/authLogger";
 import { extractRefreshToken } from "./parse";
 
 // Allow callers to opt out of the interceptor's automatic error toast.
@@ -64,6 +65,9 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   // this request — the caller (e.g. a mutation's onError) owns the messaging,
   // so we avoid a second, generic toast overshadowing the detailed one.
   skipErrorToast?: boolean;
+  // Correlation id (also sent as the X-Auth-Trace header) so a 401 logged on the
+  // frontend matches the backend's auth-decision log line.
+  _authTrace?: string;
 }
 
 interface QueueEntry {
@@ -118,6 +122,8 @@ export function setAccessToken(token: string | null): void {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
+
+    authLogger.log("token:set", { which: "access", fp: authLogger.fingerprint(token) });
   } else {
     // Clear all three layers
     _accessToken = null;
@@ -127,6 +133,8 @@ export function setAccessToken(token: string | null): void {
     } catch {}
 
     Cookies.remove("access_token");
+
+    authLogger.log("token:clear", { which: "access" });
   }
 }
 
@@ -172,9 +180,11 @@ export function setRefreshToken(token: string | null): void {
   if (token) {
     _refreshToken = token;
     try { sessionStorage.setItem(REFRESH_KEY, token); } catch {}
+    authLogger.log("token:set", { which: "refresh", fp: authLogger.fingerprint(token) });
   } else {
     _refreshToken = null;
     try { sessionStorage.removeItem(REFRESH_KEY); } catch {}
+    authLogger.log("token:clear", { which: "refresh" });
   }
 }
 
@@ -196,7 +206,14 @@ export const refreshOnce = async (): Promise<string | null> => {
   // Send the stored refresh token in the body as a fallback for when the
   // HttpOnly cookie can't be delivered (cross-host). The backend prefers the
   // cookie and only uses the body when the cookie is absent.
-  const body = getRefreshToken() ? { refresh: getRefreshToken() } : {}
+  const stored = getRefreshToken()
+  const body = stored ? { refresh: stored } : {}
+
+  authLogger.log("refresh:start", {
+    sentBodyToken: Boolean(stored),
+    refreshFp: authLogger.fingerprint(stored),
+    cookies: authLogger.cookieState(),
+  })
 
   refreshPromise = api.post('/auth/refresh/', body)
     .then(res => {
@@ -206,9 +223,19 @@ export const refreshOnce = async (): Promise<string | null> => {
       // body-based refresh uses the current token, not a blacklisted one.
       const rotated = extractRefreshToken(res)
       if (rotated) setRefreshToken(rotated)
+      authLogger.log("refresh:success", {
+        gotAccess: Boolean(token),
+        rotatedRefresh: Boolean(rotated),
+      })
       return token
     })
-    .catch(() => {
+    .catch((err: AxiosError) => {
+      const data = err.response?.data as { code?: string; detail?: string } | undefined
+      authLogger.log("refresh:fail", {
+        status: err.response?.status,
+        // The backend's reason: NO_REFRESH_TOKEN / INVALID_TOKEN / etc.
+        reason: data?.code ?? data?.detail ?? err.message,
+      })
       return null
     })
     .finally(() => {
@@ -270,13 +297,16 @@ function isAuthRoute(url: string): boolean {
 
 api.interceptors.request.use(
   (config) => {
+    const url = config.url ?? "";
+
     // Attach the access token as a Bearer header so authenticated requests work
     // even when the HttpOnly `access` cookie can't be delivered (cross-host prod:
     // Vercel frontend + Render backend, where SameSite=Lax cookies aren't sent
     // cross-site). The backend's CookieJWTAuthentication accepts either. We skip
     // this on /auth/refresh/ since that path carries the refresh token itself.
     const token = getAccessToken();
-    if (token && !(config.url ?? "").includes("/auth/refresh/")) {
+    const isRefresh = url.includes("/auth/refresh/");
+    if (token && !isRefresh) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -286,6 +316,28 @@ api.interceptors.request.use(
         config.headers["X-CSRFToken"] = match[1];
       }
     }
+
+    // Correlation trace: the backend logs its auth decision against this id, so a
+    // 401 here can be matched to the exact backend reason. Stored on the config
+    // so the response interceptor can reference the same id.
+    const trace = authLogger.newTraceId();
+    config.headers["X-Auth-Trace"] = trace;
+    (config as CustomAxiosRequestConfig)._authTrace = trace;
+
+    authLogger.log(
+      "request",
+      {
+        method: (config.method ?? "get").toUpperCase(),
+        url,
+        authHeader: Boolean(token) && !isRefresh,
+        accessFp: authLogger.fingerprint(token),
+        hasRefreshToken: Boolean(getRefreshToken()),
+        cookies: authLogger.cookieState(),
+        withCredentials: config.withCredentials,
+      },
+      trace,
+    );
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -311,6 +363,24 @@ api.interceptors.response.use(
 
     const { status } = error.response;
     const url = originalRequest.url ?? "";
+
+    // Log EVERY 401 against the request's trace id so it lines up with the
+    // backend's auth-decision log line (which logs the same X-Auth-Trace).
+    if (status === 401) {
+      const data = error.response.data as { code?: string; detail?: string } | undefined;
+      authLogger.log(
+        "401",
+        {
+          url,
+          // Backend reason: NO_REFRESH_TOKEN / INVALID_TOKEN / "Token expired or invalid" …
+          reason: data?.code ?? data?.detail,
+          willTryRefresh: !originalRequest._retry && !isAuthRoute(url),
+          hadAccessToken: Boolean(getAccessToken()),
+          cookies: authLogger.cookieState(),
+        },
+        originalRequest._authTrace,
+      );
+    }
 
     // ── 401 — try refresh ───────────────────────────────
     if (status === 401 && !originalRequest._retry && !isAuthRoute(url)) {
