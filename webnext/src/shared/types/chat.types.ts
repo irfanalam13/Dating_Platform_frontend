@@ -49,7 +49,9 @@ export interface ConversationParticipant extends ChatUser {
 
 export type MessageType =
   | "text" | "image" | "video" | "audio" | "voice"
-  | "gif" | "sticker" | "document" | "location" | "contact" | "system";
+  | "gif" | "sticker" | "document" | "location" | "contact" | "system"
+  // A text reply / emoji reaction to a story — carries `metadata.story`.
+  | "story_reply" | "story_reaction";
 
 export interface MessageAttachment {
   uuid: string;

@@ -42,16 +42,29 @@ try {
   apiOrigin = "";
 }
 
+// Cleartext localhost endpoints are permitted ONLY in local dev. In production
+// the CSP is https/wss-only — the previous build shipped a literal
+// `http://localhost:8000` / `ws://localhost:8000` allowance to prod, which we
+// now strip. (In dev, apiOrigin/WS_URL already resolve to the http/ws localhost
+// values, so dev connectivity is unchanged.)
+const devCleartext = isDev ? ["http://localhost:8000", "ws://localhost:8000"] : [];
+
+// In production, drop ANY cleartext (http:// / ws://) source — even one that
+// leaked in via an unset NEXT_PUBLIC_API_URL/WS_URL falling back to localhost.
+// Keyword tokens ('self', data:, blob:) and https/wss origins are kept.
+const isSecureSource = (src: string) =>
+  isDev || !/^(?:http|ws):\/\//i.test(src);
+
 const connectSrc = [
   "'self'",
   apiOrigin,
   WS_URL,
   "https://dating-platform-backend.onrender.com",
   "wss://dating-platform-backend.onrender.com",
-  "http://localhost:8000",
-  "ws://localhost:8000",
+  ...devCleartext,
 ]
   .filter(Boolean)
+  .filter(isSecureSource)
   .join(" ");
 
 // Next's App Router injects inline bootstrap scripts (no nonce by default), so
@@ -61,17 +74,33 @@ const scriptSrc = isDev
   ? "'self' 'unsafe-inline' 'unsafe-eval'"
   : "'self' 'unsafe-inline'";
 
+// Same rule for image sources: http://localhost media only in dev.
+const imgSrc = [
+  "'self'",
+  "data:",
+  "blob:",
+  "https://res.cloudinary.com",
+  "https://images.unsplash.com",
+  "https://dating-platform-backend.onrender.com",
+  ...(isDev ? ["http://localhost:8000"] : []),
+]
+  .filter(isSecureSource)
+  .join(" ");
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://dating-platform-backend.onrender.com http://localhost:8000",
+  `img-src ${imgSrc}`,
   "font-src 'self' data:",
   `connect-src ${connectSrc}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
+  // Production only: auto-upgrade any stray http subresource to https and block
+  // mixed content outright. Omitted in dev so http://localhost keeps working.
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [

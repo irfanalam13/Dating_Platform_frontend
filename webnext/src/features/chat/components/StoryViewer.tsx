@@ -1,17 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Trash2, Eye } from "lucide-react";
+import { X, Trash2, Eye, Send } from "lucide-react";
 import type { StoryGroup } from "@/shared/types/story.types";
 import {
   useDeleteStory,
+  useReactToStory,
+  useReplyToStory,
   useStoryViewers,
   useViewStory,
 } from "@/features/chat/hooks/useStories";
+import { showError } from "@/shared/utils/toast";
 import ProfileImage from "@/shared/components/ProfileImage";
 import { formatTime } from "@/shared/utils/time";
 
 const STORY_DURATION_MS = 5000;
+// Quick-reaction emojis — must match the backend's ALLOWED_REACTIONS exactly,
+// or the react endpoint rejects them.
+const STORY_REACTIONS = ["👍", "❤️", "😂", "😮", "😭", "😡", "🔥", "🎉"];
 
 interface StoryViewerProps {
   groups: StoryGroup[];
@@ -36,9 +42,17 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Shows the "viewed by" sheet for your own story; also freezes auto-advance.
   const [showViewers, setShowViewers] = useState(false);
+  // Reply composer (other people's stories): text + whether the input is
+  // focused (freezes auto-advance so the story doesn't skip while typing).
+  const [replyText, setReplyText] = useState("");
+  const [composerActive, setComposerActive] = useState(false);
+  // A transient confirmation that floats up after a reply/reaction is sent.
+  const [flash, setFlash] = useState<{ id: number; content: string } | null>(null);
 
   const viewStory = useViewStory();
   const deleteStory = useDeleteStory();
+  const replyToStory = useReplyToStory();
+  const reactToStory = useReactToStory();
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
@@ -81,25 +95,36 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
       seenRef.current.add(story.uuid);
       viewStory.mutate(story.uuid);
     }
-    if (confirmDelete || showViewers) return;
+    if (confirmDelete || showViewers || composerActive) return;
     const t = setTimeout(goNext, STORY_DURATION_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story?.uuid, groupIndex, storyIndex, confirmDelete, showViewers]);
+  }, [story?.uuid, groupIndex, storyIndex, confirmDelete, showViewers, composerActive]);
 
-  // Close the viewers sheet whenever we move to a different story.
+  // Moving to a different story resets the sheet + reply composer.
   useEffect(() => {
     setShowViewers(false);
+    setReplyText("");
+    setComposerActive(false);
   }, [story?.uuid]);
+
+  // Auto-dismiss the "sent" confirmation shortly after it appears.
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 1100);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   // Esc to close.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // While a sheet is open it owns the keyboard: Esc closes it, nav is frozen.
-      if (showViewers || confirmDelete) {
+      // While a sheet/composer owns focus: Esc dismisses it, nav stays frozen
+      // (so arrow keys + space type into the reply box instead of skipping).
+      if (showViewers || confirmDelete || composerActive) {
         if (e.key === "Escape") {
           setShowViewers(false);
           setConfirmDelete(false);
+          (document.activeElement as HTMLElement | null)?.blur();
         }
         return;
       }
@@ -109,7 +134,7 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, onClose, showViewers, confirmDelete]);
+  }, [goNext, goPrev, onClose, showViewers, confirmDelete, composerActive]);
 
   if (!group || !story) return null;
 
@@ -118,6 +143,37 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
   const handleDelete = () => {
     if (!group.is_self) return;
     deleteStory.mutate(story.uuid, { onSuccess: onClose });
+  };
+
+  // A brief floating confirmation (the emoji, or "Sent") above the composer.
+  const popFlash = (content: string) => setFlash({ id: Date.now(), content });
+
+  const sendReply = () => {
+    const text = replyText.trim();
+    if (!text || replyToStory.isPending) return;
+    replyToStory.mutate(
+      { uuid: story.uuid, text },
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setComposerActive(false);
+          (document.activeElement as HTMLElement | null)?.blur();
+          popFlash("Sent ✓");
+        },
+        onError: (e) => showError(e, "Could not send reply."),
+      },
+    );
+  };
+
+  const sendReaction = (emoji: string) => {
+    if (reactToStory.isPending) return;
+    reactToStory.mutate(
+      { uuid: story.uuid, emoji },
+      {
+        onSuccess: () => popFlash(emoji),
+        onError: (e) => showError(e, "Could not send reaction."),
+      },
+    );
   };
 
   return (
@@ -196,10 +252,73 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         )
       )}
 
-      {/* Caption (image stories) — other people's stories. */}
-      {!group.is_self && story.kind !== "text" && story.caption && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-12">
-          <p className="text-center text-sm font-medium text-white drop-shadow">{story.caption}</p>
+      {/* Reply + react composer — other people's stories. */}
+      {!group.is_self && (
+        <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-5 pt-16">
+          {/* Caption (image stories) sits above the composer. */}
+          {story.kind !== "text" && story.caption && (
+            <p className="mb-3 text-center text-sm font-medium text-white drop-shadow">
+              {story.caption}
+            </p>
+          )}
+
+          {/* Quick emoji reactions */}
+          <div className="mb-3 flex items-center justify-center gap-2">
+            {STORY_REACTIONS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => sendReaction(e)}
+                disabled={reactToStory.isPending}
+                aria-label={`React ${e}`}
+                className="text-2xl leading-none transition hover:scale-110 active:scale-90 disabled:opacity-50"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+
+          {/* Text reply */}
+          <form
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              sendReply();
+            }}
+            className="flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 backdrop-blur-md"
+          >
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onFocus={() => setComposerActive(true)}
+              onBlur={() => setComposerActive(false)}
+              maxLength={2000}
+              placeholder={`Reply to ${name}…`}
+              className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!replyText.trim() || replyToStory.isPending}
+              aria-label="Send reply"
+              className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/90 text-black transition active:scale-90 disabled:opacity-40"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Floating "sent" confirmation (emoji / ✓) after a reply or reaction. */}
+      {flash && (
+        <div
+          key={flash.id}
+          className="pointer-events-none absolute inset-x-0 bottom-44 z-30 flex justify-center"
+        >
+          <span
+            className="rounded-full bg-black/50 px-4 py-2 text-3xl leading-none text-white backdrop-blur-md drop-shadow"
+            style={{ animation: "story-flash 1.1s ease-out forwards" }}
+          >
+            {flash.content}
+          </span>
         </div>
       )}
 
@@ -349,6 +468,11 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
                           <span className="flex-1 truncate text-sm font-medium text-white">
                             {vName}
                           </span>
+                          {v.reactions.length > 0 && (
+                            <span className="text-base leading-none" aria-label="reacted">
+                              {v.reactions.join(" ")}
+                            </span>
+                          )}
                           <span className="text-xs text-white/60">
                             {formatTime(v.viewed_at)}
                           </span>
@@ -367,6 +491,11 @@ export default function StoryViewer({ groups, startGroupIndex, onClose }: StoryV
         @keyframes story-fill {
           from { width: 0%; }
           to { width: 100%; }
+        }
+        @keyframes story-flash {
+          0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+          25% { opacity: 1; transform: translateY(0) scale(1); }
+          100% { opacity: 0; transform: translateY(-44px) scale(1); }
         }
       `}</style>
     </div>

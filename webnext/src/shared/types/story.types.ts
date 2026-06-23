@@ -37,6 +37,24 @@ export interface StoryViewerEntry {
   profile_image: string | null;
   /** When this viewer first opened the story. */
   viewed_at: string;
+  /** Emojis this viewer reacted with (empty when they only watched). */
+  reactions: string[];
+}
+
+/**
+ * A snapshot of a story embedded in a chat message's `metadata.story` (for
+ * story replies / reactions), so the bubble can show a preview even after the
+ * story has expired.
+ */
+export interface StorySnapshot {
+  uuid: string;
+  /** Author of the story — used to phrase "your story" vs "their story". */
+  author_id: number;
+  kind: StoryKind;
+  image_url: string | null;
+  text: string;
+  background: string;
+  caption: string;
 }
 
 /** Response of GET /chat/stories/:uuid/viewers/ — author-only. */

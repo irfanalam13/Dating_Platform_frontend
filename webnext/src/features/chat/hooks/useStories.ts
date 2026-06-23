@@ -6,6 +6,8 @@ import {
   deleteStory,
   getStories,
   getStoryViewers,
+  reactToStory,
+  replyToStory,
   viewStory,
   type CreateStoryPayload,
 } from "@/shared/api/story.api";
@@ -52,6 +54,25 @@ export function useStoryViewers(storyUuid: string | null, enabled: boolean) {
     enabled: enabled && !!storyUuid,
     staleTime: 15_000,
     retry: false,
+  });
+}
+
+/** Send a text reply to a story (delivered as a chat message to the author). */
+export function useReplyToStory() {
+  return useMutation({
+    mutationFn: ({ uuid, text }: { uuid: string; text: string }) =>
+      replyToStory(uuid, text),
+  });
+}
+
+/** Leave an emoji reaction on a story. Refreshes the viewer/reaction state. */
+export function useReactToStory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ uuid, emoji }: { uuid: string; emoji: string }) =>
+      reactToStory(uuid, emoji),
+    onSuccess: (_d, { uuid }) =>
+      qc.invalidateQueries({ queryKey: ["story-viewers", uuid] }),
   });
 }
 

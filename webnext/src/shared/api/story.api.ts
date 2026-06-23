@@ -44,6 +44,17 @@ export function getStoryViewers(storyUuid: string): Promise<StoryViewers> {
   return data({ method: "GET", url: `/chat/stories/${storyUuid}/viewers/` });
 }
 
+/** POST /chat/stories/:uuid/reply/ — send a text reply to a story (becomes a
+ *  chat message to the author). */
+export function replyToStory(storyUuid: string, text: string): Promise<void> {
+  return data({ method: "POST", url: `/chat/stories/${storyUuid}/reply/`, data: { text } });
+}
+
+/** POST /chat/stories/:uuid/react/ — leave an emoji reaction on a story. */
+export function reactToStory(storyUuid: string, emoji: string): Promise<{ emoji: string }> {
+  return data({ method: "POST", url: `/chat/stories/${storyUuid}/react/`, data: { emoji } });
+}
+
 /** DELETE /chat/stories/:uuid/ — remove your own story early. */
 export function deleteStory(storyUuid: string): Promise<void> {
   return data({ method: "DELETE", url: `/chat/stories/${storyUuid}/` });

@@ -7,6 +7,7 @@ import {
   Check, CheckCheck, Clock,
 } from 'lucide-react'
 import { Message } from '@/shared/types/chat.types'
+import type { StorySnapshot } from '@/shared/types/story.types'
 import { formatTime } from '@/shared/lib/utils'
 import { useAuth } from '@/features/auth'
 import { showSuccess, showError } from '@/shared/utils/toast'
@@ -55,6 +56,10 @@ export default function MessageBubble({
   const canAct = !!uuid && !idStr.startsWith('temp-')
   const deleted = !!message.is_deleted_for_all
   const isPending = idStr.startsWith('temp-')  // optimistic, not yet server-acked
+
+  // Story reply / reaction: carry a preview of the story being responded to.
+  const isReaction = message.type === 'story_reaction'
+  const storyMeta = message.metadata?.story as StorySnapshot | undefined
 
   // Detailed delivery/seen receipt — fetched only for the latest own message.
   const receipt = useMessageReceipt(
@@ -264,6 +269,16 @@ export default function MessageBubble({
             : 'bg-white/80 text-[#1a1a2e] rounded-bl-sm shadow-sm'}
           ${isSearchActive ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}>
 
+          {/* Story preview — what this reply/reaction is responding to. */}
+          {storyMeta && !deleted && (
+            <StoryQuote
+              meta={storyMeta}
+              isMine={isMine}
+              currentUserId={Number(user?.id)}
+              isReaction={isReaction}
+            />
+          )}
+
           {/* Attachments */}
           {(message.attachments ?? []).map((a) => (
             <div key={a.uuid} className="mb-1">
@@ -286,6 +301,9 @@ export default function MessageBubble({
 
           {deleted ? (
             <p className="italic opacity-70">This message was deleted</p>
+          ) : isReaction ? (
+            // A story reaction's content is the emoji itself — show it large.
+            <p className="py-0.5 text-4xl leading-none">{message.content}</p>
           ) : (
             message.content && (
               <p className="break-words whitespace-pre-wrap">
@@ -398,6 +416,41 @@ export default function MessageBubble({
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// A compact preview of the story a reply/reaction is responding to, shown
+// inside the message bubble (Instagram-style). Survives story expiry because
+// the snapshot is stored on the message.
+function StoryQuote({
+  meta, isMine, currentUserId, isReaction,
+}: { meta: StorySnapshot; isMine: boolean; currentUserId: number; isReaction: boolean }) {
+  // The story's author is the message recipient (you can only respond to
+  // someone else's story), so "your story" when the viewer authored it.
+  const aboutOwnStory = Number(meta.author_id) === currentUserId
+  const label = isReaction
+    ? (aboutOwnStory ? 'Reacted to your story' : 'You reacted to their story')
+    : (aboutOwnStory ? 'Replied to your story' : 'You replied to their story')
+
+  return (
+    <div className={`mb-1 flex items-center gap-2 rounded-lg border-l-2 py-1 pl-2 pr-2.5 ${
+      isMine ? 'border-white/50 bg-white/15' : 'border-gray-300 bg-black/[0.04]'}`}>
+      {meta.kind === 'image' && meta.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={meta.image_url} alt="story"
+             className="h-12 w-9 flex-none rounded object-cover" />
+      ) : (
+        <div
+          className="flex h-12 w-9 flex-none items-center justify-center overflow-hidden rounded p-1"
+          style={{ background: meta.background || 'linear-gradient(135deg,#4cc9f0,#4361ee)' }}
+        >
+          <span className="line-clamp-3 text-[7px] leading-tight text-white">{meta.text}</span>
+        </div>
+      )}
+      <span className={`text-[11px] font-medium ${isMine ? 'text-indigo-100' : 'text-gray-500'}`}>
+        {label}
+      </span>
     </div>
   )
 }

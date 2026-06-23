@@ -168,6 +168,9 @@ export function useChat(conversationId: string | null): UseChatReturn {
               reply_to: replyPreview,
               attachments: e.attachments ?? [],
               reactions: [],
+              // Carry metadata through so story replies/reactions render their
+              // story preview when delivered live (not just on REST reload).
+              metadata: e.metadata ?? {},
               is_edited: e.is_edited ?? false,
               is_deleted_for_all: e.is_deleted ?? false,
               is_read: false,
