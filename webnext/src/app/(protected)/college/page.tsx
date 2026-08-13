@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GraduationCap, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { getCollegeMode, submitStudentVerification } from "@/shared/api/college.api";
 
 export default function CollegeModePage() {

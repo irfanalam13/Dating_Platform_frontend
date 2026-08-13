@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useLogin } from "../hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import GoogleAuthButton from "./GoogleAuthButton";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -30,7 +30,7 @@ export default function LoginForm() {
         className="w-full max-w-md p-8 rounded-3xl space-y-5 text-black"
       >
         <div className="text-center">
-          <img src="/logo.png" alt="" width={200} height={200} className="mx-auto" />
+          <Image src="/logo.png" alt="MatchMakers logo" width={200} height={200} priority className="mx-auto" />
           <p className="log-font text-black/70 text-4xl">MatchMakers</p>
         </div>
         <br /><br />

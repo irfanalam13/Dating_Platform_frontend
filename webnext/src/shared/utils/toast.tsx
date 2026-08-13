@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast, type Toast } from "react-hot-toast";
-import { AlertCircle, CheckCircle2, RotateCcw, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, RotateCcw, X } from "lucide-react";
 
 type ToastSource = string | Error | unknown;
 
@@ -405,13 +405,9 @@ export const showError = (
 	// visible — helps diagnose any case where the toast can't find a message.
 	if (process.env.NODE_ENV !== "production" && typeof source === "object" && source !== null) {
 		const err = source as { response?: { status?: number; data?: unknown } };
-		// eslint-disable-next-line no-console
 		console.groupCollapsed(`[toast] error → "${extractMessage(source, fallback)}"`);
-		// eslint-disable-next-line no-console
 		console.log("status:", err.response?.status);
-		// eslint-disable-next-line no-console
 		console.log("response.data:", err.response?.data ?? source);
-		// eslint-disable-next-line no-console
 		console.groupEnd();
 	}
 	showToast("error", source, fallback);

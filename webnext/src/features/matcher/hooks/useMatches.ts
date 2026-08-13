@@ -9,10 +9,9 @@ import {
   cancelMatch,
   removeMatch,
 } from "@/shared/api/matcher.api";
-import { getConversation } from "@/shared/api/chat.api";
 import { useAuth } from "@/features/auth";
-import { showError, showSuccess } from "@/shared/utils/toast"
-import { createOrGetConversation } from "@/shared/api/chat.api"
+import { showError, showSuccess } from "@/shared/utils/toast";
+import { createOrGetConversation } from "@/shared/api/chat.api";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import type { PendingMatch, MatchRequestItem, AcceptedMatch } from "@/shared/types/matcher.types";
 

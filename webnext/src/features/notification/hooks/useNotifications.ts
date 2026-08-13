@@ -1,7 +1,4 @@
 // features/notification/hooks/useNotifications.ts
-import {
-  useCallback,
-} from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {

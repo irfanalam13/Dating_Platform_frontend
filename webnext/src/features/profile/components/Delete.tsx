@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 
 export default function AccountDeletionPage() {
@@ -48,9 +49,11 @@ export default function AccountDeletionPage() {
                   {/* Profile Image */}
                   <div className="flex justify-center mb-6">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg ring-4 ring-slate-100">
-                      <img
+                      <Image
                         src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop"
                         alt="Profile"
+                        width={200}
+                        height={200}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -92,9 +95,11 @@ export default function AccountDeletionPage() {
                 <div className="space-y-6 animate-fadeIn">
                   <div className="flex justify-center mb-4">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center overflow-hidden shadow-lg ring-4 ring-slate-100">
-                      <img
+                      <Image
                         src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop"
                         alt="Profile"
+                        width={200}
+                        height={200}
                         className="w-full h-full object-cover"
                       />
                     </div>

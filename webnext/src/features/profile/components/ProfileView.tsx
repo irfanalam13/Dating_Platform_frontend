@@ -6,7 +6,7 @@ import SettingsPage from './SettingsPage';
 import { useMyProfile } from '@/features/profile/hooks/useProfile';
 
 export default function ProfileView() {
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings] = useState(false);
   const router = useRouter();
   const { data } = useMyProfile();
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRegister } from "../hooks/useAuth";
 import { showError } from "@/shared/utils/toast";
 import { Eye, EyeOff, CheckCircle, XCircle, Mail } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import GoogleAuthButton from "./GoogleAuthButton";
 
 export default function RegisterForm() {
   const { mutate, isPending, isSuccess } = useRegister();
@@ -112,7 +112,7 @@ export default function RegisterForm() {
       >
         {/* Title */}
         <div className="text-center">
-          <img src="/logo.png" alt="" width={200} height={200} className="mx-auto" />
+          <Image src="/logo.png" alt="MatchMakers logo" width={200} height={200} priority className="mx-auto" />
           <p className="log-font text-black/70 text-4xl">MatchMakers</p>
         </div>
         <br />

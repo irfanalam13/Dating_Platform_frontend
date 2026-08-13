@@ -20,7 +20,6 @@ import type { Profile } from "@/shared/types/profile.types";
 import {
   DIET_OPTIONS,
   FREQUENCY_OPTIONS,
-  GOTRA_RULE_OPTIONS,
 } from "@/shared/constants/profileOptions";
 import { showError, showSuccess } from "@/shared/utils/toast";
 import { getReligionRules } from "@/shared/constants/religionRules";
@@ -145,7 +144,6 @@ const HOROSCOPE_OPTIONS = [
 
 
 const ANY_FREQUENCY = [{ value: "", label: "Any" }, ...FREQUENCY_OPTIONS];
-const ANY_GOTRA_RULE = [{ value: "", label: "No preference" }, ...GOTRA_RULE_OPTIONS];
 
 function toPayload(input?: string): PreferencePayload {
   if (!input || !input.trim()) {
@@ -244,7 +242,7 @@ export default function PreferencesPage() {
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
 
-  const [activeScope, setActiveScope] = useState<PreferenceScope>("your_hobbies");
+  const [activeScope] = useState<PreferenceScope>("your_hobbies");
   const [saved, setSaved] = useState(false);
   const [formState, setFormState] = useState<PreferencePayload>({
     your_hobbies: emptyForm(),
@@ -272,7 +270,7 @@ export default function PreferencesPage() {
   // the religion name in `current.religion`, so the shared rules decide which
   // levels / horoscope to show (caste & gotra & horoscope are Hindu-only;
   // Islam/Christian show only the relabeled level-1 "Sect"/"Denomination").
-  const culturalRules = getReligionRules(current.religion);
+  const culturalRules = getReligionRules(current.religion, current.community);
 
   // The cultural cascade depends on the *active* tab's selections, one level at
   // a time: religion → community → … → gotra.
@@ -478,9 +476,15 @@ export default function PreferencesPage() {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">Religious compatibility</h3>
             <ToggleRow label="Accept different religion" checked={filters.accept_different_religion} onChange={(v) => setFilter("accept_different_religion", v)} />
-            <ToggleRow label="Accept different community" checked={filters.accept_different_community} onChange={(v) => setFilter("accept_different_community", v)} />
-            <ToggleRow label="Accept different caste" checked={filters.accept_different_caste} onChange={(v) => setFilter("accept_different_caste", v)} />
-            <ToggleRow label="Accept different gotra" checked={filters.accept_different_gotra} onChange={(v) => setFilter("accept_different_gotra", v)} />
+            {culturalRules.levels.includes("community") && (
+              <ToggleRow label="Accept different community / ethnicity" checked={filters.accept_different_community} onChange={(v) => setFilter("accept_different_community", v)} />
+            )}
+            {culturalRules.levels.includes("caste_v2") && (
+              <ToggleRow label="Accept different caste" checked={filters.accept_different_caste} onChange={(v) => setFilter("accept_different_caste", v)} />
+            )}
+            {culturalRules.levels.includes("gotra_v2") && (
+              <ToggleRow label="Accept different gotra" checked={filters.accept_different_gotra} onChange={(v) => setFilter("accept_different_gotra", v)} />
+            )}
           </div>
 
           <div className="space-y-3">

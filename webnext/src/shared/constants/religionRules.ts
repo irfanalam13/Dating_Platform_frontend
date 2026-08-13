@@ -52,13 +52,19 @@ const RULES: Record<string, ReligionRules> = {
     levels: ["community"],
     showHoroscope: false,
     showTemple: false,
-    communityLabel: "Sect",
+    communityLabel: "Community / Ethnicity",
+  },
+  Muslim: {
+    levels: ["community"],
+    showHoroscope: false,
+    showTemple: false,
+    communityLabel: "Community / Ethnicity",
   },
   Christian: {
     levels: ["community"],
     showHoroscope: false,
     showTemple: false,
-    communityLabel: "Denomination",
+    communityLabel: "Community / Ethnicity",
   },
 };
 
@@ -66,18 +72,44 @@ const NONE: ReligionRules = {
   levels: [],
   showHoroscope: false,
   showTemple: false,
-  communityLabel: "Community",
+  communityLabel: "Community / Ethnicity",
 };
 
-export function getReligionRules(religionName?: string | null): ReligionRules {
-  if (!religionName) return NONE;
-  return RULES[religionName.trim()] ?? NONE;
+export function getReligionRules(
+  religionName?: string | null,
+  communityName?: string | null
+): ReligionRules {
+  const rel = (religionName ?? "").trim().toLowerCase();
+  const comm = (communityName ?? "").trim().toLowerCase();
+
+  if (
+    rel.includes("muslim") ||
+    rel.includes("islam") ||
+    comm.includes("shia") ||
+    comm.includes("sunni")
+  ) {
+    return RULES.Islam;
+  }
+  if (rel.includes("hindu")) {
+    return RULES.Hindu;
+  }
+  if (rel.includes("christian")) {
+    return RULES.Christian;
+  }
+  if (religionName && RULES[religionName.trim()]) {
+    return RULES[religionName.trim()];
+  }
+  return NONE;
 }
 
 export const isHindu = (religionName?: string | null): boolean =>
-  (religionName ?? "").trim() === HINDU;
+  (religionName ?? "").trim().toLowerCase().includes("hindu");
 
 /** Convenience: is a given cascade level visible for this religion? */
-export function showsLevel(religionName: string | null | undefined, level: CulturalLevel): boolean {
-  return getReligionRules(religionName).levels.includes(level);
+export function showsLevel(
+  religionName: string | null | undefined,
+  level: CulturalLevel,
+  communityName?: string | null
+): boolean {
+  return getReligionRules(religionName, communityName).levels.includes(level);
 }

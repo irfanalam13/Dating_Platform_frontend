@@ -28,6 +28,7 @@ import ProfileImage from "@/shared/components/ProfileImage";
 import { blockProfile, reportProfile, type ReportReasonValue } from "@/shared/api/mvp.api";
 import { showSuccess, showError } from "@/shared/utils/toast";
 import type { ProfileClientProps } from "./profile-client/types";
+import { getReligionRules } from "@/shared/constants/religionRules";
 import {
   CompletionBar,
   InfoCard,
@@ -157,9 +158,7 @@ export default function ProfileClient({
     const diet         = isOwn ? data!.diet                 : publicData!.diet;
     const alcohol      = isOwn ? data!.alcohol              : publicData!.alcohol;
     const smoking      = isOwn ? data!.smoking              : publicData!.smoking;
-    const educationLevel = isOwn ? data!.education_level    : publicData!.education_level;
     const industry     = isOwn ? data!.industry             : publicData!.industry;
-    const incomeRange  = isOwn ? data!.income_range         : publicData!.income_range;
     const familyType   = isOwn ? data!.family_type          : publicData!.family_type;
     const isProfilePublic = isOwn ? data!.is_profile_public : publicData!.is_profile_public;
     // Someone else viewing a private account → blur the photo (privacy = blur).
@@ -186,9 +185,7 @@ export default function ProfileClient({
       { label: "Diet", value: diet || "" },
       { label: "Alcohol", value: alcohol || "" },
       { label: "Smoking", value: smoking || "" },
-      { label: "Education level", value: educationLevel || "" },
       { label: "Industry", value: industry || "" },
-      { label: "Income", value: incomeRange || "" },
       { label: "Family type", value: familyType || "" },
     ].filter((d) => d.value && d.value.trim() !== "");
 
@@ -344,17 +341,30 @@ export default function ProfileClient({
             </div>
 
             {/* Cultural background block */}
-            <div className="flex flex-col gap-0.5 mt-3 text-xs text-[#746767]">
-              <p><span className="font-semibold text-[#2D2424]">Ethnicity:</span> {ethnicity || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-              <p><span className="font-semibold text-[#2D2424]">Religion:</span> {religion || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-              {community && <p><span className="font-semibold text-[#2D2424]">Community:</span> {community}</p>}
-              <p><span className="font-semibold text-[#2D2424]">Caste:</span> {caste || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-              {subCaste && <p><span className="font-semibold text-[#2D2424]">Sub-caste:</span> {subCaste}</p>}
-              {clan && <p><span className="font-semibold text-[#2D2424]">Clan:</span> {clan}</p>}
-              <p><span className="font-semibold text-[#2D2424]">Gotra:</span> {gotra || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-
-              <p><span className="font-semibold text-[#2D2424]">Horoscope:</span> {horoscope || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
-            </div>
+            {(() => {
+              const rules = getReligionRules(religion, community);
+              return (
+                <div className="flex flex-col gap-0.5 mt-3 text-xs text-[#746767]">
+                  <p><span className="font-semibold text-[#2D2424]">Religion:</span> {religion || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+                  <p><span className="font-semibold text-[#2D2424]">Community / Ethnicity:</span> {ethnicity || community || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+                  {rules.levels.includes("caste_v2") && (
+                    <p><span className="font-semibold text-[#2D2424]">Caste:</span> {caste || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+                  )}
+                  {subCaste && rules.levels.includes("sub_caste") && (
+                    <p><span className="font-semibold text-[#2D2424]">Sub-caste:</span> {subCaste}</p>
+                  )}
+                  {clan && rules.levels.includes("clan") && (
+                    <p><span className="font-semibold text-[#2D2424]">Clan:</span> {clan}</p>
+                  )}
+                  {rules.levels.includes("gotra_v2") && (
+                    <p><span className="font-semibold text-[#2D2424]">Gotra:</span> {gotra || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+                  )}
+                  {rules.showHoroscope && (
+                    <p><span className="font-semibold text-[#2D2424]">Horoscope:</span> {horoscope || <span className="italic text-[#BFBFBF]">Not added</span>}</p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </section>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { getInitials } from "@/shared/lib/utils";
 
@@ -12,6 +13,12 @@ interface ProfileImageProps {
   className?: string;
   /** Font-size classes for the initials fallback. Scale this to the avatar size. */
   textClassName?: string;
+  /** Intrinsic image width used by Next Image. */
+  width?: number;
+  /** Intrinsic image height used by Next Image. */
+  height?: number;
+  /** Responsive size hint for Next Image. */
+  sizes?: string;
   loading?: "eager" | "lazy";
   draggable?: boolean;
   alt?: string;
@@ -33,6 +40,9 @@ export default function ProfileImage({
   name,
   className = "",
   textClassName = "text-2xl",
+  width = 512,
+  height = 512,
+  sizes,
   loading = "eager",
   draggable,
   alt,
@@ -52,13 +62,17 @@ export default function ProfileImage({
 
   if (isRealImage(src) && !broken) {
     return (
-      <img
+      <Image
         src={src as string}
         alt={label}
         className={`object-cover ${className}`}
+        width={width}
+        height={height}
+        sizes={sizes}
         loading={loading}
         draggable={draggable}
         onError={() => setBroken(true)}
+        unoptimized
       />
     );
   }
@@ -75,4 +89,3 @@ export default function ProfileImage({
     </div>
   );
 }
-

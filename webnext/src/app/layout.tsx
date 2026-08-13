@@ -5,18 +5,14 @@ import Providers from "./providers";
 import QueryProvider from "@/providers/QueryProvider";
 import { AppChrome } from "@/shared/ui/app-chrome";
 
-// Self-hosted, build-time-optimized fonts. next/font inlines the @font-face,
-// preloads the woff2, and applies `font-display: swap` automatically — removing
-// the render-blocking external request chain to fonts.googleapis.com /
-// fonts.gstatic.com that the previous CSS `@import` forced onto the critical path.
+// Self-hosted, build-time-optimized fonts.
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
 });
 
-// Brand wordmark face. Single weight (it has no variable axis), only preloaded
-// where it's actually used via the `--font-beau-rivage` CSS variable (.log-font).
+// Brand wordmark face.
 const beauRivage = Beau_Rivage({
   weight: "400",
   subsets: ["latin"],
@@ -28,6 +24,36 @@ const beauRivage = Beau_Rivage({
 export const metadata: Metadata = {
   title: "MatchMakers",
   description: "Find your match on MatchMakers.",
+
+  // PWA manifest
+  manifest: "/manifest.json",
+
+  // Browser favicon + Apple Home Screen icon
+  icons: {
+    icon: [
+      {
+        url: "/icons/favicon-32.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/icons/favicon-16.png",
+        sizes: "16x16",
+        type: "image/png",
+      },
+    ],
+
+    apple: [
+      {
+        url: "/icons/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
+
+  // Helps identify the app as a web application
+  applicationName: "MatchMakers",
 };
 
 export const viewport: Viewport = {

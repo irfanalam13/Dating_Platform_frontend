@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowLeft, HeartHandshake, MessageCircle, UserCheck, X, Send, UserX, HeartCrack } from "lucide-react";
+import { ArrowLeft, HeartHandshake, MessageCircle, UserCheck, X, Send, HeartCrack } from "lucide-react";
 import ProfileImage from "@/shared/components/ProfileImage";
 import {
   useAcceptedMatches,

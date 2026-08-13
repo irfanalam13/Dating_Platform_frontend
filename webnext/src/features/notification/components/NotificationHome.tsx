@@ -43,7 +43,8 @@ function NotificationIcon({ type }: { type: NotificationType }) {
 }
 
 function iconClass(_type: NotificationType, _isRead: boolean): string {
-  // Pure glossy glass for every notification icon.
+  void _type;
+  void _isRead;
   return "glass-glossy";
 }
 

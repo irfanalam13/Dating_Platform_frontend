@@ -28,7 +28,7 @@
 
 
 // shared/utils/wsToken.ts
-import { getAccessToken, refreshOnce } from '@/shared/api/client'
+import { refreshOnce } from '@/shared/api/client'
 
 export const getFreshToken = async (): Promise<string | null> => {
   const token = await refreshOnce()

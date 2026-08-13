@@ -68,7 +68,9 @@ class WebSocketManager {
     }
   }
 
-  protected _onMessage(_e: MessageEvent) {}
+  protected _onMessage(_event: MessageEvent): void {
+    void _event;
+  }
 
   disconnect() {
     this.shouldReconnect = false

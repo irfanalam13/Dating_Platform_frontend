@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, UserRound, Camera } from "lucide-react";
@@ -15,13 +16,9 @@ import {
   useGotrasV2,
 } from "@/features/preference/hooks/usePreference";
 import {
-  NATIONALITY_OPTIONS,
-  CITIZENSHIP_OPTIONS,
   DIET_OPTIONS,
   FREQUENCY_OPTIONS,
-  EDUCATION_LEVEL_OPTIONS,
   INDUSTRY_OPTIONS,
-  INCOME_RANGE_OPTIONS,
   LANGUAGE_OPTIONS,
   type Option,
 } from "@/shared/constants/profileOptions";
@@ -67,10 +64,8 @@ export default function EditProfile() {
     nationality: "",
     citizenship: "",
     education: "",
-    education_level: "",
     career: "",
     industry: "",
-    income_range: "",
     values: "",
     hobbies: "",
     bio: "",
@@ -153,10 +148,8 @@ export default function EditProfile() {
       nationality: data.nationality || "",
       citizenship: data.citizenship || "",
       education: data.education || "",
-      education_level: data.education_level || "",
       career: data.career || "",
       industry: data.industry || "",
-      income_range: data.income_range || "",
       values: data.values || "",
       hobbies: data.hobbies || "",
       bio: data.bio || "",
@@ -309,8 +302,7 @@ export default function EditProfile() {
                     >
                       <span className="grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-white text-[#9A8C82]">
                         {shownPhoto ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={shownPhoto} alt="Profile photo" className="h-24 w-24 object-cover" />
+                          <Image src={shownPhoto} alt="Profile photo" width={96} height={96} className="h-24 w-24 object-cover" />
                         ) : (
                           <UserRound className="h-12 w-12" />
                         )}
@@ -353,11 +345,9 @@ export default function EditProfile() {
 
               {step === 1 && (
                 <>
-                  <ChoiceSelect label="Education level" value={form.education_level} onChange={(v) => update("education_level", v)} options={EDUCATION_LEVEL_OPTIONS} optional />
-                  <Field label="Field / Institution" value={form.education} onChange={(v) => update("education", v)} optional />
+                  <Field label="Education" value={form.education} onChange={(v) => update("education", v)} optional />
                   <Field label="Occupation" value={form.career} onChange={(v) => update("career", v)} optional />
                   <ChoiceSelect label="Industry" value={form.industry} onChange={(v) => update("industry", v)} options={INDUSTRY_OPTIONS} optional />
-                  <ChoiceSelect label="Income range" value={form.income_range} onChange={(v) => update("income_range", v)} options={INCOME_RANGE_OPTIONS} optional />
                   <ChoiceSelect label="Diet" value={form.diet} onChange={(v) => update("diet", v)} options={DIET_OPTIONS} optional />
                   <div className="grid grid-cols-2 gap-3">
                     <ChoiceSelect label="Alcohol" value={form.alcohol} onChange={(v) => update("alcohol", v)} options={FREQUENCY_OPTIONS} optional />
@@ -369,7 +359,7 @@ export default function EditProfile() {
 
               {step === 2 && (
                 <>
-                  <Field label="Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} optional />
+                  <Field label="Community / Ethnicity" value={form.ethnicity} onChange={(v) => update("ethnicity", v)} placeholder="e.g. Shia, Sunni, Catholic, South Asian, etc." optional />
                   <CultureSelect label="Religion" value={culture.religion} onChange={selectReligion} options={religions} placeholder="Select religion" />
                   {rules.levels.includes("community") && (
                     <CultureSelect

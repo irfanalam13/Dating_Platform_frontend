@@ -4,11 +4,12 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck, MapPin, PenLine, Settings, Eye, Lock,
-  Heart, BookOpen, Briefcase, Star, Globe, Sparkles, ChevronRight,
+  BookOpen, Briefcase, Star, Globe, Sparkles,
 } from "lucide-react";
 import { useMyProfile } from "@/features/profile/hooks/useProfile";
 import type { Profile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { getReligionRules } from "@/shared/constants/religionRules";
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function ProfileSkeleton() {
@@ -171,7 +172,13 @@ export default function ProfileCard() {
       yourHobbies = parsed.your_hobbies ?? {};
     } catch {}
   }
-  const hobbyChips = [yourHobbies.gotra, yourHobbies.religion, yourHobbies.caste, yourHobbies.horoscope].filter(Boolean) as string[];
+  const rules = getReligionRules(data.religion_name, data.community_name);
+  const hobbyChips = [
+    yourHobbies.religion,
+    rules.levels.includes("caste_v2") ? yourHobbies.caste : null,
+    rules.levels.includes("gotra_v2") ? yourHobbies.gotra : null,
+    rules.showHoroscope ? yourHobbies.horoscope : null,
+  ].filter(Boolean) as string[];
   const hasHobbySection = hobbyChips.length > 0 || yourHobbies.preferences || yourHobbies.hobbies;
 
   return (
@@ -266,7 +273,7 @@ export default function ProfileCard() {
           <div className="grid grid-cols-2 gap-3">
             <InfoCard icon={Briefcase} label="Career" value={data.career || "Not added"} />
             <InfoCard icon={BookOpen} label="Education" value={data.education || "Not added"} />
-            <InfoCard icon={Globe} label="Ethnicity" value={data.ethnicity || "Not added"} />
+            <InfoCard icon={Globe} label="Community / Ethnicity" value={data.ethnicity || data.community_name || "Not added"} />
           </div>
         </Section>
 
@@ -336,17 +343,25 @@ export default function ProfileCard() {
         )}
 
         {/* ── Cultural ── */}
-        {(data.religion_name || data.caste_name || data.gotra_name || data.horoscope) && (
-          <Section title="Cultural background">
-            <div className="grid grid-cols-2 gap-3">
-              {data.religion_name && <InfoCard icon={Star} label="Religion" value={data.religion_name} />}
-              {data.caste_name && <InfoCard icon={Star} label="Caste" value={data.caste_name} />}
-              {data.gotra_name && <InfoCard icon={Star} label="Gotra" value={data.gotra_name} />}
-
-              {data.horoscope && <InfoCard icon={Star} label="Horoscope" value={data.horoscope} />}
-            </div>
-          </Section>
-        )}
+        {(() => {
+          const showCaste = Boolean(data.caste_name && rules.levels.includes("caste_v2"));
+          const showGotra = Boolean(data.gotra_name && rules.levels.includes("gotra_v2"));
+          const showHoro = Boolean(data.horoscope && rules.showHoroscope);
+          const showCommunity = Boolean(data.community_name && rules.levels.includes("community"));
+          const hasAny = Boolean(data.religion_name || showCommunity || showCaste || showGotra || showHoro);
+          if (!hasAny) return null;
+          return (
+            <Section title="Cultural background">
+              <div className="grid grid-cols-2 gap-3">
+                {data.religion_name && <InfoCard icon={Star} label="Religion" value={data.religion_name} />}
+                {showCommunity && <InfoCard icon={Star} label={rules.communityLabel} value={data.community_name!} />}
+                {showCaste && <InfoCard icon={Star} label="Caste" value={data.caste_name!} />}
+                {showGotra && <InfoCard icon={Star} label="Gotra" value={data.gotra_name!} />}
+                {showHoro && <InfoCard icon={Star} label="Horoscope" value={data.horoscope!} />}
+              </div>
+            </Section>
+          );
+        })()}
       </div>
     </main>
   );

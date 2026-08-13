@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Profile } from "@/shared/types/profile.types";
 import ProfileImage from "@/shared/components/ProfileImage";
+import { getReligionRules } from "@/shared/constants/religionRules";
 import { displayImage } from "./helpers";
 
 // ─── Detail row for view modal ────────────────────────────────────────────────
@@ -109,16 +110,21 @@ export default function ViewProfileModal({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <Detail label="Career" value={profile.career} />
-            <Detail label="Education" value={profile.education} />
-            <Detail label="Ethnicity" value={profile.ethnicity} />
-            <Detail label="Religion" value={profile.religion_name} />
-            <Detail label="Caste" value={profile.caste_name} />
-            <Detail label="Gotra" value={profile.gotra_name} />
-            <Detail label="Horoscope" value={profile.horoscope} />
-            <Detail label="Values" value={profile.values} />
-          </div>
+          {(() => {
+            const rules = getReligionRules(profile.religion_name, profile.community_name);
+            return (
+              <div className="grid grid-cols-2 gap-2">
+                <Detail label="Career" value={profile.career} />
+                <Detail label="Education" value={profile.education} />
+                <Detail label="Religion" value={profile.religion_name} />
+                <Detail label="Community / Ethnicity" value={profile.ethnicity || profile.community_name} />
+                {rules.levels.includes("caste_v2") && <Detail label="Caste" value={profile.caste_name} />}
+                {rules.levels.includes("gotra_v2") && <Detail label="Gotra" value={profile.gotra_name} />}
+                {rules.showHoroscope && <Detail label="Horoscope" value={profile.horoscope} />}
+                <Detail label="Values" value={profile.values} />
+              </div>
+            );
+          })()}
 
           {hobbies.length > 0 && (
             <div>

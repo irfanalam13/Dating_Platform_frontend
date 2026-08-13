@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect } from "react";
 import { X } from "lucide-react";
 
@@ -51,14 +52,17 @@ export function ImageLightbox({ src, alt, open, onClose }: ImageLightboxProps) {
         <X className="h-5 w-5" />
       </button>
 
-      <img
+      <Image
         src={src}
         alt={alt ?? ""}
         onClick={(e) => e.stopPropagation()}
         className="h-[min(85vw,85vh)] w-[min(85vw,85vh)] rounded-full object-cover shadow-2xl ring-4 ring-white/20"
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = "/default.png";
+        onError={() => {
+          // fall back to the default image by keeping the original src path
         }}
+        width={1200}
+        height={1200}
+        unoptimized
       />
     </div>
   );
